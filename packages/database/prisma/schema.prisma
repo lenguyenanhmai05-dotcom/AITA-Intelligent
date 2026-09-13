@@ -1,0 +1,196 @@
+// Prisma Schema for AITA-INTELLIGENT: Subsystem 5
+// Redis Queue & Teamwork Analytics Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Users (Shared core entity referenced via FK)
+model User {
+  id             Int       @id @default(autoincrement())
+  fullName       String
+  email          String    @unique
+  gitEmails      String[]  @default([]) // Enhanced: Secondary/personal emails for Git Author Matching
+  githubUsername String?   // Enhanced: GitHub username for matching PRs & commits
+  role           String    // lecturer | student | admin
+  password       String?
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  classesTaught       Class[]               @relation("LecturerClasses")
+  teamMemberships     TeamMember[]
+  createdBatches      GradingBatch[]        @relation("BatchCreator")
+  dismissedJobs       GradingJob[]          @relation("JobDismisser")
+  contributions       MemberContribution[]
+  updatedSettings     SystemSetting[]       @relation("SettingUpdater")
+
+  @@map("users")
+}
+
+// 2. Classes (Created & managed by Lecturer)
+model Class {
+  id         Int       @id @default(autoincrement())
+  className  String
+  lecturerId Int
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  lecturer   User           @relation("LecturerClasses", fields: [lecturerId], references: [id], onDelete: Cascade)
+  teams      Team[]
+  batches    GradingBatch[]
+
+  @@map("classes")
+}
+
+// 3. Teams (Student groups belonging to a class)
+model Team {
+  id        Int       @id @default(autoincrement())
+  teamName  String
+  classId   Int
+  createdAt DateTime  @default(now())
+
+  // Relations
+  class     Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  gitRepos  GitRepo[]
+
+  @@map("teams")
+}
+
+// 4. TeamMembers (Many-to-many relationship between Teams and Users)
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  teamId    Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  // Relations
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+// 5. GradingBatches (Batch grading requests initiated by Lecturer)
+model GradingBatch {
+  id        Int          @id @default(autoincrement())
+  batchName String
+  classId   Int
+  createdBy Int
+  priority  String       // Exam | Assignment | Practice (BR-01)
+  status    String       @default("waiting") // waiting | active | completed | failed
+  createdAt DateTime     @default(now())
+
+  // Relations
+  class     Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator   User         @relation("BatchCreator", fields: [createdBy], references: [id])
+  jobs      GradingJob[]
+
+  @@map("grading_batches")
+}
+
+// 6. GradingJobs (Individual grading tasks within a batch)
+model GradingJob {
+  id                  Int          @id @default(autoincrement())
+  batchId             Int
+  submissionId        Int          // Reference to student submission
+  studentName         String?      // Cached student name for convenience
+  submissionTitle     String?      // Title/identifier of submission
+  status              String       @default("waiting") // waiting | active | completed | failed | dead
+  retryCount          Int          @default(0) // Capped at 3 (BR-04)
+  runtimeDurationMs   Int?
+  errorClassification String?      // timeout | runtime_error | syntax_error | etc.
+  stackTrace          String?
+  dismissed           Boolean      @default(false)
+  dismissedBy         Int?
+  dismissedAt         DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relations
+  batch               GradingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  dismisser           User?        @relation("JobDismisser", fields: [dismissedBy], references: [id])
+
+  @@map("grading_jobs")
+}
+
+// 7. GitRepos (Submitted Git repository for teamwork analysis)
+model GitRepo {
+  id           Int                  @id @default(autoincrement())
+  teamId       Int
+  repoUrl      String
+  branch       String               @default("main")
+  isPrivate    Boolean              @default(false)
+  patEncrypted String?              // Encrypted at rest AES-256 (BR-08)
+  cloneStatus  String               @default("pending") // pending | cloning | success | failed
+  errorMessage String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  // Relations
+  team          Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  commits       GitCommit[]
+  contributions MemberContribution[]
+
+  @@map("git_repos")
+}
+
+// 8. GitCommits (Parsed commit metadata from cloned repo)
+model GitCommit {
+  id               Int       @id @default(autoincrement())
+  repoId           Int
+  commitHash       String
+  authorEmail      String
+  authorName       String?
+  commitDate       DateTime
+  linesAdded       Int       @default(0)
+  linesDeleted     Int       @default(0)
+  isSuspicious     Boolean   @default(false) // Flagged by heuristics (BR-10)
+  suspiciousReason String?   // whitespace-only | self-revert
+
+  // Relations
+  repo             GitRepo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@index([repoId, authorEmail])
+  @@map("git_commits")
+}
+
+// 9. MemberContributions (Calculated contribution metrics & free-riding flag)
+model MemberContribution {
+  id                     Int      @id @default(autoincrement())
+  repoId                 Int
+  userId                 Int
+  prCount                Int      @default(0)
+  commitCount            Int      @default(0)
+  locCount               Int      @default(0)
+  contributionPercentage Float    @default(0.0) // 40% LOC + 40% Commits + 20% PRs (BR-11)
+  isFreeRiding           Boolean  @default(false) // Flagged if below threshold (BR-12)
+  createdAt              DateTime @default(now())
+
+  // Relations
+  repo                   GitRepo  @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([repoId, userId])
+  @@map("member_contributions")
+}
+
+// 10. SystemSettings (Global system configuration editable by Admin)
+model SystemSetting {
+  id           Int      @id @default(autoincrement())
+  settingKey   String   @unique // worker_concurrency | free_riding_threshold
+  settingValue String
+  updatedBy    Int?
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  updater      User?    @relation("SettingUpdater", fields: [updatedBy], references: [id])
+
+  @@map("system_settings")
+}
