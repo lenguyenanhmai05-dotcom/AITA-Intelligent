@@ -1,57 +1,84 @@
 import { useState, useEffect } from 'react';
+import { LoginScreen } from './components/LoginScreen';
+import { DashboardPortal } from './components/DashboardPortal';
+import { Language } from './translations';
+
+export const ADMIN_EMAILS = [
+  'lenguyenanhmai05@gmail.com',
+  'admin@aita.fpt.edu.vn',
+  'admin@fpt.edu.vn',
+];
+export const isAdminEmail = (email: string): boolean => {
+  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+};
 
 export default function App() {
-  const [healthStatus, setHealthStatus] = useState<string>('Connecting to API...');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<'lecturer' | 'student' | 'admin'>('student');
+  const [userEmail, setUserEmail] = useState<string>('lenguyenanhmai05@gmail.com');
+  const [userFullName, setUserFullName] = useState<string>('Lê Nguyễn Anh Mai');
+  const [lang, setLang] = useState<Language>(() => {
+    return (localStorage.getItem('aita_lang') as Language) || 'vi';
+  });
+
+  const handleToggleLang = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem('aita_lang', newLang);
+  };
 
   useEffect(() => {
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data) => setHealthStatus(data.subsystem || 'Connected'))
-      .catch(() => setHealthStatus('API Server is offline'));
+    // Check saved session on load
+    const savedUser = localStorage.getItem('aita_user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.email) {
+          setUserEmail(parsed.email);
+          setUserFullName(parsed.fullName || parsed.name || 'Người dùng AITA');
+          const isAdm = isAdminEmail(parsed.email);
+          setUserRole(isAdm ? 'admin' : (parsed.role || 'student'));
+          setIsLoggedIn(true);
+        }
+      } catch (e) {
+        console.warn('Could not parse saved session', e);
+      }
+    }
   }, []);
 
+  const handleLoginSuccess = (role: 'lecturer' | 'student' | 'admin', email: string, fullName?: string) => {
+    // Only designated admin emails can have role 'admin'
+    const finalRole = isAdminEmail(email) ? 'admin' : (role === 'admin' ? 'student' : role);
+    setUserRole(finalRole);
+    setUserEmail(email);
+    if (fullName) setUserFullName(fullName);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('aita_token');
+    localStorage.removeItem('aita_user');
+    setIsLoggedIn(false);
+  };
+
   return (
-    <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '20px', marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          AITA-INTELLIGENT
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
-          Subsystem 5: Redis Queue (BullMQ) & Git Teamwork Analytics Platform
-        </p>
-      </header>
-
-      <main>
-        <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Môi Trường Dự Án (Monorepo Scaffolding)</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
-            Trạng thái kết nối API: <span style={{ color: 'var(--accent-green)', fontWeight: 600 }}>{healthStatus}</span>
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <h3 style={{ color: 'var(--accent-blue)', marginBottom: '8px' }}>1. Batch Grading (BullMQ)</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Điều phối hàng đợi Redis phân loại Exam (100) &gt; Assignment (50) &gt; Practice (10). Tự động retry 3 lần và quản lý Dead-Letter Queue.
-              </p>
-            </div>
-
-            <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <h3 style={{ color: 'var(--accent-purple)', marginBottom: '8px' }}>2. Git Analytics Engine</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Bare clone vào sandbox, bóc tách diff commits, lọc rác node_modules, bắt gian lận whitespace-only &amp; self-revert.
-              </p>
-            </div>
-
-            <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <h3 style={{ color: 'var(--accent-green)', marginBottom: '8px' }}>3. Anti Free-Riding</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Tính điểm đóng góp công bằng: 40% LOC + 40% Commits + 20% PRs. Hỗ trợ nhiều email sinh viên (@gmail, @fpt) và cảnh báo lười biếng.
-              </p>
-            </div>
-          </div>
-        </div>
-      </main>
+    <div style={{ position: 'relative', minHeight: '100vh' }}>
+      {isLoggedIn ? (
+        <DashboardPortal
+          role={userRole}
+          userEmail={userEmail}
+          userFullName={userFullName}
+          lang={lang}
+          onToggleLang={handleToggleLang}
+          onLogout={handleLogout}
+        />
+      ) : (
+        <LoginScreen
+          lang={lang}
+          onToggleLang={handleToggleLang}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
     </div>
   );
 }
+
