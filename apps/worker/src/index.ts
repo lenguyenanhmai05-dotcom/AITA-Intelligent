@@ -1,7 +1,22 @@
 import dotenv from 'dotenv';
-import { DEFAULT_WORKER_CONCURRENCY } from '@aita/shared';
+import { GradingWorkerService } from './grading/gradingWorker';
 
 dotenv.config();
 
-console.log('[Worker Daemon] Initializing AITA Subsystem 5 Worker...');
-console.log(`[Worker Daemon] Default Concurrency set to: ${DEFAULT_WORKER_CONCURRENCY}`);
+console.log('================================================================');
+console.log('🚀 AITA-INTELLIGENT: Subsystem 5 Background Worker Starting...');
+console.log('================================================================');
+
+// Start BullMQ Worker Daemon
+GradingWorkerService.start();
+
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('[Worker Daemon] Gracefully shutting down...');
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('[Worker Daemon] Interrupted, shutting down...');
+  process.exit(0);
+});

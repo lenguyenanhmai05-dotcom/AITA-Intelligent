@@ -1,15 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #111827;
-  --bg-card: #1f2937;
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
-  --accent-green: #10b981;
-  --accent-red: #ef4444;
-  --border-color: #374151;
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  /* ========================================================================= */
+  /* AITA-INTELLIGENT: Cantaloupe / Melon Design System Tokens                */
+  /* ========================================================================= */
+  --color-exocarp: #788417;       /* Deep Olive Green */
+  --color-unripe: #AAB026;        /* Fresh Lime / Olive */
+  --color-mystic-melon: #F6F1BC;  /* Creamy Pale Melon */
+  --color-cantaloupe: #FDCB7B;    /* Warm Cantaloupe Tint */
+  --color-kumquat: #EEA64B;       /* Vibrant Kumquat Orange */
+  --color-orange-zest: #D9641F;   /* Rich Terracotta Orange */
+
+  /* Neutral & Functional Colors */
+  --bg-page: #FAF9F3;
+  --bg-page-gradient: radial-gradient(circle at 15% 15%, #FFFFFF 0%, #FAF9F3 45%, #F1F4E4 100%);
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #FAF9F1;
+  --bg-surface-input: #FDFDFC;
+  
+  --text-main: #1C2009;
+  --text-body: #4A5229;
+  --text-muted: #7A855A;
+  --text-subtle: #9EA885;
+  
+  --border-light: rgba(120, 132, 23, 0.15);
+  --border-focus: #EEA64B;
+  --border-badge: rgba(170, 176, 38, 0.35);
+
+  --shadow-card: 0 20px 45px -15px rgba(217, 100, 31, 0.08), 0 8px 20px -6px rgba(120, 132, 23, 0.06), 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-btn: 0 8px 20px -4px rgba(217, 100, 31, 0.35);
+  --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit', var(--font-sans);
 }
 
 * {
@@ -19,14 +47,37 @@
 }
 
 body {
-  font-family: var(--font-family);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  font-family: var(--font-sans);
+  background: var(--bg-page-gradient);
+  background-attachment: fixed;
+  color: var(--text-main);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F4F3EB;
+}
+::-webkit-scrollbar-thumb {
+  background: #D5DAC0;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B6BD9B;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
 }
