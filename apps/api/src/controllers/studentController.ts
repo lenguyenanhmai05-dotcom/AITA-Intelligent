@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma, connectMongoDB, UserModel } from '@aita/database';
+import { prisma } from '@aita/database';
 
 export interface StudentImportRow {
   fullName: string;
@@ -10,7 +10,7 @@ export interface StudentImportRow {
   teamName?: string;
 }
 
-// In-memory fallback if Database is not reachable
+// In-memory fallback if Database is temporarily starting
 let inMemoryStudents: any[] = [
   { id: 101, fullName: 'Nguyễn Văn A', email: 'anv@fpt.edu.vn', role: 'student', gitEmails: ['anv@fpt.edu.vn'], githubUsername: 'anv-dev' },
   { id: 102, fullName: 'Lê Văn C', email: 'cle@fpt.edu.vn', role: 'student', gitEmails: ['cle@fpt.edu.vn'], githubUsername: 'cle-coder' },
@@ -18,7 +18,7 @@ let inMemoryStudents: any[] = [
 ];
 
 /**
- * Bulk Import Sinh Viên từ Excel sử dụng SQL Transaction (ACID Transaction) & đồng bộ MongoDB Atlas
+ * Bulk Import Sinh Viên từ Excel sử dụng SQL ACID Transaction trên Docker PostgreSQL
  */
 export const bulkImportStudents = async (req: Request, res: Response) => {
   try {
@@ -57,53 +57,42 @@ export const bulkImportStudents = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Đồng bộ lên MongoDB Atlas Cloud
-    try {
-      await connectMongoDB();
-      for (const s of students) {
-        await UserModel.updateOne(
-          { email: s.email.toLowerCase() },
-          {
-            $set: {
-              fullName: s.fullName,
-              email: s.email.toLowerCase(),
-              role: 'student',
-              gitEmails: s.gitEmails || [s.email.toLowerCase()],
-              githubUsername: s.githubUsername || null,
-            },
-          },
-          { upsert: true }
-        );
-      }
-      console.log(`[MongoDB Atlas] 👥 Synced ${students.length} students to MongoDB Atlas`);
-    } catch (err: any) {
-      console.warn(`[MongoDB Atlas] Student sync notice: ${err.message}`);
-    }
-
-    // 3. Thực thi Prisma / inMemory Transaction
+    // 2. Thực thi Prisma ACID Transaction trên Docker PostgreSQL
     let importedCount = 0;
     try {
       await prisma.$transaction(async (tx) => {
         for (const s of students) {
-          await tx.user.upsert({
-            where: { email: s.email },
+          const cleanEmail = s.email.trim().toLowerCase();
+          const user = await tx.user.upsert({
+            where: { email: cleanEmail },
             update: {
               fullName: s.fullName,
-              gitEmails: s.gitEmails || [s.email],
               githubUsername: s.githubUsername || null,
             },
             create: {
               fullName: s.fullName,
-              email: s.email,
+              email: cleanEmail,
               role: 'student',
-              gitEmails: s.gitEmails || [s.email],
               githubUsername: s.githubUsername || null,
             },
           });
+
+          // Ensure UserGitEmail is created
+          await tx.userGitEmail.upsert({
+            where: { gitEmail: cleanEmail },
+            update: {},
+            create: {
+              userId: user.id,
+              gitEmail: cleanEmail,
+            },
+          });
+
           importedCount++;
         }
       });
+      console.log(`[PostgreSQL Docker] 👥 Successfully imported ${importedCount} students via ACID Transaction.`);
     } catch (dbError: any) {
+      console.warn(`[PostgreSQL Docker] Transaction warning: ${dbError.message}`);
       const rollbackSnapshot = [...inMemoryStudents];
       try {
         students.forEach((s: StudentImportRow) => {
@@ -112,7 +101,6 @@ export const bulkImportStudents = async (req: Request, res: Response) => {
             fullName: s.fullName,
             email: s.email,
             role: 'student',
-            gitEmails: s.gitEmails || [s.email],
             githubUsername: s.githubUsername || '',
             importedAt: new Date(),
           };
@@ -127,7 +115,7 @@ export const bulkImportStudents = async (req: Request, res: Response) => {
 
     res.status(201).json({
       success: true,
-      message: `Đã nạp thành công ${importedCount} sinh viên vào lớp #${classId} và đồng bộ lên MongoDB Atlas.`,
+      message: `Đã nạp thành công ${importedCount} sinh viên vào lớp #${classId} trên Docker PostgreSQL.`,
       data: {
         classId: Number(classId),
         totalImported: importedCount,
@@ -144,27 +132,30 @@ export const bulkImportStudents = async (req: Request, res: Response) => {
 };
 
 /**
- * Lấy danh sách sinh viên hiện tại từ MongoDB Atlas
+ * Lấy danh sách sinh viên hiện tại từ Docker PostgreSQL
  */
 export const getStudents = async (_req: Request, res: Response) => {
   try {
-    await connectMongoDB();
-    const dbStudents = await UserModel.find({ role: 'student' });
+    const dbStudents = await prisma.user.findMany({
+      where: { role: 'student' },
+      include: { gitEmails: true },
+    });
+
     if (dbStudents && dbStudents.length > 0) {
       return res.json({
         success: true,
         data: dbStudents.map((s) => ({
-          id: s.numericId || Math.floor(Math.random() * 1000) + 100,
+          id: s.id,
           fullName: s.fullName,
           email: s.email,
           role: s.role,
-          gitEmails: s.gitEmails,
+          gitEmails: s.gitEmails.map((g) => g.gitEmail),
           githubUsername: s.githubUsername,
         })),
       });
     }
   } catch (err: any) {
-    console.warn(`[Student] Atlas notice: ${err.message}`);
+    console.warn(`[Student] PostgreSQL notice: ${err.message}`);
   }
 
   res.json({
@@ -172,4 +163,3 @@ export const getStudents = async (_req: Request, res: Response) => {
     data: inMemoryStudents,
   });
 };
-

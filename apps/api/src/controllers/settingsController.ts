@@ -7,7 +7,7 @@ import {
   DEFAULT_WORKER_CONCURRENCY,
   FREE_RIDING_THRESHOLD_DEFAULT
 } from '@aita/shared';
-import { connectMongoDB, SystemSettingModel } from '@aita/database';
+import { prisma } from '@aita/database';
 
 let currentSettings = {
   worker_concurrency: DEFAULT_WORKER_CONCURRENCY,
@@ -17,22 +17,25 @@ let currentSettings = {
 };
 
 /**
- * Lấy danh sách cài đặt hệ thống (UC-05 / Page 43) từ MongoDB Atlas
+ * Lấy danh sách cài đặt hệ thống (UC-05 / Page 43) từ PostgreSQL
  */
 export const getSettings = async (_req: Request, res: Response) => {
   try {
-    await connectMongoDB();
-    const workerSetting = await SystemSettingModel.findOne({ settingKey: 'worker_concurrency' });
-    const freeRidingSetting = await SystemSettingModel.findOne({ settingKey: 'free_riding_threshold' });
+    const workerSetting = await prisma.systemSetting.findUnique({
+      where: { settingKey: 'worker_concurrency' },
+    });
+    const freeRidingSetting = await prisma.systemSetting.findUnique({
+      where: { settingKey: 'free_riding_threshold' },
+    });
 
     if (workerSetting) {
-      currentSettings.worker_concurrency = workerSetting.settingValue;
+      currentSettings.worker_concurrency = Number(workerSetting.settingValue);
     }
     if (freeRidingSetting) {
-      currentSettings.free_riding_threshold = freeRidingSetting.settingValue;
+      currentSettings.free_riding_threshold = Number(freeRidingSetting.settingValue);
     }
   } catch (err: any) {
-    console.warn(`[Settings] Atlas notice: ${err.message}`);
+    console.warn(`[Settings] PostgreSQL notice: ${err.message}`);
   }
 
   res.json({
@@ -63,20 +66,26 @@ export const updateWorkerConcurrency = async (req: Request, res: Response) => {
     currentSettings.updatedAt = new Date();
 
     try {
-      await connectMongoDB();
-      await SystemSettingModel.updateOne(
-        { settingKey: 'worker_concurrency' },
-        { $set: { settingValue: concurrency, updatedBy: String(updatedBy), updatedAt: new Date() } },
-        { upsert: true }
-      );
-      console.log(`[MongoDB Atlas] ⚙️ Worker Concurrency saved to Atlas: ${concurrency}`);
+      await prisma.systemSetting.upsert({
+        where: { settingKey: 'worker_concurrency' },
+        update: {
+          settingValue: String(concurrency),
+          updatedBy: Number(updatedBy),
+        },
+        create: {
+          settingKey: 'worker_concurrency',
+          settingValue: String(concurrency),
+          updatedBy: Number(updatedBy),
+        },
+      });
+      console.log(`[PostgreSQL Docker] ⚙️ Worker Concurrency saved to PostgreSQL: ${concurrency}`);
     } catch (err: any) {
-      console.warn(`[MongoDB Atlas] Settings update notice: ${err.message}`);
+      console.warn(`[PostgreSQL Docker] Settings update notice: ${err.message}`);
     }
 
     res.json({
       success: true,
-      message: `Đã cập nhật số lượng worker song song thành ${concurrency} (Đã lưu vào MongoDB Atlas).`,
+      message: `Đã cập nhật số lượng worker song song thành ${concurrency} (Đã lưu vào Docker PostgreSQL).`,
       data: currentSettings,
     });
   } catch (error: any) {
@@ -106,24 +115,29 @@ export const updateFreeRidingThreshold = async (req: Request, res: Response) => 
     currentSettings.updatedAt = new Date();
 
     try {
-      await connectMongoDB();
-      await SystemSettingModel.updateOne(
-        { settingKey: 'free_riding_threshold' },
-        { $set: { settingValue: threshold, updatedBy: String(updatedBy), updatedAt: new Date() } },
-        { upsert: true }
-      );
-      console.log(`[MongoDB Atlas] ⚙️ Free-riding threshold saved to Atlas: ${threshold}%`);
+      await prisma.systemSetting.upsert({
+        where: { settingKey: 'free_riding_threshold' },
+        update: {
+          settingValue: String(threshold),
+          updatedBy: Number(updatedBy),
+        },
+        create: {
+          settingKey: 'free_riding_threshold',
+          settingValue: String(threshold),
+          updatedBy: Number(updatedBy),
+        },
+      });
+      console.log(`[PostgreSQL Docker] ⚙️ Free-riding threshold saved to PostgreSQL: ${threshold}%`);
     } catch (err: any) {
-      console.warn(`[MongoDB Atlas] Settings update notice: ${err.message}`);
+      console.warn(`[PostgreSQL Docker] Settings update notice: ${err.message}`);
     }
 
     res.json({
       success: true,
-      message: `Đã cập nhật ngưỡng cảnh báo Free-Rider thành ${threshold}% (Đã lưu vào MongoDB Atlas).`,
+      message: `Đã cập nhật ngưỡng cảnh báo Free-Rider thành ${threshold}% (Đã lưu vào Docker PostgreSQL).`,
       data: currentSettings,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

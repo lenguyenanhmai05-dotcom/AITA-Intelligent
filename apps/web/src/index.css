@@ -2,7 +2,7 @@
 
 :root {
   /* ========================================================================= */
-  /* AITA-INTELLIGENT: Cantaloupe / Melon Design System Tokens                */
+  /* AITA-INTELLIGENT: Cantaloupe / Melon Design System Tokens (LIGHT MODE)    */
   /* ========================================================================= */
   --color-exocarp: #788417;       /* Deep Olive Green */
   --color-unripe: #AAB026;        /* Fresh Lime / Olive */
@@ -11,19 +11,26 @@
   --color-kumquat: #EEA64B;       /* Vibrant Kumquat Orange */
   --color-orange-zest: #D9641F;   /* Rich Terracotta Orange */
 
-  /* Neutral & Functional Colors */
+  /* Neutral & Functional Colors - Light */
   --bg-page: #FAF9F3;
   --bg-page-gradient: radial-gradient(circle at 15% 15%, #FFFFFF 0%, #FAF9F3 45%, #F1F4E4 100%);
   --bg-surface: #FFFFFF;
   --bg-surface-subtle: #FAF9F1;
+  --bg-surface-hover: #F3F2E8;
+  --bg-surface-accent: #FAF2E6;
   --bg-surface-input: #FDFDFC;
+  --bg-navbar: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-nav-pill: #F6F5ED;
   
   --text-main: #1C2009;
   --text-body: #4A5229;
   --text-muted: #7A855A;
   --text-subtle: #9EA885;
   
-  --border-light: rgba(120, 132, 23, 0.15);
+  --border-light: #E5E8D6;
+  --border-subtle: #F1F3E8;
+  --border-card: rgba(120, 132, 23, 0.16);
   --border-focus: #EEA64B;
   --border-badge: rgba(170, 176, 38, 0.35);
 
@@ -40,6 +47,47 @@
   --font-heading: 'Outfit', var(--font-sans);
 }
 
+/* ========================================================================= */
+/* AITA-INTELLIGENT: Obsidian Olive / Dark Cantaloupe (DARK MODE)            */
+/* ========================================================================= */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-exocarp: #9EAB2B;       /* Brighter lime olive for dark contrast */
+  --color-unripe: #C0C840;
+  --color-mystic-melon: #2A321E;
+  --color-cantaloupe: #ECAE52;
+  --color-kumquat: #F5A642;
+  --color-orange-zest: #E06C28;
+
+  /* Neutral & Functional Colors - Dark */
+  --bg-page: #10140D;
+  --bg-page-gradient: radial-gradient(circle at 15% 15%, #182013 0%, #10140D 50%, #0A0D08 100%);
+  --bg-surface: #181F13;
+  --bg-surface-subtle: #202819;
+  --bg-surface-hover: #27311F;
+  --bg-surface-accent: #2A2417;   /* Warm dark amber accent */
+  --bg-surface-input: #12170E;
+  --bg-navbar: #141A10;
+  --bg-sidebar: #141A10;
+  --bg-nav-pill: #1C2415;
+  
+  --text-main: #F4F6EC;
+  --text-body: #CCD4BE;
+  --text-muted: #8E9975;
+  --text-subtle: #6D7755;
+  
+  --border-light: rgba(255, 255, 255, 0.11);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-card: rgba(170, 176, 38, 0.24);
+  --border-focus: #F5A642;
+  --border-badge: rgba(170, 176, 38, 0.4);
+
+  --shadow-card: 0 20px 45px -15px rgba(0, 0, 0, 0.65), 0 8px 20px -6px rgba(0, 0, 0, 0.45);
+  --shadow-btn: 0 8px 20px -4px rgba(224, 108, 40, 0.45);
+  --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -54,9 +102,10 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Light */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -72,6 +121,17 @@ body {
   background: #B6BD9B;
 }
 
+/* Custom Scrollbar - Dark */
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: #11150E;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #2B3420;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #3B472E;
+}
+
 input, button, select, textarea {
   font-family: inherit;
 }
@@ -80,4 +140,93 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+}
+
+/* ========================================================================= */
+/* COMPREHENSIVE DARK MODE OVERRIDES ACROSS ALL SCREENS                      */
+/* ========================================================================= */
+
+[data-theme='dark'] header {
+  background: var(--bg-navbar) !important;
+  border-bottom: 1.5px solid var(--border-light) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme='dark'] aside {
+  background: var(--bg-sidebar) !important;
+  border-right: 1.5px solid var(--border-light) !important;
+}
+
+[data-theme='dark'] nav {
+  background: var(--bg-nav-pill) !important;
+}
+
+[data-theme='dark'] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme='dark'] textarea,
+[data-theme='dark'] select {
+  background: var(--bg-surface-input) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-light) !important;
+}
+
+[data-theme='dark'] input::placeholder,
+[data-theme='dark'] textarea::placeholder {
+  color: var(--text-subtle) !important;
+}
+
+[data-theme='dark'] table {
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme='dark'] th {
+  background: var(--bg-surface-subtle) !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+[data-theme='dark'] td {
+  border-bottom: 1px solid var(--border-subtle) !important;
+  color: var(--text-body) !important;
+}
+
+[data-theme='dark'] tr:hover td {
+  background: var(--bg-surface-hover) !important;
+}
+
+/* Surface overrides for hardcoded light values in dark mode */
+[data-theme='dark'] [style*="background: #FFFFFF"],
+[data-theme='dark'] [style*="background: #ffffff"],
+[data-theme='dark'] [style*="background:#FFFFFF"],
+[data-theme='dark'] [style*="background:#ffffff"],
+[data-theme='dark'] [style*="background: rgb(255, 255, 255)"] {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-light) !important;
+}
+
+[data-theme='dark'] [style*="background: #FAF9F1"],
+[data-theme='dark'] [style*="background: #faf9f1"],
+[data-theme='dark'] [style*="background:#FAF9F1"],
+[data-theme='dark'] [style*="background: #FAF9F3"],
+[data-theme='dark'] [style*="background: #F6F5ED"],
+[data-theme='dark'] [style*="background: #f6f5ed"],
+[data-theme='dark'] [style*="background: #F4F3EB"],
+[data-theme='dark'] [style*="background: #F8FAFC"],
+[data-theme='dark'] [style*="background: #F1F5F9"] {
+  background: var(--bg-surface-subtle) !important;
+  border-color: var(--border-light) !important;
+}
+
+[data-theme='dark'] [style*="background: #FAF2E6"],
+[data-theme='dark'] [style*="background: #faf2e6"],
+[data-theme='dark'] [style*="background:#FAF2E6"] {
+  background: var(--bg-surface-accent) !important;
+  border-color: rgba(224, 108, 40, 0.4) !important;
+}
+
+/* Pre / Code blocks in Dark Mode */
+[data-theme='dark'] pre,
+[data-theme='dark'] code {
+  background: #0E130A !important;
+  color: #E2E8F0 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }

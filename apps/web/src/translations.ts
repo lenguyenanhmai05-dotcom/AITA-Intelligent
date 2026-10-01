@@ -14,7 +14,7 @@ export const translations = {
     lecturerRole: 'Giảng viên',
     adminRole: 'Quản trị viên',
     adminOnlyNotice: 'Chỉ tài khoản Quản trị viên (admin@aita.fpt.edu.vn) mới có quyền truy cập Dashboard Quản trị.',
-    connectedAtlas: 'MongoDB Atlas Cloud — Đã kết nối Live',
+    connectedAtlas: 'Docker PostgreSQL — Đã kết nối Live',
 
     // Login Screen
     loginTitle: 'Đăng nhập',
@@ -42,7 +42,7 @@ export const translations = {
     securitySSL: 'Bảo mật SSL 256-bit',
     securityCert: 'Chứng nhận an toàn cấp Bộ GD & ĐT',
     googleModalTitle: 'Đăng Nhập Google Workspace / Gmail',
-    googleModalDesc: 'Đăng nhập bảo mật thông qua tài khoản Google. Phiên làm việc sẽ tự động kết nối với cơ sở dữ liệu MongoDB Atlas.',
+    googleModalDesc: 'Đăng nhập bảo mật thông qua tài khoản Google. Phiên làm việc sẽ tự động kết nối với cơ sở dữ liệu Docker PostgreSQL.',
     googleClientConfigTitle: 'Cấu Hình Google OAuth 2.0 Client ID',
     googleClientConfigDesc: 'Bạn có thể cung cấp Google Client ID để chạy xác thực Google OAuth thật trên trình duyệt.',
     heroTag: 'GIÁM SÁT CODE REAL-TIME',
@@ -56,23 +56,23 @@ export const translations = {
     // Navigation Tabs - Student
     studentNavTitle: 'Cổng Sinh Viên',
     navSubmit: 'Nộp Bài Làm',
-    navTeamGit: 'Đóng Góp Nhóm 2 (Git)',
+    navTeamGit: 'Đóng Góp Nhóm (Git)',
     navGrades: 'Điểm Số & Phúc Khảo',
     navClassroom: 'Lớp Học (SWP391)',
 
     // Navigation Tabs - Lecturer
     lecturerNavTitle: 'Bàn Làm Việc Giảng Viên',
-    navClassSubmissions: 'Bài Nộp Cả Lớp (Tạo Batch)',
-    navQueueMonitor: 'Giám Sát Queue (Live 2s)',
-    navDlq: 'Dead-Letter Queue (DLQ)',
-    navGitAnalyzer: 'Nộp & Bóc Tách Git Repo',
-    navReports: 'Báo Cáo & Free-Rider',
+    navClassSubmissions: 'Bài Nộp Cả Lớp',
+    navQueueMonitor: 'Giám Sát Queue',
+    navDlq: 'Dead-Letter Queue',
+    navGitAnalyzer: 'Phân Tích Git Repo',
+    navReports: 'Báo Cáo Free-Rider',
 
     // Navigation Tabs - Admin
     adminNavTitle: 'Quản Trị Hệ Thống',
     navAdminDashboard: 'Dashboard Trung Tâm',
-    navRuntimeSettings: 'Cài Đặt Runtime (BR-07)',
-    navDockerSandbox: 'Giám Sát Docker Sandbox',
+    navRuntimeSettings: 'Cài Đặt Runtime',
+    navDockerSandbox: 'Docker Sandbox',
 
     // Student Upload Portal Content
     portalTitle: 'Cổng Nộp Bài Lập Trình (Student Code Submission)',
@@ -85,14 +85,14 @@ export const translations = {
     methodArchive: 'Tải Lên Tệp Mã Nguồn (.ZIP / Code)',
     methodGit: 'Liên Kết GitHub Repository',
     dragDropText: 'Kéo thả tệp mã nguồn (.zip) vào đây hoặc nhấn để duyệt tệp',
-    dragDropFormats: 'Hỗ trợ định dạng: .zip, .java, .py, .cpp, .rar (Dung lượng tối đa: 50 MB)',
+    dragDropFormats: 'Hỗ trợ định dạng: .zip, .java, .py, .cpp, .rar, .tar.gz (Dung lượng tối đa: 50 MB)',
     notesLabel: 'LỜI NHẮN / GHI CHÚ GỬI GIẢNG VIÊN (TÙY CHỌN)',
     notesPlaceholder: 'Nhập ghi chú cho giảng viên nếu có (vd: mô tả các module đã hoàn thiện)...',
     confirmSubmitBtn: 'XÁC NHẬN NỘP BÀI LÀM NGAY (SUBMIT CODE)',
-    submittingBtn: 'Đang xử lý tải lên & xác thực JWT...',
-    submitSuccessBanner: '🎉 Nộp bài thành công! Bài làm của bạn đã được ghi nhận trên MongoDB Atlas và xếp vào hàng đợi chấm bài.',
+    submittingBtn: 'Đang xử lý tải lên & lưu vào PostgreSQL Docker...',
+    submitSuccessBanner: '🎉 Nộp bài thành công! Bài làm của bạn đã được ghi nhận vào Docker PostgreSQL và xếp vào hàng đợi chấm bài.',
     historyTitle: 'Lịch Sử Bài Nộp & Kết Quả Chấm Của Bạn',
-    historySub: 'Dữ liệu đồng bộ trực tiếp với MongoDB Atlas',
+    historySub: 'Dữ liệu đồng bộ trực tiếp với Docker PostgreSQL (Port 5432)',
     colSubId: 'MÃ BÀI',
     colAssignment: 'BÀI TẬP',
     colMethod: 'PHƯƠNG THỨC NỘP',
@@ -119,7 +119,14 @@ export const translations = {
     activeBatches: 'ACTIVE BATCHES',
     deadLetterJobs: 'DEAD-LETTER JOBS',
     gitMonitored: 'GIT MONITORED',
-    atlasUsers: 'ATLAS USERS SYNCED',
+    atlasUsers: 'POSTGRES USERS SYNCED',
+
+    // Theme Mode
+    themeSectionTitle: 'CHẾ ĐỘ GIAO DIỆN (SÁNG / TỐI)',
+    themeLightMode: 'Chế độ Sáng (Light Mode)',
+    themeDarkMode: 'Chế độ Tối (Dark Mode)',
+    themeLightDesc: 'Giao diện sáng Cantaloupe tiêu chuẩn',
+    themeDarkDesc: 'Giao diện tối Obsidian dịu mắt',
   },
   en: {
     // Top Bar & Global
@@ -134,7 +141,7 @@ export const translations = {
     lecturerRole: 'Lecturer',
     adminRole: 'Administrator',
     adminOnlyNotice: 'Only Administrator accounts (admin@aita.fpt.edu.vn) have access to the Admin Dashboard.',
-    connectedAtlas: 'MongoDB Atlas Cloud — Live Connected',
+    connectedAtlas: 'Docker PostgreSQL — Live Connected',
 
     // Login Screen
     loginTitle: 'Sign In',
@@ -162,7 +169,7 @@ export const translations = {
     securitySSL: '256-bit SSL Security',
     securityCert: 'Ministry of Education & Training Certified',
     googleModalTitle: 'Sign in with Google Workspace / Gmail',
-    googleModalDesc: 'Secure authentication via your Google Account. Session will synchronize with MongoDB Atlas Cloud.',
+    googleModalDesc: 'Secure authentication via your Google Account. Session will synchronize with Docker PostgreSQL database.',
     googleClientConfigTitle: 'Configure Google OAuth 2.0 Client ID',
     googleClientConfigDesc: 'You can provide your Google Client ID to run native browser Google OAuth popup.',
     heroTag: 'REAL-TIME CODE MONITORING',
@@ -176,23 +183,23 @@ export const translations = {
     // Navigation Tabs - Student
     studentNavTitle: 'Student Portal',
     navSubmit: 'Submit Assignment',
-    navTeamGit: 'Team 2 Git Contribution',
+    navTeamGit: 'Team Git',
     navGrades: 'Grades & Appeals',
     navClassroom: 'Classroom (SWP391)',
 
     // Navigation Tabs - Lecturer
     lecturerNavTitle: 'Lecturer Workspace',
-    navClassSubmissions: 'Class Submissions (Batch)',
-    navQueueMonitor: 'Queue Monitor (Live 2s)',
-    navDlq: 'Dead-Letter Queue (DLQ)',
+    navClassSubmissions: 'Class Submissions',
+    navQueueMonitor: 'Queue Monitor',
+    navDlq: 'Dead-Letter Queue',
     navGitAnalyzer: 'Git Repo Analyzer',
     navReports: 'Reports & Free-Riders',
 
     // Navigation Tabs - Admin
     adminNavTitle: 'System Administration',
     navAdminDashboard: 'Central Dashboard',
-    navRuntimeSettings: 'Runtime Settings (BR-07)',
-    navDockerSandbox: 'Docker Sandbox Monitor',
+    navRuntimeSettings: 'Runtime Settings',
+    navDockerSandbox: 'Docker Sandbox',
 
     // Student Upload Portal Content
     portalTitle: 'Student Code Submission Portal',
@@ -205,14 +212,14 @@ export const translations = {
     methodArchive: 'Upload Source Code Archive (.ZIP / Code)',
     methodGit: 'Link GitHub Repository',
     dragDropText: 'Drag and drop your source code archive (.zip) here, or click to browse',
-    dragDropFormats: 'Supported formats: .zip, .java, .py, .cpp, .rar (Max size: 50 MB)',
+    dragDropFormats: 'Supported formats: .zip, .java, .py, .cpp, .rar, .tar.gz (Max size: 50 MB)',
     notesLabel: 'NOTES / MESSAGE TO LECTURER (OPTIONAL)',
     notesPlaceholder: 'Enter any notes for the lecturer (e.g. completed modules, architectural decisions)...',
     confirmSubmitBtn: 'CONFIRM & SUBMIT CODE NOW',
-    submittingBtn: 'Uploading archive & validating JWT token...',
-    submitSuccessBanner: '🎉 Submission successful! Your code has been synced to MongoDB Atlas and dispatched to the grading queue.',
+    submittingBtn: 'Uploading archive & saving to PostgreSQL Docker...',
+    submitSuccessBanner: '🎉 Submission successful! Your code has been saved into Docker PostgreSQL and dispatched to the BullMQ grading queue.',
     historyTitle: 'Your Submission History & Grading Results',
-    historySub: 'Live synchronized with MongoDB Atlas Cluster0',
+    historySub: 'Live synchronized with Docker PostgreSQL (Port 5432)',
     colSubId: 'ID',
     colAssignment: 'ASSIGNMENT',
     colMethod: 'METHOD',
@@ -239,6 +246,13 @@ export const translations = {
     activeBatches: 'ACTIVE BATCHES',
     deadLetterJobs: 'DEAD-LETTER JOBS',
     gitMonitored: 'GIT MONITORED',
-    atlasUsers: 'ATLAS USERS SYNCED',
+    atlasUsers: 'POSTGRES USERS SYNCED',
+
+    // Theme Mode
+    themeSectionTitle: 'DISPLAY THEME (LIGHT / DARK)',
+    themeLightMode: 'Light Mode',
+    themeDarkMode: 'Dark Mode',
+    themeLightDesc: 'Standard Cantaloupe light theme',
+    themeDarkDesc: 'Obsidian dark theme for eye comfort',
   },
 };

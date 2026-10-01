@@ -7,17 +7,21 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Language, translations } from '../translations';
-import { isAdminEmail } from '../App';
+import { isAdminEmail, Theme } from '../App';
 import { LanguageFlagToggle } from './FlagIcons';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LoginScreenProps {
   lang: Language;
   onToggleLang: (lang: Language) => void;
+  theme?: Theme;
+  onToggleTheme?: (theme: Theme) => void;
   onLoginSuccess: (role: 'lecturer' | 'student' | 'admin', email: string, fullName?: string, token?: string) => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, onLoginSuccess }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, theme = 'light', onToggleTheme, onLoginSuccess }) => {
   const t = translations[lang];
+  const isDark = theme === 'dark';
   const [selectedRole, setSelectedRole] = useState<'lecturer' | 'student'>('student');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -195,7 +199,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
       flexDirection: 'row',
       position: 'relative',
       overflow: 'hidden',
-      background: '#FAFAF7',
+      background: isDark ? 'var(--bg-page)' : '#FAFAF7',
     }}>
       {/* =================================================================== */}
       {/* LEFT COLUMN: Brand Header (Top-Left) + Login Card                   */}
@@ -298,11 +302,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
           {/* Bảng đăng nhập (Login Card) */}
           <div style={{
             width: '100%',
-            background: '#FFFFFF',
+            background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
             borderRadius: '24px',
             padding: '30px 28px',
-            border: '1.5px solid rgba(120, 132, 23, 0.16)',
-            boxShadow: '0 20px 45px -12px rgba(217, 100, 31, 0.12), 0 10px 20px -8px rgba(120, 132, 23, 0.08), 0 0 1px rgba(0, 0, 0, 0.1)',
+            border: isDark ? '1px solid var(--border-light)' : '1.5px solid rgba(120, 132, 23, 0.16)',
+            boxShadow: isDark ? 'var(--shadow-card)' : '0 20px 45px -12px rgba(217, 100, 31, 0.12), 0 10px 20px -8px rgba(120, 132, 23, 0.08), 0 0 1px rgba(0, 0, 0, 0.1)',
             display: 'flex',
             flexDirection: 'column',
           }}>
@@ -321,15 +325,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                 {t.loginTitle}
               </h2>
 
-              {/* Language Flag Switcher (Interactive Vietnam Flag -> UK Flag) */}
-              <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="card" />
+              {/* Language Flag Switcher & Theme Toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {onToggleTheme && (
+                  <ThemeToggle theme={theme} onToggle={onToggleTheme} variant="card" />
+                )}
+                <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="card" />
+              </div>
             </div>
 
             {/* Segmented Role Selector: Sinh viên & Giảng viên */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              background: '#F1F5F9',
+              background: isDark ? 'var(--bg-surface-subtle)' : '#F1F5F9',
               padding: '4px',
               borderRadius: '12px',
               gap: '6px',
@@ -349,7 +358,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                   fontWeight: 700,
                   transition: 'all 0.2s ease',
                   background: selectedRole === 'student' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
-                  color: selectedRole === 'student' ? '#FFFFFF' : '#475569',
+                  color: selectedRole === 'student' ? '#FFFFFF' : (isDark ? 'var(--text-muted)' : '#475569'),
                   boxShadow: selectedRole === 'student' ? '0 4px 10px rgba(217, 100, 31, 0.25)' : 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -373,7 +382,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                   fontWeight: 700,
                   transition: 'all 0.2s ease',
                   background: selectedRole === 'lecturer' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
-                  color: selectedRole === 'lecturer' ? '#FFFFFF' : '#475569',
+                  color: selectedRole === 'lecturer' ? '#FFFFFF' : (isDark ? 'var(--text-muted)' : '#475569'),
                   boxShadow: selectedRole === 'lecturer' ? '0 4px 10px rgba(217, 100, 31, 0.25)' : 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -387,7 +396,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
             {/* Micro instruction hint */}
             <p style={{
               fontSize: '0.74rem',
-              color: '#64748B',
+              color: isDark ? 'var(--text-muted)' : '#64748B',
               textAlign: 'center',
               marginTop: '6px',
               marginBottom: '22px',
@@ -401,9 +410,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
             {/* Error or Success Alert */}
             {authError && (
               <div style={{
-                background: '#FEE2E2',
-                border: '1px solid #FCA5A5',
-                color: '#B91C1C',
+                background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+                border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #FCA5A5',
+                color: isDark ? '#F87171' : '#B91C1C',
                 padding: '10px 14px',
                 borderRadius: '10px',
                 fontSize: '0.8rem',
@@ -418,9 +427,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
 
             {authSuccess && (
               <div style={{
-                background: '#EDF6E8',
-                border: '1px solid #C4DCB5',
-                color: 'var(--color-exocarp)',
+                background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#EDF6E8',
+                border: isDark ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid #C4DCB5',
+                color: isDark ? '#4ADE80' : 'var(--color-exocarp)',
                 padding: '10px 14px',
                 borderRadius: '10px',
                 fontSize: '0.8rem',
@@ -446,10 +455,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                 style={{
                   width: '100%',
                   padding: '14px 20px',
-                  background: '#FFFFFF',
-                  border: '1.5px solid #CBD5E1',
+                  background: isDark ? 'var(--bg-surface-subtle)' : '#FFFFFF',
+                  border: isDark ? '1.5px solid var(--border-light)' : '1.5px solid #CBD5E1',
                   borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                  boxShadow: isDark ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.05)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -463,8 +472,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                   e.currentTarget.style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#CBD5E1';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                  e.currentTarget.style.borderColor = isDark ? 'var(--border-light)' : '#CBD5E1';
+                  e.currentTarget.style.boxShadow = isDark ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.05)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
@@ -478,7 +487,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                 <span style={{
                   fontSize: '0.94rem',
                   fontWeight: 700,
-                  color: '#1E293B',
+                  color: isDark ? 'var(--text-main)' : '#1E293B',
                   letterSpacing: '-0.01em',
                 }}>
                   {isLoading ? (lang === 'vi' ? 'Đang kết nối Google...' : 'Connecting Google...') : t.googleButton}
@@ -496,17 +505,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
                   justifyContent: 'center',
                   gap: '8px',
                   padding: '11px',
-                  background: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
+                  background: isDark ? 'var(--bg-surface-input)' : '#F8FAFC',
+                  border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
                   borderRadius: '11px',
                   fontSize: '0.80rem',
                   fontWeight: 600,
-                  color: '#475569',
+                  color: isDark ? 'var(--text-body)' : '#475569',
                   transition: 'all 0.2s',
                   cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#F1F5F9'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#F8FAFC'}
+                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#F1F5F9'}
+                onMouseLeave={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-input)' : '#F8FAFC'}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -522,13 +531,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
             justifyContent: 'center',
             alignItems: 'center',
             fontSize: '0.70rem',
-            color: '#94A3B8',
-            borderTop: '1px solid #F1F5F9',
+            color: isDark ? 'var(--text-muted)' : '#94A3B8',
+            borderTop: isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9',
             paddingTop: '16px',
             marginTop: '24px',
             gap: '8px',
           }}>
-            <Sparkles size={12} color="#94A3B8" />
+            <Sparkles size={12} color={isDark ? 'var(--text-muted)' : '#94A3B8'} />
             <span>Google Identity SSO</span>
             <span>•</span>
             <span>FPT EDU SAML</span>
@@ -542,7 +551,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, on
         justifyContent: 'center',
         alignItems: 'center',
         fontSize: '0.72rem',
-        color: '#94A3B8',
+        color: isDark ? 'var(--text-muted)' : '#94A3B8',
         letterSpacing: '0.02em',
         height: '24px',
         zIndex: 1,

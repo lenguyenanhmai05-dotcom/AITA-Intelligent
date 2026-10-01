@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "@aita/shared": "*",
-    "@prisma/client": "^5.14.0",
-    "mongoose": "^9.10.1"
+    "@prisma/client": "^5.14.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

@@ -1,16 +1,15 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { UserModel, connectMongoDB } from '@aita/database';
+import { prisma } from '@aita/database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aita-jwt-secret-key-swp391-2026';
 
-// Mock system users for demonstration & login
+// Mock system users for fallback
 const mockUsers = [
   {
     id: 1,
     fullName: 'TS. Nguyễn Văn Giảng',
     email: 'giangnv@fpt.edu.vn',
-    gitEmails: ['giangnv@fpt.edu.vn', 'nguyen.giang@gmail.com'],
     githubUsername: 'giangnv-fpt',
     role: 'lecturer',
     password: 'password123',
@@ -19,7 +18,6 @@ const mockUsers = [
     id: 2,
     fullName: 'Quản Trị Viên Hệ Thống',
     email: 'admin@aita.fpt.edu.vn',
-    gitEmails: ['admin@aita.fpt.edu.vn'],
     githubUsername: 'aita-admin',
     role: 'admin',
     password: 'adminpassword',
@@ -28,7 +26,6 @@ const mockUsers = [
     id: 3,
     fullName: 'Trần Minh Sinh',
     email: 'sinhtmhe160001@fpt.edu.vn',
-    gitEmails: ['sinhtmhe160001@fpt.edu.vn', 'minhsinh.dev@gmail.com'],
     githubUsername: 'minhsinh-dev',
     role: 'student',
     password: 'studentpassword',
@@ -37,7 +34,6 @@ const mockUsers = [
 
 /**
  * 1. Đăng nhập bằng Email / Mật khẩu cấp phát JWT Token
- * Hỗ trợ đăng nhập bằng bất kỳ email thật nào của người dùng (Gmail, FPT edu.vn, v.v.)
  */
 export const login = async (req: Request, res: Response) => {
   try {
@@ -68,39 +64,42 @@ export const login = async (req: Request, res: Response) => {
 
     let user: any = null;
 
-    // 1. Tìm hoặc lưu tài khoản trực tiếp vào MongoDB Atlas Cloud
+    // 1. Tìm hoặc lưu tài khoản trực tiếp vào Docker PostgreSQL
     try {
-      await connectMongoDB();
-      let dbUser = await UserModel.findOne({ email: cleanEmail });
+      let dbUser = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+
       if (!dbUser) {
-        dbUser = await UserModel.create({
-          numericId: Math.floor(Math.random() * 9000) + 1000,
-          fullName: displayName,
-          email: cleanEmail,
-          gitEmails: [cleanEmail],
-          githubUsername: cleanEmail.split('@')[0],
-          role: role || (cleanEmail.includes('admin') ? 'admin' : cleanEmail.endsWith('@fpt.edu.vn') && !cleanEmail.includes('he') ? 'lecturer' : 'student'),
-          password: password || '123456',
+        dbUser = await prisma.user.create({
+          data: {
+            fullName: displayName,
+            email: cleanEmail,
+            githubUsername: cleanEmail.split('@')[0],
+            role: role || (cleanEmail.includes('admin') ? 'admin' : cleanEmail.endsWith('@fpt.edu.vn') && !cleanEmail.includes('he') ? 'lecturer' : 'student'),
+            password: password || '123456',
+            gitEmails: {
+              create: { gitEmail: cleanEmail },
+            },
+          },
         });
-        console.log(`[MongoDB Atlas] 👤 New user registered & persisted to Atlas: ${cleanEmail}`);
+        console.log(`[PostgreSQL Docker] 👤 New user registered: ${cleanEmail}`);
       }
       user = {
-        id: dbUser.numericId,
+        id: dbUser.id,
         fullName: dbUser.fullName,
         email: dbUser.email,
-        gitEmails: dbUser.gitEmails,
         githubUsername: dbUser.githubUsername,
         role: dbUser.role,
       };
     } catch (dbErr: any) {
-      console.warn(`[MongoDB Atlas] Fallback to in-memory: ${dbErr.message}`);
+      console.warn(`[PostgreSQL Docker] Fallback to in-memory: ${dbErr.message}`);
       let fallbackUser = mockUsers.find((u) => u.email.toLowerCase() === cleanEmail);
       if (!fallbackUser) {
         fallbackUser = {
           id: mockUsers.length + 10,
           fullName: displayName,
           email: cleanEmail,
-          gitEmails: [cleanEmail],
           githubUsername: cleanEmail.split('@')[0],
           role: role || 'student',
           password: password || '123456',
@@ -139,7 +138,6 @@ export const login = async (req: Request, res: Response) => {
 
 /**
  * 2. Đăng nhập Google SSO (OAuth2 / OpenID Connect)
- * Nhận credential/id_token từ Google, xác thực và cấp phát JWT nội bộ
  */
 export const googleSsoLogin = async (req: Request, res: Response) => {
   try {
@@ -191,43 +189,47 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
 
     let user: any = null;
 
-    // Đồng bộ vào MongoDB Atlas Cloud
+    // Đồng bộ vào Docker PostgreSQL
     try {
-      await connectMongoDB();
-      let dbUser = await UserModel.findOne({ email: userEmail });
+      let dbUser = await prisma.user.findUnique({
+        where: { email: userEmail },
+      });
 
       if (!dbUser) {
-        dbUser = await UserModel.create({
-          numericId: Math.floor(Math.random() * 9000) + 1000,
-          fullName: userName,
-          email: userEmail,
-          gitEmails: [userEmail],
-          githubUsername: userEmail.split('@')[0],
-          role: userRole,
-          password: '',
+        dbUser = await prisma.user.create({
+          data: {
+            fullName: userName,
+            email: userEmail,
+            githubUsername: userEmail.split('@')[0],
+            role: userRole,
+            password: '',
+            gitEmails: {
+              create: { gitEmail: userEmail },
+            },
+          },
         });
-        console.log(`[MongoDB Atlas] 👤 New Google SSO user registered: ${userEmail} (${userRole})`);
+        console.log(`[PostgreSQL Docker] 👤 New Google SSO user registered: ${userEmail} (${userRole})`);
       } else if (dbUser.role !== userRole) {
-        dbUser.role = userRole;
-        await dbUser.save();
+        dbUser = await prisma.user.update({
+          where: { id: dbUser.id },
+          data: { role: userRole },
+        });
       }
       user = {
-        id: dbUser.numericId,
+        id: dbUser.id,
         fullName: dbUser.fullName,
         email: dbUser.email,
-        gitEmails: dbUser.gitEmails,
         githubUsername: dbUser.githubUsername,
         role: dbUser.role,
       };
     } catch (dbErr: any) {
-      console.warn(`[MongoDB Atlas] Fallback to mock user for Google SSO: ${dbErr.message}`);
+      console.warn(`[PostgreSQL Docker] Fallback to mock user for Google SSO: ${dbErr.message}`);
       let fallbackUser = mockUsers.find((u) => u.email.toLowerCase() === userEmail.toLowerCase());
       if (!fallbackUser) {
         fallbackUser = {
           id: mockUsers.length + 1,
           fullName: userName,
           email: userEmail,
-          gitEmails: [userEmail],
           githubUsername: userEmail.split('@')[0],
           role: userEmail.includes('admin') ? 'admin' : (userEmail.endsWith('@fpt.edu.vn') && !userEmail.includes('he')) ? 'lecturer' : 'student',
           password: '',
@@ -277,6 +279,18 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+      });
+      if (dbUser) {
+        const { password: _, ...userSafe } = dbUser;
+        return res.json({ success: true, data: userSafe });
+      }
+    } catch {
+      // Fallback
+    }
 
     const user = mockUsers.find((u) => u.id === decoded.userId);
     if (!user) {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getSubmissions,
+  createSubmission,
   createBatch,
   getTelemetry,
   getJobDetail,
@@ -11,8 +12,9 @@ import {
 
 const router = Router();
 
-// Submissions
+// Submissions (Student submission & Lecturer listing)
 router.get('/submissions', getSubmissions);
+router.post('/submissions', createSubmission);
 
 // Batch Grading Orchestration (UC-01)
 router.post('/batches', createBatch);

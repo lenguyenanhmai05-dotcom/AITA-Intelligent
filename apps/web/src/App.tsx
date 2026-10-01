@@ -12,6 +12,8 @@ export const isAdminEmail = (email: string): boolean => {
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 };
 
+export type Theme = 'light' | 'dark';
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<'lecturer' | 'student' | 'admin'>('student');
@@ -20,11 +22,23 @@ export default function App() {
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('aita_lang') as Language) || 'vi';
   });
+  const [theme, setTheme] = useState<Theme>(() => {
+    return (localStorage.getItem('aita_theme') as Theme) || 'light';
+  });
 
   const handleToggleLang = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem('aita_lang', newLang);
   };
+
+  const handleToggleTheme = (newTheme: Theme) => {
+    setTheme(newTheme);
+    localStorage.setItem('aita_theme', newTheme);
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     // Check saved session on load
@@ -69,12 +83,16 @@ export default function App() {
           userFullName={userFullName}
           lang={lang}
           onToggleLang={handleToggleLang}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onLogout={handleLogout}
         />
       ) : (
         <LoginScreen
           lang={lang}
           onToggleLang={handleToggleLang}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onLoginSuccess={handleLoginSuccess}
         />
       )}
