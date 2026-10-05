@@ -67,12 +67,32 @@ export const translations = {
     navDlq: 'Dead-Letter Queue',
     navGitAnalyzer: 'Phân Tích Git Repo',
     navReports: 'Báo Cáo Free-Rider',
+    queueMonitorTitle: 'Giám Sát Hàng Đợi (BullMQ Live Telemetry)',
+    queueMonitorDesc: 'Tự động cập nhật mỗi 2 giây (\'BR-03\'). Worker nhặt bài và tính thời gian \'runtimeDurationMs\'.',
+    queueLivePolling: 'Live Polling (2s chu kỳ)',
+    dlqTitle: 'Hàng Đợi Chết (Dead-Letter Queue - DLQ)',
+    dlqDesc: 'Khu vực cách ly các tác vụ chấm bị crash hoặc timeout sau 3 lần retry liên tiếp (\'status = \\\'dead\\\'\').',
 
     // Navigation Tabs - Admin
     adminNavTitle: 'Quản Trị Hệ Thống',
     navAdminDashboard: 'Dashboard Trung Tâm',
     navRuntimeSettings: 'Cài Đặt Runtime',
     navDockerSandbox: 'Docker Sandbox',
+
+    // Extra table headers and statuses
+    colJobId: 'JOB ID',
+    colStatusGeneral: 'TRẠNG THÁI',
+    colRetryCount: 'RETRY COUNT (BR-04)',
+    colRunTime: 'THỜI GIAN CHẠY',
+    colAction: 'HÀNH ĐỘNG',
+    colErrorClass: 'PHÂN LOẠI NGUYÊN NHÂN LỖI',
+    colActionBr06: 'HÀNH ĐỘNG (BR-06)',
+    statusFailedRetry: 'Thất bại (Cần retry)',
+    statusGradingWorker: 'Đang chấm (Worker)',
+    statusNotGraded: 'Đang chờ',
+    emptyQueue: 'Không có job nào trong hàng đợi',
+    emptyDlq: 'Hiện không có tác vụ nào bị lỗi hoặc tồn đọng trong Hàng Đợi Chết (DLQ)',
+    actionProcessReplay: 'Xử lý / Replay',
 
     // Student Upload Portal Content
     portalTitle: 'Cổng Nộp Bài Lập Trình (Student Code Submission)',
@@ -194,12 +214,32 @@ export const translations = {
     navDlq: 'Dead-Letter Queue',
     navGitAnalyzer: 'Git Repo Analyzer',
     navReports: 'Reports & Free-Riders',
+    queueMonitorTitle: 'Queue Monitor (BullMQ Live Telemetry)',
+    queueMonitorDesc: 'Automatically updates every 2 seconds (\'BR-03\'). Worker fetches jobs and calculates \'runtimeDurationMs\'.',
+    queueLivePolling: 'Live Polling (2s cycle)',
+    dlqTitle: 'Dead-Letter Queue (DLQ)',
+    dlqDesc: 'Quarantine area for grading tasks that crashed or timed out after 3 consecutive retries (\'status = \\\'dead\\\'\').',
 
     // Navigation Tabs - Admin
     adminNavTitle: 'System Administration',
     navAdminDashboard: 'Central Dashboard',
     navRuntimeSettings: 'Runtime Settings',
     navDockerSandbox: 'Docker Sandbox',
+
+    // Extra table headers and statuses
+    colJobId: 'JOB ID',
+    colStatusGeneral: 'STATUS',
+    colRetryCount: 'RETRY COUNT (BR-04)',
+    colRunTime: 'RUN TIME',
+    colAction: 'ACTION',
+    colErrorClass: 'ERROR CLASSIFICATION',
+    colActionBr06: 'ACTION (BR-06)',
+    statusFailedRetry: 'Failed (Needs retry)',
+    statusGradingWorker: 'Grading (Worker)',
+    statusNotGraded: 'Waiting',
+    emptyQueue: 'No jobs in the queue',
+    emptyDlq: 'No failed jobs currently in Dead-Letter Queue (DLQ)',
+    actionProcessReplay: 'Process / Replay',
 
     // Student Upload Portal Content
     portalTitle: 'Student Code Submission Portal',
