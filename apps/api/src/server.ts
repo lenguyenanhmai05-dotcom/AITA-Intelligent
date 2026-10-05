@@ -5,8 +5,10 @@ import authRoutes from './routes/authRoutes';
 import studentRoutes from './routes/studentRoutes';
 import gradingRoutes from './routes/gradingRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import gitRoutes from './routes/gitRoutes';
 
-dotenv.config();
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
 const port = process.env.API_PORT || 4000;
@@ -27,6 +29,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/grading', gradingRoutes);
 app.use('/api/dlq', gradingRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/git', gitRoutes);
 app.use('/api', gradingRoutes); // Also mount /api/submissions
 
 // Register Supporting Routes (Auth JWT & Excel Bulk Import with SQL Transaction)
