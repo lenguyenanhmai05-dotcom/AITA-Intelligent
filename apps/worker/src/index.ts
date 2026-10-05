@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
 import { GradingWorkerService } from './grading/gradingWorker';
 
-dotenv.config();
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 console.log('================================================================');
 console.log('🚀 AITA-INTELLIGENT: Subsystem 5 Background Worker Starting...');
