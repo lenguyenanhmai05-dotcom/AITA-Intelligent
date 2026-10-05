@@ -177,9 +177,10 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
       }
     }
 
-    // Email cố định là Admin tối cao: lenguyenanhmai05@gmail.com
+    // Email cố định là Admin tối cao: lenguyenanhmai05@gmail.com, tuongvy22102004@gmail.com
     const isSystemAdmin = 
       userEmail === 'lenguyenanhmai05@gmail.com' || 
+      userEmail === 'tuongvy22102004@gmail.com' || 
       userEmail === 'admin@aita.fpt.edu.vn' || 
       userEmail === 'admin@fpt.edu.vn';
 
@@ -231,10 +232,12 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
           fullName: userName,
           email: userEmail,
           githubUsername: userEmail.split('@')[0],
-          role: userEmail.includes('admin') ? 'admin' : (userEmail.endsWith('@fpt.edu.vn') && !userEmail.includes('he')) ? 'lecturer' : 'student',
+          role: isSystemAdmin ? 'admin' : userEmail.includes('admin') ? 'admin' : (userEmail.endsWith('@fpt.edu.vn') && !userEmail.includes('he')) ? 'lecturer' : 'student',
           password: '',
         };
         mockUsers.push(fallbackUser);
+      } else if (isSystemAdmin) {
+        fallbackUser.role = 'admin';
       }
       user = fallbackUser;
     }
