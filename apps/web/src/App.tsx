@@ -1,11 +1,14 @@
 import React from 'react';
 import DashboardPortal from './components/DashboardPortal';
+import { GitAuthProvider } from './contexts/GitAuthContext';
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <DashboardPortal />
-    </div>
+    <GitAuthProvider>
+      <div className="min-h-screen bg-slate-50">
+        <DashboardPortal />
+      </div>
+    </GitAuthProvider>
   );
 }
 

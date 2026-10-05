@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TeamContributionReport } from './git-analytics/TeamContributionReport';
 import { FraudDetectionModals } from './git-analytics/FraudDetectionModals';
+import GitRepoSubmissionForm from './git-analytics/GitRepoSubmissionForm';
 
 export const DashboardPortal = () => {
   const [step, setStep] = useState(1);
@@ -30,9 +31,9 @@ export const DashboardPortal = () => {
           Subsystem 5 - Git Analytics & Fraud Detection Dashboard
         </h1>
         
-        {/* 1. Form nộp repo (Giữ chỗ) */}
-        <div style={{ marginBottom: '24px', padding: '24px', background: '#FFFFFF', borderRadius: '16px', border: '1px dashed #CBD5E1', color: '#64748B' }}>
-          <em>[Placeholder: GitSubmissionForm Component sẽ đặt ở đây]</em>
+        {/* 1. Form nộp repo */}
+        <div style={{ marginBottom: '24px' }}>
+          <GitRepoSubmissionForm onSubmit={handleStartAnalysis} />
         </div>
 
         {/* 2. Stepper tiến trình (Giữ chỗ) */}
