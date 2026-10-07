@@ -2510,7 +2510,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 {isAnalyzing ? (
                   <ProgressStepper currentStep={gitStep} isAnalyzing={isAnalyzing} />
                 ) : (
-                  <GitRepoSubmissionForm onSubmit={handleStartAnalysis} />
+                  <GitRepoSubmissionForm onSubmit={handleStartAnalysis} lang={lang} isDark={isDark} />
                 )}
               </div>
             </div>
