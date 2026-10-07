@@ -4,22 +4,37 @@ import PATAuthModal from './PATAuthModal';
 
 const GITHUB_URL_REGEX = /^https:\/\/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+?)(?:\.git)?$/;
 
+const GROUP_REPOS: Record<string, { url: string; branch: string }> = {
+  '2': {
+    url: 'https://github.com/lenguyenanhmai05/AITA-Intelligent',
+    branch: 'main',
+  },
+  '1': {
+    url: 'https://github.com/smart-lms/smart-lms-platform',
+    branch: 'main',
+  },
+};
+
 interface GitRepoSubmissionFormProps {
   onSubmit?: (url: string, branch: string, pat?: string) => void;
   lang?: 'vi' | 'en';
   isDark?: boolean;
+  defaultUrl?: string;
+  defaultBranch?: string;
 }
 
 export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({ 
   onSubmit, 
   lang = 'en', 
-  isDark = false 
+  isDark = false,
+  defaultUrl,
+  defaultBranch
 }) => {
   const { patToken, clearToken } = useGitAuth();
   
   const [selectedGroup, setSelectedGroup] = useState('2');
-  const [url, setUrl] = useState('');
-  const [branch, setBranch] = useState('main');
+  const [url, setUrl] = useState(defaultUrl !== undefined ? defaultUrl : GROUP_REPOS['2'].url);
+  const [branch, setBranch] = useState(defaultBranch !== undefined ? defaultBranch : GROUP_REPOS['2'].branch);
   const [isPrivate, setIsPrivate] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +42,9 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
   const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const groupVal = e.target.value;
     setSelectedGroup(groupVal);
-    if (groupVal === '2') {
-      setUrl('https://github.com/lenguyenanhmai05/AITA-Intelligent');
-      setBranch('main');
+    if (GROUP_REPOS[groupVal]) {
+      setUrl(GROUP_REPOS[groupVal].url);
+      setBranch(GROUP_REPOS[groupVal].branch);
     }
     if (error) setError(null);
   };

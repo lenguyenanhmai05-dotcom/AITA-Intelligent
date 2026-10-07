@@ -25,8 +25,10 @@ describe('GitRepoSubmissionForm', () => {
     const submitBtn = screen.getByText('Start Analysis');
     
     // Attempt submit with empty fields
+    const urlInput = screen.getByPlaceholderText('https://github.com/owner/repo');
+    fireEvent.change(urlInput, { target: { value: '' } });
     fireEvent.click(submitBtn);
-    
+
     expect(screen.getByText('GitHub URL is required.')).toBeInTheDocument();
   });
 
