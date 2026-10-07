@@ -6,6 +6,8 @@ import { GitAuthProvider } from './contexts/GitAuthContext';
 
 export const ADMIN_EMAILS = [
   'lenguyenanhmai05@gmail.com',
+  'n133vy@gmail.com',
+  'khanhlinh9a4tqd@gmail.com',
   'admin@aita.fpt.edu.vn',
   'admin@fpt.edu.vn',
 ];

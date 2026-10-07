@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest'; // Fix TS Error: toBeInTheDocument for Vitest
 import { FraudDetectionModals } from '../FraudDetectionModals';
-import React from 'react';
 
 describe('FraudDetectionModals Component', () => {
   const mockCommits = [

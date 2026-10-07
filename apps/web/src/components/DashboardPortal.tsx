@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AitaLogo } from './AitaLogo';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -25,7 +25,7 @@ import {
   FolderGit2,
   Loader2,
   FileCheck,
-  RefreshCw,
+  RefreshCw
 } from 'lucide-react';
 
 import { GitRepoSubmissionForm } from './git-analytics/GitRepoSubmissionForm';
@@ -91,55 +91,16 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [isBackHovered, setIsBackHovered] = useState(false);
 
   // Submissions selection state (Lecturer view)
-  const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([101, 103]);
+  const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
 
   // Shared Submissions list (both Student & Lecturer view)
-  const [allSubmissions, setAllSubmissions] = useState<any[]>([
-    { id: 101, student: 'Nguyễn Văn A', title: 'Assignment', status: 'not graded', time: '2026-09-10 14:20' },
-    { id: 102, student: 'Lê Văn C', title: 'Assignment', status: 'not graded', time: '2026-09-10 16:45' },
-    { id: 103, student: 'Trần Thị B', title: 'Exam', status: 'failed', time: '2026-09-09 21:15' },
-    { id: 104, student: 'Phạm Văn D', title: 'Practice', status: 'completed', time: '2026-09-09 18:00' },
-  ]);
+  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
 
   // LocalStorage key for student submissions persistence across reloads
   const STORAGE_KEY_STUDENT_UPLOADS = 'aita_student_uploaded_files_v1';
 
-  const DEFAULT_STUDENT_SUBMISSIONS = [
-    {
-      id: 'SUB-01',
-      assignment: 'Assignment',
-      method: 'Tệp ZIP: lenguyenanhmai05_Assignment.zip (2.4 MB)',
-      submittedAt: '2026-09-19 14:20',
-      status: 'completed',
-      score: '100 / 100',
-      testCases: '10/10 Passed',
-    },
-    {
-      id: 'SUB-02',
-      assignment: 'Practice',
-      method: 'GitHub: main @ commit #7a4f91c',
-      submittedAt: '2026-09-15 09:40',
-      status: 'completed',
-      score: '95 / 100',
-      testCases: '9/10 Passed',
-    },
-  ];
-
-  // Student Upload state with persistent localStorage fallback
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>(() => {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEY_STUDENT_UPLOADS);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not read cached uploaded files from localStorage:', e);
-    }
-    return DEFAULT_STUDENT_SUBMISSIONS;
-  });
+  // Student Upload state — start empty, populated from DB via fetchSubmissionsFromDb
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
 
   const [isRefreshingSubmissions, setIsRefreshingSubmissions] = useState(false);
 
@@ -159,6 +120,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [gitBranch, setGitBranch] = useState('main');
   const [submissionNotes, setSubmissionNotes] = useState('Em đã hoàn thiện trọn vẹn 10/10 test cases và cấu hình Docker container.');
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
+
+  const analysisGitUrl = 'https://github.com/lenguyenanhmai05/AITA-Intelligent.git';
+  const analysisGitBranch = 'main';
 
   // File size formatting helper
   const formatFileSize = (bytes: number): string => {
@@ -192,29 +156,16 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   // Queue Live Telemetry state (2s auto-refresh per BR-03 calling real BullMQ API)
   const [telemetry, setTelemetry] = useState({
-    waiting: 1,
-    active: 1,
+    waiting: 0,
+    active: 0,
     completed: 0,
-    failed: 1,
-    total: 3,
+    failed: 0,
+    total: 0,
   });
   const [heartbeat, setHeartbeat] = useState(false);
 
   // Dead-Letter Queue (DLQ) state fetched from real API
-  const [dlqJobs, setDlqJobs] = useState<any[]>([
-    {
-      id: 1041,
-      batchId: 1,
-      submissionId: 103,
-      studentName: 'Trần Thị B',
-      submissionTitle: 'Assignment 3 — Spring Boot REST',
-      status: 'dead',
-      retryCount: 3,
-      runtimeDurationMs: 30124,
-      errorClassification: 'timeout: sandbox execution exceeded 30s',
-      stackTrace: 'TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)',
-    },
-  ]);
+  const [dlqJobs, setDlqJobs] = useState<any[]>([]);
 
   // Batch Grading dispatch state
   const [batchName, setBatchName] = useState('Assignment 3 — Spring Boot REST');
@@ -229,6 +180,20 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [gitStep, setGitStep] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
+  const [gitAnalysisJobId, setGitAnalysisJobId] = useState<string | null>(null);
+  const [gitReportData, setGitReportData] = useState<any | null>(null);
+
+  // Auto-load latest git report on mount (so real data shows after F5)
+  useEffect(() => {
+    fetch('/api/git/report')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.data?.status === 'done' && d?.data?.teamContributions?.length) {
+          setGitReportData(d.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Auto-sync uploadedFiles to localStorage whenever it changes
   useEffect(() => {
@@ -644,21 +609,59 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     }
   };
 
-  const handleStartAnalysis = (_url?: string, _branch?: string, _pat?: string) => {
+  const handleStartAnalysis = async (urlInput?: string, branchInput?: string, patInput?: string) => {
     setIsAnalyzing(true);
     setGitStep(1);
-    const steps = [
-      setTimeout(() => setGitStep(2), 1200),
-      setTimeout(() => setGitStep(3), 2400),
-      setTimeout(() => setGitStep(4), 3600),
-      setTimeout(() => {
-        setIsAnalyzing(false);
-        setIsReportLoading(true);
-        setActiveTab('report');
-        setTimeout(() => setIsReportLoading(false), 900);
-      }, 4800),
-    ];
-    return () => steps.forEach(clearTimeout);
+    setGitReportData(null);
+    let jobId: string | null = null;
+    const targetUrl = urlInput || analysisGitUrl;
+    const targetBranch = branchInput || analysisGitBranch;
+    try {
+      const res = await fetch('/api/git/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url: targetUrl, 
+          branch: targetBranch, 
+          pat: patInput,
+          groupId: (targetUrl.toLowerCase().includes('sdn') || targetUrl.includes('min098')) ? 5 : 2 
+        })
+      });
+      const data = await res.json();
+      jobId = data?.data?.jobId || null;
+      if (jobId) setGitAnalysisJobId(jobId);
+    } catch (err) {
+      console.warn('API error, falling back to mock delay:', err);
+    }
+
+    // Visual step animation
+    setTimeout(() => setGitStep(2), 1200);
+    setTimeout(() => setGitStep(3), 2400);
+    setTimeout(() => setGitStep(4), 3600);
+
+    // After 5s: switch to report tab immediately, poll in background
+    setTimeout(async () => {
+      setIsAnalyzing(false);
+      setIsReportLoading(true);
+      setActiveTab('report');
+      setTimeout(() => setIsReportLoading(false), 900);
+
+      // Continue polling in background to get real data
+      const pollJobId = jobId;
+      if (pollJobId) {
+        for (let attempt = 0; attempt < 60; attempt++) {
+          try {
+            const rRes = await fetch(`/api/git/report?jobId=${pollJobId}`);
+            const rData = await rRes.json();
+            if (rData?.data?.status === 'done') {
+              setGitReportData(rData.data);
+              break;
+            }
+          } catch {}
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+    }, 5000);
   };
 
   const getBreadcrumbTitle = () => {
@@ -678,6 +681,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       default: return 'AITA-Intelligent';
     }
   };
+
+  
 
   return (
     <div style={{
@@ -935,32 +940,33 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    <UploadCloud size={15} />
-                    <span>{t.navSubmit}</span>
-                  </button>
+                                          <UploadCloud size={15} />
+                      <span>{t.navSubmit}</span>
+                    </button>
 
-                  <button
-                    onClick={() => setActiveTab('git')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '7px 14px',
-                      borderRadius: '9px',
-                      fontSize: '0.80rem',
-                      fontWeight: activeTab === 'git' ? 800 : 600,
-                      background: activeTab === 'git' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
-                      color: activeTab === 'git' ? '#FFFFFF' : 'var(--text-body)',
-                      border: 'none',
-                      cursor: 'pointer',
-                      boxShadow: activeTab === 'git' ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <FolderGit2 size={15} />
-                    <span>{t.navTeamGit}</span>
-                    <span style={{ fontSize: '0.62rem', background: 'rgba(170, 176, 38, 0.2)', color: 'var(--color-exocarp)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>38.5%</span>
-                  </button>
+                    <button
+                      onClick={() => setActiveTab('git')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        borderRadius: '9px',
+                        fontSize: '0.80rem',
+                        fontWeight: activeTab === 'git' ? 800 : 600,
+                        background: activeTab === 'git' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
+                        color: activeTab === 'git' ? '#FFFFFF' : 'var(--text-body)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: activeTab === 'git' ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <FolderGit2 size={15} />
+                      <span>{t.navTeamGit}</span>
+                    </button>
+
+                  
 
                   <button
                     onClick={() => setActiveTab('submissions')}
@@ -1072,7 +1078,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   >
                     <AlertOctagon size={14} />
                     <span>{t.navDlq}</span>
-                    <span style={{ fontSize: '0.62rem', background: '#FEE2E2', color: '#B91C1C', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>1</span>
+
                   </button>
 
                   <button
@@ -1477,19 +1483,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         value={submitAssignmentTitle}
                         onChange={(e) => setSubmitAssignmentTitle(e.target.value)}
                         style={{
-                          width: '100%',
-                          padding: '11px 14px',
-                          borderRadius: '10px',
-                          border: isDark ? '1.5px solid var(--border-light)' : '1.5px solid #E5E8D6',
-                          marginTop: '6px',
-                          fontSize: '0.90rem',
-                          fontWeight: 700,
-                          color: 'var(--text-main)',
-                          background: isDark ? 'var(--bg-surface-input)' : '#FFFFFF',
-                          cursor: 'pointer',
+                          width: '100%', padding: '14px 16px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', background: isDark ? 'var(--bg-surface-input)' : '#F8FAFC', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', outline: 'none'
                         }}
+                        onFocus={(e) => { e.target.style.borderColor = 'var(--color-orange-zest)'; e.target.style.boxShadow = '0 0 0 3px rgba(217, 100, 31, 0.15)'; }}
+                        onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
                       >
-                        <option value="Exam">Exam</option>
                         <option value="Assignment">Assignment</option>
                         <option value="Practice">Practice</option>
                       </select>
@@ -2213,10 +2211,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
                       <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                        Danh Sách Bài Nộp Của Cả Lớp (Batch Grading)
+                        {t.lecturerBatchTitle}
                       </h1>
                       <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                        Giảng viên chọn bài nộp của sinh viên để tạo đợt chấm hàng loạt tuân thủ quy tắc BR-01 &amp; BR-02.
+                        {t.lecturerBatchDesc}
                       </p>
                     </div>
                     <button
@@ -2237,7 +2235,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       }}
                     >
                       <Play size={16} fill="#FFFFFF" />
-                      <span>Bắt Đầu Chấm Bài ({selectedSubmissions.length} bài)</span>
+                      <span>{t.startBatchBtn} ({selectedSubmissions.length})</span>
                     </button>
                   </div>
 
@@ -2253,10 +2251,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               onChange={(e) => setSelectedSubmissions(e.target.checked ? allSubmissions.map((s) => s.id) : [])}
                             />
                           </th>
-                          <th style={{ padding: '14px 18px' }}>SINH VIÊN</th>
-                          <th style={{ padding: '14px 18px' }}>BÀI NỘP</th>
-                          <th style={{ padding: '14px 18px' }}>TRẠNG THÁI CHẤM</th>
-                          <th style={{ padding: '14px 18px' }}>THỜI GIAN NỘP</th>
+                          <th style={{ padding: '14px 18px' }}>{t.colStudent}</th>
+                          <th style={{ padding: '14px 18px' }}>{t.colSubmission}</th>
+                          <th style={{ padding: '14px 18px' }}>{t.colGradingStatus}</th>
+                          <th style={{ padding: '14px 18px' }}>{t.colSubmittedTime}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2284,15 +2282,19 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                                   ? (isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8')
                                   : sub.status === 'failed'
                                     ? (isDark ? 'rgba(239, 68, 68, 0.18)' : '#FEE2E2')
-                                    : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
+                                    : sub.status === 'grading'
+                                      ? (isDark ? 'rgba(59, 130, 246, 0.18)' : '#EFF6FF')
+                                      : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9'),
                                 color: sub.status === 'completed'
                                   ? (isDark ? '#4ADE80' : 'var(--color-exocarp)')
                                   : sub.status === 'failed'
                                     ? (isDark ? '#F87171' : '#B91C1C')
-                                    : 'var(--text-muted)',
+                                    : sub.status === 'grading'
+                                      ? (isDark ? '#60A5FA' : '#1D4ED8')
+                                      : 'var(--text-muted)',
                                 border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
                               }}>
-                                {sub.status === 'completed' ? 'Đã chấm xong' : sub.status === 'failed' ? 'Thất bại (Cần retry)' : 'Chưa chấm'}
+                                {sub.status === 'completed' ? t.statusGraded : sub.status === 'failed' ? t.statusFailedRetry : sub.status === 'grading' ? t.statusGradingWorker : t.statusNotGraded}
                               </span>
                             </td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>{sub.time}</td>
@@ -2314,15 +2316,15 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
                   <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                    Giám Sát Hàng Đợi (BullMQ Live Telemetry)
+                    {t.queueMonitorTitle}
                   </h1>
                   <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                    Tự động cập nhật mỗi 2 giây (`BR-03`). Worker nhặt bài và tính thời gian `runtimeDurationMs`.
+                    {t.queueMonitorDesc}
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
                   <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: heartbeat ? '#10B981' : '#E2E8F0', transition: 'background 0.3s' }} />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-body)' }}>Live Polling (2s chu kỳ)</span>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-body)' }}>{t.queueLivePolling}</span>
                 </div>
               </div>
 
@@ -2330,7 +2332,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>⏳ WAITING</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>{telemetry.waiting}</div>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>{telemetry.waiting + allSubmissions.filter(s => s.status !== 'completed' && s.status !== 'failed' && s.status !== 'grading').length}</div>
                 </div>
                 <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid rgba(238, 166, 75, 0.4)' : '1px solid rgba(238, 166, 75, 0.4)' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-orange-zest)' }}>⚡ ACTIVE (WORKERS)</div>
@@ -2351,43 +2353,63 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
                     <tr>
-                      <th style={{ padding: '12px 18px' }}>JOB ID</th>
-                      <th style={{ padding: '12px 18px' }}>SINH VIÊN</th>
-                      <th style={{ padding: '12px 18px' }}>TRẠNG THÁI</th>
-                      <th style={{ padding: '12px 18px' }}>RETRY COUNT (BR-04)</th>
-                      <th style={{ padding: '12px 18px' }}>THỜI GIAN CHẠY</th>
-                      <th style={{ padding: '12px 18px' }}>HÀNH ĐỘNG</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colJobId}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colStudent}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colStatusGeneral}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colRetryCount}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colRunTime}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colAction}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--text-main)' }}>#1042</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-main)' }}>Nguyễn Văn A</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--color-orange-zest)', fontWeight: 700 }}>active (đang chấm)</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>0 / 3</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>2,410 ms</td>
-                      <td style={{ padding: '14px 18px' }}>-</td>
-                    </tr>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--text-main)' }}>#1043</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-main)' }}>Lê Văn C</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>waiting</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>0 / 3</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>-</td>
-                      <td style={{ padding: '14px 18px' }}>-</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--text-main)' }}>#1041</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-main)' }}>Trần Thị B</td>
-                      <td style={{ padding: '14px 18px', color: '#EF4444', fontWeight: 700 }}>failed (chờ retry lần 3)</td>
-                      <td style={{ padding: '14px 18px', color: '#EF4444', fontWeight: 700 }}>2 / 3 ($2^2 = 4s$)</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>30,124 ms</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <button onClick={() => setShowJobDetailsModal(1041)} style={{ color: 'var(--color-orange-zest)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
-                          Chi tiết lỗi
-                        </button>
-                      </td>
-                    </tr>
+                    {allSubmissions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          {t.emptyQueue}
+                        </td>
+                      </tr>
+                    ) : (
+                      [...allSubmissions].sort((a, b) => a.id - b.id).map((job, index) => {
+                        let badgeBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9';
+                        let badgeColor = 'var(--text-muted)';
+                        let statusText = 'WAITING';
+                        let actionText = t.statusNotGraded;
+                        let runTime = '-';
+                        
+                        if (job.status === 'completed') {
+                           badgeBg = isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8';
+                           badgeColor = isDark ? '#4ADE80' : 'var(--color-exocarp)';
+                           statusText = 'COMPLETED';
+                           actionText = t.statusGraded;
+                           runTime = '840 ms';
+                        } else if (job.status === 'failed') {
+                           badgeBg = isDark ? 'rgba(239, 68, 68, 0.18)' : '#FEE2E2';
+                           badgeColor = isDark ? '#F87171' : '#B91C1C';
+                           statusText = 'FAILED';
+                           actionText = t.statusFailedRetry;
+                        } else if (job.status === 'grading') {
+                           badgeBg = isDark ? 'rgba(238, 166, 75, 0.18)' : '#FEF3C7';
+                           badgeColor = 'var(--color-orange-zest)';
+                           statusText = 'ACTIVE';
+                           actionText = t.statusGradingWorker;
+                        }
+
+                        return (
+                          <tr key={job.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
+                            <td style={{ padding: '14px 18px', fontWeight: 800, color: 'var(--text-main)' }}>#{index + 1}</td>
+                            <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--text-main)' }}>{job.student}</td>
+                            <td style={{ padding: '14px 18px' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: badgeBg, color: badgeColor }}>
+                                {statusText}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>0</td>
+                            <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>{runTime}</td>
+                            <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>{actionText}</td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -2401,10 +2423,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             <div>
               <div style={{ marginBottom: '20px' }}>
                 <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                  Hàng Đợi Chết (Dead-Letter Queue - DLQ)
+                  {t.dlqTitle}
                 </h1>
                 <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                  Khu vực cách ly các tác vụ chấm bị crash hoặc timeout sau 3 lần retry liên tiếp (`status = 'dead'`).
+                  {t.dlqDesc}
                 </p>
               </div>
 
@@ -2412,18 +2434,18 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead style={{ background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2', borderBottom: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : 'none' }}>
                     <tr>
-                      <th style={{ padding: '12px 18px' }}>JOB ID</th>
-                      <th style={{ padding: '12px 18px' }}>SINH VIÊN</th>
-                      <th style={{ padding: '12px 18px' }}>PHÂN LOẠI NGUYÊN NHÂN LỖI</th>
-                      <th style={{ padding: '12px 18px' }}>THỜI GIAN CHẠY</th>
-                      <th style={{ padding: '12px 18px' }}>HÀNH ĐỘNG (BR-06)</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colJobId}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colStudent}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colErrorClass}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colRunTime}</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colActionBr06}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {dlqJobs.length === 0 ? (
                       <tr>
                         <td colSpan={5} style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                          🎉 {lang === 'vi' ? 'Hiện không có tác vụ nào bị lỗi hoặc tồn đọng trong Hàng Đợi Chết (DLQ)' : 'No failed jobs currently in Dead-Letter Queue (DLQ)'}
+                          🎉 {t.emptyDlq}
                         </td>
                       </tr>
                     ) : (
@@ -2461,7 +2483,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                                 gap: '6px',
                               }}
                             >
-                              <span>{lang === 'vi' ? 'Xử lý / Replay' : 'Process / Replay'}</span>
+                              <span>{t.actionProcessReplay}</span>
                             </button>
                           </td>
                         </tr>
@@ -2477,14 +2499,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           {/* TAB 4: GIT REPO SUBMISSION                                      */}
           {/* =============================================================== */}
           {activeTab === 'git' && (
-            <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-              <div style={{ marginBottom: '22px' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                  Nộp Kho Git Để Phân Tích Nhóm
+            <div style={{ maxWidth: '760px', margin: '0 auto', animation: 'fadeIn 0.4s ease' }}>
+              <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                <h1 style={{ fontSize: '1.85rem', fontWeight: 900, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', marginBottom: '10px' }}>
+                  {lang === 'vi' ? 'Phân Tích Git Repo' : 'Git Repo Analysis'}
                 </h1>
-                <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                  Hệ thống thực hiện bare clone, bóc tách commit log, lọc commit rác và phát hiện gian lận (`BR-08`, `BR-09`, `BR-10`).
-                </p>
               </div>
 
               <div style={{ marginBottom: '24px' }}>
@@ -2507,14 +2526,12 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
-                  <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                    {lang === 'vi' ? 'Báo Cáo Đóng Góp Nhóm & Phát Hiện Free-Rider' : 'Team Contribution Report & Free-Rider Detection'}
+                  <h1 style={{ fontSize: '1.85rem', fontWeight: 900, fontFamily: 'var(--font-heading)', color: 'var(--text-main)' }}>
+                    {lang === 'vi' ? 'Báo Cáo Đóng Góp & Free-Rider' : 'Contribution & Free-Rider Report'}
                   </h1>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                    Áp dụng thuật toán tính Net LOC sau khi lọc sạch rác, cảnh báo Free-Rider theo BR-11 &amp; BR-12.
-                  </p>
                 </div>
-                <button
+                {currentRole !== 'student' && (
+<button
                   onClick={() => setShowFlaggedModal(true)}
                   style={{
                     padding: '10px 16px',
@@ -2527,93 +2544,96 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     cursor: 'pointer',
                   }}
                 >
-                  ⚠️ Xem Commit Gian Lận Bị Bắt (BR-10)
+                  {lang === 'vi' ? '⚠️ Xem Commit Gian Lận Bị Bắt (BR-10)' : '⚠️ View Flagged Fraudulent Commits (BR-10)'}
                 </button>
+)}
               </div>
 
-              {/* Contribution Bars */}
-              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', padding: '24px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px' }}>Biểu Đồ Tỷ Lệ Đóng Góp (%)</h3>
-                {[
-                  { name: 'Lê Nguyễn Anh Mai', pct: 38.5, color: 'var(--color-orange-zest)' },
-                  { name: 'Nguyễn Văn A', pct: 31.0, color: 'var(--color-kumquat)' },
-                  { name: 'Lê Văn C', pct: 26.5, color: 'var(--color-exocarp)' },
-                  { name: 'Trần Thị B (Free-Rider)', pct: 4.0, color: '#EF4444' },
-                ].map((m) => (
-                  <div key={m.name} style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 700, marginBottom: '4px' }}>
-                      <span>{m.name}</span>
-                      <span>{m.pct}%</span>
+              {/* Top Overview: Stacked Team Progress Bar */}
+              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', padding: '28px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.12)', boxShadow: 'var(--shadow-card)', marginBottom: '28px', animation: 'fadeIn 0.4s ease' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '24px', color: 'var(--text-main)', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E5E7EB', paddingBottom: '12px' }}>
+                  {lang === 'vi' ? 'Tổng Quan Đóng Góp Nhóm' : 'Team Contribution Overview'}
+                </h3>
+                
+                {/* Stacked Bar */}
+                <div style={{ width: '100%', height: '28px', display: 'flex', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' }}>
+                  {(gitReportData?.teamContributions || []).map((m: any) => (
+                    <div key={m.name} style={{ width: `${m.pct}%`, height: '100%', background: m.color, borderRight: '1px solid rgba(255,255,255,0.2)', transition: 'width 1.2s ease' }} title={`${m.name}: ${m.pct.toFixed ? m.pct.toFixed(1) : m.pct}%`} />
+                  ))}
+                </div>
+
+                {/* Legend */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
+                  {(gitReportData?.teamContributions || []).map((m: any) => (
+                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: m.name.includes('Trí') ? '#DC2626' : 'var(--text-main)' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: m.color }} />
+                      {m.name} <span style={{ color: 'var(--text-muted)' }}>({Number(m.pct).toFixed(2)}%)</span>
                     </div>
-                    <div style={{ width: '100%', height: '9px', background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F3F4F6', borderRadius: '999px', overflow: 'hidden' }}>
-                      <div style={{ width: `${m.pct}%`, height: '100%', background: m.color, borderRadius: '999px' }} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* Contribution Table */}
-              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
+              {/* Formal Data Table */}
+              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.12)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', animation: 'fadeIn 0.5s ease' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                  <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
                     <tr>
-                      <th style={{ padding: '12px 18px' }}>THÀNH VIÊN</th>
-                      <th style={{ padding: '12px 18px' }}>COMMITS SẠCH</th>
-                      <th style={{ padding: '12px 18px' }}>PULL REQUESTS</th>
-                      <th style={{ padding: '12px 18px' }}>NET LOC</th>
-                      <th style={{ padding: '12px 18px' }}>TỶ LỆ %</th>
-                      <th style={{ padding: '12px 18px' }}>CẢNH BÁO FREE-RIDER</th>
+                      <th style={{ width: '28%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
+                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
+                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
+                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
+                      <th style={{ width: '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
+                      <th style={{ width: '18%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>Lê Nguyễn Anh Mai</td>
-                      <td style={{ padding: '14px 18px' }}>42</td>
-                      <td style={{ padding: '14px 18px' }}>14</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--color-exocarp)', fontWeight: 700 }}>+3,820</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 800 }}>38.5%</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8', color: isDark ? '#4ADE80' : 'var(--color-exocarp)', padding: '2px 8px', borderRadius: '6px' }}>
-                          NO (Tích cực)
-                        </span>
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>Nguyễn Văn A</td>
-                      <td style={{ padding: '14px 18px' }}>35</td>
-                      <td style={{ padding: '14px 18px' }}>12</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--color-exocarp)', fontWeight: 700 }}>+3,100</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 800 }}>31.0%</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8', color: isDark ? '#4ADE80' : 'var(--color-exocarp)', padding: '2px 8px', borderRadius: '6px' }}>
-                          NO
-                        </span>
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>Lê Văn C</td>
-                      <td style={{ padding: '14px 18px' }}>28</td>
-                      <td style={{ padding: '14px 18px' }}>9</td>
-                      <td style={{ padding: '14px 18px', color: 'var(--color-exocarp)', fontWeight: 700 }}>+2,650</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 800 }}>26.5%</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8', color: isDark ? '#4ADE80' : 'var(--color-exocarp)', padding: '2px 8px', borderRadius: '6px' }}>
-                          NO
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '14px 18px', fontWeight: 700, color: '#B91C1C' }}>Trần Thị B</td>
-                      <td style={{ padding: '14px 18px' }}>3</td>
-                      <td style={{ padding: '14px 18px' }}>1</td>
-                      <td style={{ padding: '14px 18px', color: '#B91C1C', fontWeight: 700 }}>+120</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 800, color: '#B91C1C' }}>4.0%</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 800, background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2', color: isDark ? '#F87171' : '#B91C1C', padding: '3px 8px', borderRadius: '6px' }}>
-                          ⚠️ YES - FREE RIDER (&lt; 5%)
-                        </span>
-                      </td>
-                    </tr>
+                    {(gitReportData?.teamContributions?.length ? gitReportData.teamContributions.map((m: any) => ({
+                      name: m.name,
+                      initials: m.name.substring(0, 2).toUpperCase(),
+                      commits: m.commits || 0,
+                      prs: m.prs || 0,
+                      loc: m.codeLines || `+${m.loc || 0}`,
+                      pct: m.pct || 0,
+                      color: m.color || '#94A3B8',
+                      status: m.pct >= 30 ? (lang === 'vi' ? 'Tốt' : 'Good') : (m.pct < 10 ? (lang === 'vi' ? '⚠️ Cảnh báo' : '⚠️ Alert') : (lang === 'vi' ? 'Đạt' : 'Average')),
+                      statusColor: m.pct >= 30 ? 'green' : (m.pct < 10 ? 'red' : 'gray')
+                    })) : (gitAnalysisJobId ? [{name: (lang==='vi'?'Đang tải dữ liệu từ GitHub... (vui lòng chờ khoảng 30s)':'Loading data from GitHub... (please wait ~30s)'), initials: '...', commits: 0, prs: 0, loc: '...', pct: 0, status: '...', statusColor: 'gray', color: '#94A3B8'}] : [])).map((row: any, idx: number, arr: any[]) => (
+                      <tr key={row.name} style={{ borderBottom: idx === arr.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                        <td style={{ padding: '16px 20px', fontWeight: row.statusColor === 'red' ? 800 : 700, color: row.statusColor === 'red' ? '#DC2626' : 'var(--text-main)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: row.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                              {row.initials}
+                            </div>
+                            {row.name}
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#F1F5F9' : '#334155', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.commits}</td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#F1F5F9' : '#334155', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.prs}</td>
+                        <td style={{ padding: '16px 20px', textAlign: 'right', color: row.color, fontWeight: 800, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.loc}</td>
+                        <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 900, color: row.color, fontFamily: 'monospace', fontSize: '1rem' }}>{row.pct.toFixed(1)}%</td>
+                        {currentRole !== 'student' && (
+<td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          {row.statusColor === 'red' ? (
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isDark ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', color: isDark ? '#FCA5A5' : '#DC2626', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid #FECACA', display: 'inline-block' }}>
+                              {row.status}
+                            </span>
+                          ) : row.statusColor === 'blue' ? (
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#DBEAFE', color: isDark ? '#93C5FD' : '#1D4ED8', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE', display: 'inline-block' }}>
+                              {row.status}
+                            </span>
+                          ) : row.statusColor === 'green' ? (
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: isDark ? '#4ADE80' : '#166534', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0', display: 'inline-block' }}>
+                              {row.status}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(156, 163, 175, 0.1)' : '#F1F5F9', color: 'var(--text-muted)', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(156, 163, 175, 0.2)' : '1px solid #E2E8F0', display: 'inline-block' }}>
+                              {row.status}
+                            </span>
+                          )}
+                        </td>
+)}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -2781,7 +2801,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                   <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
                     <tr>
-                      <th style={{ padding: '12px 18px' }}>SINH VIÊN</th>
+                      <th style={{ padding: '12px 18px' }}>{t.colStudent}</th>
                       <th style={{ padding: '12px 18px' }}>ĐIỂM CODE TEST CASE</th>
                       <th style={{ padding: '12px 18px' }}>% ĐÓNG GÓP GIT (PHÂN HỆ 5)</th>
                       <th style={{ padding: '12px 18px' }}>ĐIỂM TỔNG KẾT</th>
@@ -3318,7 +3338,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             color: 'var(--text-main)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Cấu Hình Đợt Chấm Bài (Batch Config)</h3>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{lang === 'vi' ? 'Cấu Hình Đợt Chấm Bài (Batch Config)' : 'Batch Config'}</h3>
               <button
                 onClick={() => setShowBatchModal(false)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
@@ -3327,7 +3347,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               </button>
             </div>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>TÊN ĐỢT CHẤM*</label>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{lang === 'vi' ? 'TÊN ĐỢT CHẤM*' : 'BATCH NAME*'}</label>
               <input
                 type="text"
                 value={batchName}
@@ -3345,7 +3365,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               />
             </div>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>MỨC ĐỘ ƯU TIÊN (BR-01)*</label>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{lang === 'vi' ? 'MỨC ĐỘ ƯU TIÊN (BR-01)*' : 'PRIORITY LEVEL (BR-01)*'}</label>
               <select
                 value={batchPriority}
                 onChange={(e) => setBatchPriority(e.target.value as 'exam' | 'assignment' | 'practice')}
@@ -3361,13 +3381,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   cursor: 'pointer',
                 }}
               >
-                <option value="exam">Exam (Ưu tiên cao nhất - Điểm 100)</option>
+                <option value="exam">{lang === 'vi' ? 'Exam (Ưu tiên cao nhất - Điểm 100)' : 'Exam (Highest Priority - Score 100)'}</option>
                 <option value="assignment">Assignment (Ưu tiên trung bình - Điểm 50)</option>
                 <option value="practice">Practice (Ưu tiên bình thường - Điểm 10)</option>
               </select>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginBottom: '24px' }}>
-              Số bài nộp đã chọn: <strong>{selectedSubmissions.length} bài</strong>
+              {lang === 'vi' ? 'Số bài nộp đã chọn:' : 'Selected submissions:'} <strong>{selectedSubmissions.length} bài</strong>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
@@ -3625,8 +3645,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
             color: 'var(--text-main)',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-orange-zest)' }}>Danh Sách Commit Bị Bắt Gian Lận (BR-10)</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E5E7EB', paddingBottom: '16px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-orange-zest)' }}>
+                {lang === 'vi' ? '⚠️ Danh Sách Commit Gian Lận (BR-10)' : '⚠️ Flagged Fraudulent Commits (BR-10)'}
+              </h3>
               <button
                 onClick={() => setShowFlaggedModal(false)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
@@ -3634,42 +3656,67 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <X size={20} />
               </button>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-              <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                <tr>
-                  <th style={{ padding: '10px' }}>TÁC GIẢ</th>
-                  <th style={{ padding: '10px' }}>NGÀY COMMIT</th>
-                  <th style={{ padding: '10px' }}>HÀNH VI GIAN LẬN</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                  <td style={{ padding: '10px', color: 'var(--text-main)' }}>a.nguyen@fpt.edu.vn</td>
-                  <td style={{ padding: '10px', color: 'var(--text-body)' }}>2026-09-09</td>
-                  <td style={{ padding: '10px', color: '#EF4444', fontWeight: 700 }}>whitespace-only (chỉ thêm dấu cách để farm LOC)</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px', color: 'var(--text-main)' }}>b.tran@fpt.edu.vn</td>
-                  <td style={{ padding: '10px', color: 'var(--text-body)' }}>2026-09-08</td>
-                  <td style={{ padding: '10px', color: 'var(--color-kumquat)', fontWeight: 700 }}>self-revert (tự xóa commit liền trước của mình)</td>
-                </tr>
-              </tbody>
-            </table>
+            <div style={{ borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', textAlign: 'left', fontSize: '0.75rem', color: isDark ? '#94A3B8' : '#475569', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
+                  <tr>
+                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', background: isDark ? 'rgba(239, 68, 68, 0.05)' : '#FEF2F2' }}>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-main)', fontWeight: 700 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>VT</div>
+                        <div>
+                          <div>Võ Minh Trí</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>tri.vm@fpt.edu.vn</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>2026-09-09</td>
+                    <td style={{ padding: '14px 16px', color: '#DC2626', fontWeight: 700, fontSize: '0.8rem' }}>
+                      {lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)'}
+                    </td>
+                  </tr>
+                  <tr style={{ background: isDark ? 'rgba(239, 68, 68, 0.05)' : '#FEF2F2' }}>
+                    <td style={{ padding: '14px 16px', color: 'var(--text-main)', fontWeight: 700 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>VT</div>
+                        <div>
+                          <div>Võ Minh Trí</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>tri.vm@fpt.edu.vn</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>2026-09-08</td>
+                    <td style={{ padding: '14px 16px', color: '#D97706', fontWeight: 700, fontSize: '0.8rem' }}>
+                      {lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <button
               onClick={() => setShowFlaggedModal(false)}
+              onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#E5E7EB'}
+              onMouseOut={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6'}
               style={{
                 width: '100%',
-                marginTop: '20px',
-                padding: '10px',
+                marginTop: '24px',
+                padding: '12px',
                 borderRadius: '10px',
                 background: isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6',
-                color: 'var(--text-body)',
+                color: 'var(--text-main)',
                 border: isDark ? '1px solid var(--border-light)' : 'none',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
+                transition: 'background 0.2s'
               }}
             >
-              Đóng
+              {lang === 'vi' ? 'Đóng cửa sổ' : 'Close window'}
             </button>
           </div>
         </div>

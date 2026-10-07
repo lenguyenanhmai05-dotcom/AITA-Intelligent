@@ -230,3 +230,12 @@ button {
   color: #E2E8F0 !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

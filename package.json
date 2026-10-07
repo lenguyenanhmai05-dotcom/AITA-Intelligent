@@ -9,8 +9,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
-    "dev:all": "concurrently -n \"API,WEB,WORKER\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:worker\"",
+    "dev": "npm run dev:all",
+    "dev:all": "concurrently -n \"API,WORKER,WEB\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:web\"",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:worker": "npm run dev --workspace=apps/worker",
     "dev:web": "npm run dev --workspace=apps/web",

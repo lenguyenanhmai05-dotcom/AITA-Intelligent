@@ -89,7 +89,7 @@ export function useJobStatus(
           nextStep = currentSimStep;
         }
 
-        const isFinished = nextStep >= 4;
+        const isFinished = nextStep >= 4 || jobStatus === 'completed';
 
         setState({
           currentStep: nextStep,

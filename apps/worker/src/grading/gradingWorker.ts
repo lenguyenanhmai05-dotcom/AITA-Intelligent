@@ -7,6 +7,7 @@ import {
   MAX_RETRY_ATTEMPTS,
   calculateBackoffDelaySeconds 
 } from '@aita/shared';
+import { prisma } from '@aita/database';
 
 const redisConnectionOptions = {
   host: process.env.REDIS_HOST || 'localhost',
@@ -28,6 +29,17 @@ export class GradingWorkerService {
       async (job: Job) => {
         console.log(`[Worker] Processing Job #${job.id} (Attempt ${job.attemptsMade + 1}/${MAX_RETRY_ATTEMPTS}) - Priority: ${job.data.priority}`);
         
+        // Cập nhật trạng thái job → 'active' trong DB
+        try {
+          const jobDbId = job.data?.jobDbId;
+          if (jobDbId) {
+            await prisma.gradingJob.update({
+              where: { id: Number(jobDbId) },
+              data: { status: 'active', startedAt: new Date() },
+            });
+          }
+        } catch {}
+
         // Chạy mock grading dispatcher
         const result: ExecutionResult = await MockDispatcher.run(
           job.data.submissionTitle,
@@ -46,23 +58,66 @@ export class GradingWorkerService {
       }
     );
 
-    // Event: Chấm bài thành công
-    this.workerInstance.on('completed', (job: Job, result: ExecutionResult) => {
+    // Event: Chấm bài thành công → cập nhật DB
+    this.workerInstance.on('completed', async (job: Job, result: ExecutionResult) => {
       console.log(`[Worker] ✅ Job #${job.id} COMPLETED in ${result.runtimeDurationMs}ms - Score: ${result.score}/100`);
+      try {
+        const jobDbId = job.data?.jobDbId;
+        if (jobDbId) {
+          await prisma.gradingJob.update({
+            where: { id: Number(jobDbId) },
+            data: {
+              status: 'completed',
+              runtimeDurationMs: result.runtimeDurationMs,
+              finishedAt: new Date(),
+            },
+          });
+          console.log(`[Worker] 📝 Updated GradingJob #${jobDbId} → completed in PostgreSQL`);
+        }
+      } catch (dbErr: any) {
+        console.warn(`[Worker] Could not update completed status in DB: ${dbErr.message}`);
+      }
     });
 
     // Event: Lỗi thực thi & Exponential Backoff Retry (BR-04, BR-05, UC-03)
-    this.workerInstance.on('failed', (job: Job | undefined, err: Error) => {
+    this.workerInstance.on('failed', async (job: Job | undefined, err: Error) => {
       if (!job) return;
 
       const attempt = job.attemptsMade;
       if (attempt < MAX_RETRY_ATTEMPTS) {
         const nextDelay = calculateBackoffDelaySeconds(attempt);
         console.warn(`[Worker] ⚠️ Job #${job.id} FAILED attempt ${attempt}/${MAX_RETRY_ATTEMPTS}. Rescheduling with Exponential Backoff (waiting ${nextDelay}s) [BR-05]`);
+        try {
+          const jobDbId = job.data?.jobDbId;
+          if (jobDbId) {
+            await prisma.gradingJob.update({
+              where: { id: Number(jobDbId) },
+              data: { status: 'waiting', retryCount: attempt },
+            });
+          }
+        } catch {}
       } else {
         // Hết 3 lần thử: Chuyển sang Dead-Letter Queue (DLQ Status Mover - UC-04)
         console.error(`[Worker] 💀 Job #${job.id} EXHAUSTED all ${MAX_RETRY_ATTEMPTS} attempts! Quarantined to Dead-Letter Queue (status = 'dead').`);
         console.error(`[Worker] Root Cause: ${err.message}`);
+        try {
+          const jobDbId = job.data?.jobDbId;
+          if (jobDbId) {
+            await prisma.gradingJob.update({
+              where: { id: Number(jobDbId) },
+              data: {
+                status: 'dead',
+                retryCount: attempt,
+                errorClassification: err.message,
+                stackTrace: err.stack || '',
+                finishedAt: new Date(),
+              },
+            });
+            console.log(`[Worker] 📝 Updated GradingJob #${jobDbId} → dead in PostgreSQL`);
+          }
+        } catch (dbErr: any) {
+          console.warn(`[Worker] Could not update dead status in DB: ${dbErr.message}`);
+        }
       }
     });
 

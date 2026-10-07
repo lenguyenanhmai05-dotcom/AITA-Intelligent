@@ -86,7 +86,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
     // 1. Nếu mail là admin cố định (lenguyenanhmai05@gmail.com) -> VÀO ADMIN QUẢN LÝ TẤT CẢ
     // 2. Nếu mail khác -> VÀO SINH VIÊN hoặc GIẢNG VIÊN tùy theo tab đang chọn
     const finalRole: 'lecturer' | 'student' | 'admin' = isTargetAdmin ? 'admin' : selectedRole;
-    const cleanName = displayName || (isTargetAdmin ? 'Lê Nguyễn Anh Mai' : fallbackName);
+    const adminDisplayName = cleanEmail === 'tuongvy22102004@gmail.com'
+      ? 'Tường Vy'
+      : 'Lê Nguyễn Anh Mai';
+    const cleanName = displayName || (isTargetAdmin ? adminDisplayName : fallbackName);
 
     try {
       const response = await fetch('/api/auth/google', {

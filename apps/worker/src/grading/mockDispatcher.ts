@@ -20,7 +20,7 @@ export class MockDispatcher {
     const startTime = Date.now();
 
     // Giả lập thời gian chạy test cases (500ms - 2500ms)
-    const simulatedDuration = Math.floor(Math.random() * 1500) + 800;
+    const simulatedDuration = 15000; // 15 seconds so user can see ACTIVE state
     await new Promise((resolve) => setTimeout(resolve, simulatedDuration));
 
     const totalDuration = Date.now() - startTime;

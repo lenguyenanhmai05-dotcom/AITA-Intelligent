@@ -3,14 +3,14 @@ import { MemberContribution } from '../components/git-analytics/TeamContribution
 import { FlaggedCommit } from '../components/git-analytics/FraudDetectionModals';
 
 // Định nghĩa kiểu dữ liệu trả về từ API Backend
-interface ReportResponse {
+export interface ReportResponse {
   success: boolean;
   data: {
     members: MemberContribution[];
   };
 }
 
-interface FlaggedCommitsResponse {
+export interface FlaggedCommitsResponse {
   success: boolean;
   data: {
     flaggedCommits: FlaggedCommit[];
