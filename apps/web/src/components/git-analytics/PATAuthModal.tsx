@@ -19,47 +19,134 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-96 relative">
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0, 0, 0, 0.55)',
+      backdropFilter: 'blur(5px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '16px'
+    }}>
+      <div style={{
+        background: 'var(--bg-surface, #FFFFFF)',
+        borderRadius: '20px',
+        padding: '28px 32px',
+        boxShadow: '0 20px 45px rgba(0, 0, 0, 0.25)',
+        maxWidth: '440px',
+        width: '100%',
+        position: 'relative',
+        border: '1px solid var(--border-light, #E5E8D6)',
+        boxSizing: 'border-box'
+      }}>
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          style={{
+            position: 'absolute',
+            top: '18px',
+            right: '18px',
+            background: 'transparent',
+            border: 'none',
+            fontSize: '1.2rem',
+            color: 'var(--text-muted, #6B7280)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
         >
           ✕
         </button>
-        <h3 className="text-lg font-semibold mb-2">Private Repository Access</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 style={{
+          fontSize: '1.2rem',
+          fontWeight: 800,
+          marginBottom: '8px',
+          color: 'var(--text-main, #1F2937)',
+          fontFamily: 'var(--font-heading, inherit)'
+        }}>
+          Private Repository Access
+        </h3>
+        <p style={{
+          fontSize: '0.84rem',
+          color: 'var(--text-body, #4B5563)',
+          marginBottom: '20px',
+          lineHeight: '1.5'
+        }}>
           Please provide a GitHub Personal Access Token (PAT) to analyze this private repository. The token is securely stored in memory and cleared on reload.
         </p>
 
-        <div className="relative mb-4">
+        <div style={{ position: 'relative', marginBottom: '22px' }}>
           <input
             type={showToken ? 'text' : 'password'}
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{
+              width: '100%',
+              padding: '11px 68px 11px 14px',
+              borderRadius: '11px',
+              border: '1.5px solid var(--border-light, #E5E8D6)',
+              background: 'var(--bg-surface-input, #FFFFFF)',
+              color: 'var(--text-main, #1F2937)',
+              fontSize: '0.88rem',
+              outline: 'none',
+              boxSizing: 'border-box',
+              transition: 'border-color 0.2s'
+            }}
             placeholder="ghp_..."
           />
           <button
             type="button"
             onClick={() => setShowToken(!showToken)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5 text-gray-500 hover:text-gray-700"
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: 'var(--color-orange-zest, #D9641F)',
+              padding: '4px 6px'
+            }}
           >
             {showToken ? 'Hide' : 'Show'}
           </button>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            style={{
+              padding: '10px 18px',
+              borderRadius: '10px',
+              border: '1.5px solid var(--border-light, #E5E8D6)',
+              background: 'var(--bg-surface-subtle, #FAF9F1)',
+              color: 'var(--text-main, #374151)',
+              fontWeight: 700,
+              fontSize: '0.84rem',
+              cursor: 'pointer'
+            }}
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             disabled={!tokenInput.trim()}
+            style={{
+              padding: '10px 22px',
+              borderRadius: '10px',
+              border: 'none',
+              background: 'linear-gradient(135deg, var(--color-kumquat, #F5A623), var(--color-orange-zest, #D9641F))',
+              color: '#FFFFFF',
+              fontWeight: 800,
+              fontSize: '0.84rem',
+              cursor: !tokenInput.trim() ? 'not-allowed' : 'pointer',
+              opacity: !tokenInput.trim() ? 0.5 : 1,
+              boxShadow: '0 3px 10px rgba(217, 100, 31, 0.25)',
+              transition: 'opacity 0.2s'
+            }}
           >
             Save Token
           </button>

@@ -28,6 +28,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { GitRepoSubmissionForm } from './git-analytics/GitRepoSubmissionForm';
+import { ProgressStepper } from './git-analytics/ProgressStepper';
+import { ReportSkeleton } from './git-analytics/ReportSkeleton';
 import { Language, translations } from '../translations';
 import { isAdminEmail, Theme } from '../App';
 import { LanguageFlagToggle, VietnamFlag, UkFlag } from './FlagIcons';
@@ -222,9 +225,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [workerConcurrency, setWorkerConcurrency] = useState(5);
   const [freeRidingThreshold, setFreeRidingThreshold] = useState(5);
 
-  // Stepper state for Git Analysis
+  // Stepper state for Git Analysis (Week 6)
   const [gitStep, setGitStep] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isReportLoading, setIsReportLoading] = useState(false);
 
   // Auto-sync uploadedFiles to localStorage whenever it changes
   useEffect(() => {
@@ -640,7 +644,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     }
   };
 
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = (_url?: string, _branch?: string, _pat?: string) => {
     setIsAnalyzing(true);
     setGitStep(1);
     const steps = [
@@ -649,7 +653,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       setTimeout(() => setGitStep(4), 3600),
       setTimeout(() => {
         setIsAnalyzing(false);
+        setIsReportLoading(true);
         setActiveTab('report');
+        setTimeout(() => setIsReportLoading(false), 900);
       }, 4800),
     ];
     return () => steps.forEach(clearTimeout);
@@ -2481,84 +2487,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </p>
               </div>
 
-              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', padding: '28px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', boxShadow: 'var(--shadow-card)' }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>CHỌN NHÓM ĐỒ ÁN*</label>
-                  <select style={{
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: '10px',
-                    border: isDark ? '1.5px solid var(--border-light)' : '1.5px solid #E5E8D6',
-                    background: isDark ? 'var(--bg-surface-input)' : '#FFFFFF',
-                    color: 'var(--text-main)',
-                    marginTop: '4px'
-                  }}>
-                    <option>Nhóm 2 - AITA Intelligent (SWP391)</option>
-                    <option>Nhóm 1 - Smart LMS Platform</option>
-                  </select>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>GIT REPOSITORY URL*</label>
-                  <input
-                    type="text"
-                    defaultValue="https://github.com/lenguyenanhmai05/AITA-Intelligent.git"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '10px',
-                      border: isDark ? '1.5px solid var(--border-light)' : '1.5px solid #E5E8D6',
-                      background: isDark ? 'var(--bg-surface-input)' : '#FFFFFF',
-                      color: 'var(--text-main)',
-                      marginTop: '4px'
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>NHÁNH PHÂN TÍCH (DEFAULT: MAIN)</label>
-                  <input
-                    type="text"
-                    defaultValue="main"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '10px',
-                      border: isDark ? '1.5px solid var(--border-light)' : '1.5px solid #E5E8D6',
-                      background: isDark ? 'var(--bg-surface-input)' : '#FFFFFF',
-                      color: 'var(--text-main)',
-                      marginTop: '4px'
-                    }}
-                  />
-                </div>
-
+              <div style={{ marginBottom: '24px' }}>
                 {isAnalyzing ? (
-                  <div style={{ padding: '20px', background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderRadius: '14px', textAlign: 'center' }}>
-                    <div style={{ fontWeight: 800, color: 'var(--color-orange-zest)', marginBottom: '8px' }}>
-                      Đang xử lý phân tích kho Git ngầm... (Bước {gitStep} / 4)
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {gitStep === 1 && '1. Đang bare clone repository...'}
-                      {gitStep === 2 && '2. Đang bóc tách commit history và git log...'}
-                      {gitStep === 3 && '3. Đang lọc sạch noise files, lockfiles, node_modules...'}
-                      {gitStep === 4 && '4. Đang tính điểm đóng góp % và xét Free-rider...'}
-                    </div>
-                  </div>
+                  <ProgressStepper currentStep={gitStep} isAnalyzing={isAnalyzing} />
                 ) : (
-                  <button
-                    onClick={handleStartAnalysis}
-                    style={{
-                      width: '100%',
-                      padding: '14px',
-                      borderRadius: '12px',
-                      background: 'var(--color-orange-zest)',
-                      color: '#FFFFFF',
-                      fontWeight: 800,
-                      fontSize: '0.92rem',
-                    }}
-                  >
-                    Bắt Đầu Bóc Tách Git Repo
-                  </button>
+                  <GitRepoSubmissionForm onSubmit={handleStartAnalysis} />
                 )}
               </div>
             </div>
@@ -2568,6 +2501,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           {/* TAB 5: TEAM CONTRIBUTION & FREE-RIDER REPORT                    */}
           {/* =============================================================== */}
           {activeTab === 'report' && (
+            isReportLoading ? (
+              <ReportSkeleton />
+            ) : (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
@@ -2682,6 +2618,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </table>
               </div>
             </div>
+            )
           )}
 
           {/* =============================================================== */}
