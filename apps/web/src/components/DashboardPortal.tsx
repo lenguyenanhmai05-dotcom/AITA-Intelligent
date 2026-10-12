@@ -29,7 +29,6 @@ import {
   Github,
   GitCommit,
   ChevronDown,
-  AlertCircle
 } from 'lucide-react';
 
 import { Language, translations } from '../translations';
@@ -99,9 +98,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   // LocalStorage key for student submissions persistence across reloads
   const STORAGE_KEY_STUDENT_UPLOADS = 'aita_student_uploaded_files_v1';
-
-  // No default submissions — always start fresh from DB
-  const DEFAULT_STUDENT_SUBMISSIONS: any[] = [];
 
   // Student Upload state — start empty, populated from DB via fetchSubmissionsFromDb
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
