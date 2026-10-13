@@ -10,22 +10,22 @@
 
 | STT | Mã Sinh Viên | Họ và Tên | Vai Trò Kỹ Thuật Chính | Trọng Tâm Trách Nhiệm |
 | :---: | :---: | :--- | :--- | :--- |
-| **1** | **QE180043** | **Nguyễn Châu Khánh Linh** | **Queue, Concurrency & Review Lead** | BullMQ Core, Worker Daemon, DLQ, Telemetry 2s & **Toàn bộ luồng Giảng viên duyệt điểm AI (`UC-04b`)** |
+| **1** | **QE190151** | **Lê Nguyễn Anh Mai** | **Queue, Concurrency & Review Lead** | BullMQ Core, Worker Daemon, DLQ, Telemetry 2s & **Toàn bộ luồng Giảng viên duyệt điểm AI (`UC-04b`)** |
 | **2** | **QE180099** | **Nguyễn Tường Vy** | **Git Engine & Heuristics Lead** | Git CLI Pipeline, Ephemeral Bare Clone, AES-256 PAT, Bắt gian lận commit (*whitespace & self-revert*) |
 | **3** | **QE190078** | **Đào Minh Nghĩa** | **Data Architect & Scoring Lead** | Prisma ORM 12 bảng, Seed data, Thuật toán Multi-Email, Công thức 40/40/20 & Bắt Free-Rider |
 | **4** | **QE190127** | **Ngô Sử Việt Anh** | **Frontend Lead (Batch & Queue UI)** | Web React: Quản lý bài nộp, Dashboard giám sát hàng đợi realtime, Màn hình DLQ Replay & Modal Concurrency |
-| **5** | **QE190151** | **Lê Nguyễn Anh Mai** | **Frontend Lead (Git UI) & QA Lead** | Web React: Git Analytics UI, Báo cáo Free-Rider, Bộ Unit Test >= 80%, Tổng đạo diễn Kịch bản Demo & Slide |
+| **5** | **QE180043** | **Nguyễn Châu Khánh Linh** | **Frontend Lead (Git UI) & QA Lead** | Web React: Git Analytics UI, Báo cáo Free-Rider, Bộ Unit Test >= 80%, Tổng đạo diễn Kịch bản Demo & Slide |
 
 ---
 
 ## 🔍 1. Đánh Giá Hiện Trạng Thực Tế & Rà Soát Ranh Giới Nhiệm Vụ
 
 Để phục vụ tốt nhất cho buổi bảo vệ **Milestone 2** và tránh việc các thành viên trong nhóm làm trùng lặp công việc của nhau:
-1. **Thành viên 1 (Nguyễn Châu Khánh Linh - Bạn):** Đã làm xong phần lõi BullMQ, Worker, Retry Backoff, DLQ, Telemetry. Nay **nhận phụ trách thêm trọn gói tính năng "Giảng viên duyệt điểm sau khi AI chấm xong" (Human-in-the-Loop Review - `UC-04b`)** từ Database, API đến UI nút bấm để sẵn sàng demo thực tế trực quan trước Hội đồng.
+1. **Thành viên 1 (Lê Nguyễn Anh Mai - Bạn):** Đã làm xong phần lõi BullMQ, Worker, Retry Backoff, DLQ, Telemetry. Nay **nhận phụ trách thêm trọn gói tính năng "Giảng viên duyệt điểm sau khi AI chấm xong" (Human-in-the-Loop Review - `UC-04b`)** từ Database, API đến UI nút bấm để sẵn sàng demo thực tế trực quan trước Hội đồng.
 2. **Thành viên 2 (Nguyễn Tường Vy):** Đã hoàn thành xuất sắc toàn bộ pipeline Git Sandbox, Bare Clone, mã hóa AES-256 PAT, bắt gian lận commit và GitHub PR API.
 3. **Thành viên 3 (Đào Minh Nghĩa):** Không làm phần duyệt điểm nữa; tập trung 100% vào Quản trị Cơ sở dữ liệu Prisma (12 bảng 3NF), Nạp dữ liệu mẫu (`seed.ts`), Thuật toán ghép email đa nguồn (`@fpt` & `@gmail`), Bộ tính điểm $40/40/20$ và Tối ưu hóa Database/Cache < 100ms.
 4. **Thành viên 4 (Ngô Sử Việt Anh):** Tập trung vào Màn hình danh sách bài nộp, Modal tạo đợt chấm (validate 3 batch), Dashboard giám sát nhịp tim 2s, Màn hình DLQ và Modal cấu hình Concurrency Worker.
-5. **Thành viên 5 (Lê Nguyễn Anh Mai):** Tập trung vào Giao diện nộp Git Repo, Stepper tiến trình phân tích, Báo cáo nhóm & Cảnh báo Free-Rider, Modal bắt gian lận commit, chủ trì Bộ Unit Test $\ge 80\%$, Kịch bản demo và Slide thuyết trình.
+5. **Thành viên 5 (Nguyễn Châu Khánh Linh):** Tập trung vào Giao diện nộp Git Repo, Stepper tiến trình phân tích, Báo cáo nhóm & Cảnh báo Free-Rider, Modal bắt gian lận commit, chủ trì Bộ Unit Test $\ge 80\%$, Kịch bản demo và Slide thuyết trình.
 
 ---
 
@@ -63,7 +63,7 @@ Hệ thống Worker thực hiện chấm tự động (chạy test cases, đo th
 
 ---
 
-### 👤 THÀNH VIÊN 1: Queue, Concurrency & Review Lead (Nguyễn Châu Khánh Linh)
+### 👤 THÀNH VIÊN 1: Queue, Concurrency & Review Lead (Lê Nguyễn Anh Mai)
 *(Phụ trách toàn bộ luồng Hàng đợi Chấm bài, Cơ chế Chịu lỗi & Nghiệp vụ Giảng viên Duyệt điểm)*
 
 - **Trách nhiệm chính:** Quản trị BullMQ Queue, Worker Daemon, Chịu lỗi Exponential Backoff, DLQ, Telemetry và Tính năng Giảng viên Duyệt điểm AI (`UC-04b`).
@@ -192,7 +192,7 @@ Hệ thống Worker thực hiện chấm tự động (chạy test cases, đo th
 
 ---
 
-### 👤 THÀNH VIÊN 5: Frontend Lead - Git UI & QA Lead (Lê Nguyễn Anh Mai)
+### 👤 THÀNH VIÊN 5: Frontend Lead - Git UI & QA Lead (Nguyễn Châu Khánh Linh)
 *(Tập trung vào Giao diện Git Analytics, Báo cáo Free-Rider, Bộ Unit Test >= 80% & Đạo diễn Demo)*
 
 - **Vai trò:** Xây dựng toàn bộ giao diện phân tích Git, hiển thị biểu đồ đóng góp nhóm, chủ trì kiểm thử hệ thống (Unit Test & API Test) và đạo diễn buổi demo trước Hội đồng.
@@ -254,7 +254,7 @@ Hệ thống Worker thực hiện chấm tự động (chạy test cases, đo th
 
 *Ghi chú: **R** (Responsible - Người trực tiếp làm), **A** (Accountable - Người chịu trách nhiệm chính), **C** (Consulted - Người được tham vấn/hỗ trợ), **I** (Informed - Người nhận thông báo/kết quả)*
 
-| Hạng Mục Nhiệm Vụ | TV1 (Linh)<br>Queue & Review Lead | TV2 (Vy)<br>Git Lead | TV3 (Nghĩa)<br>Data/Scoring | TV4 (Việt Anh)<br>Grading UI | TV5 (Mai)<br>Git UI & QA |
+| Hạng Mục Nhiệm Vụ | TV1 (Mai)<br>Queue & Review Lead | TV2 (Vy)<br>Git Lead | TV3 (Nghĩa)<br>Data/Scoring | TV4 (Việt Anh)<br>Grading UI | TV5 (Linh)<br>Git UI & QA |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **BullMQ Worker & Mock Dispatcher** | **R / A** | I | C | I | I |
 | **Priority Queue & Concurrency Slider** | **R / A** | I | C | R *(UI)* | I |
