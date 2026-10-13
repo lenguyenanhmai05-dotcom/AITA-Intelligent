@@ -1,201 +1,355 @@
-# Bảng Phân Chia Công Việc Cho 5 Thành Viên (Team Task Allocation)
-> **Dự án:** AITA-INTELLIGENT (SWP391-RBL - FPT University)  
-> **Phân hệ 5:** Redis Queue (BullMQ) & Git Teamwork Analytics Platform  
-> **Phiên bản:** Cập nhật đồng bộ theo Đề cương 10 Tuần & 4 Cột Mốc Đánh Giá (Milestones)
+# Bảng Phân Công Nhiệm Vụ 5 Thành Viên & Kế Hoạch Hành Động Chi Tiết
+> **Dự án:** AITA-INTELLIGENT (Hệ thống Hỗ trợ Giảng dạy & Đánh giá Dự án Phần mềm Thông minh)  
+> **Phân hệ 5 (Subsystem 5):** Redis Queue (BullMQ) & Git Teamwork Analytics Platform  
+> **Môn học:** SWP391 - Software Project (FPT University)  
+> **Phiên bản:** Cập nhật đồng bộ thực tế mã nguồn & Tích hợp quy trình Giảng viên duyệt điểm AI (Human-in-the-Loop)
 
 ---
 
 ## 👥 Danh Sách 5 Thành Viên Nhóm 2 (SWP391)
-1. **QE180043 – Nguyễn Châu Khánh Linh**
-2. **QE180099 – Nguyễn Tường Vy**
-3. **QE190078 – Đào Minh Nghĩa**
-4. **QE190127 – Ngô Sử Việt Anh**
-5. **QE190151 – Lê Nguyễn Anh Mai**
+
+| STT | Mã Sinh Viên | Họ và Tên | Vai Trò Kỹ Thuật Chính | Trọng Tâm Trách Nhiệm |
+| :---: | :---: | :--- | :--- | :--- |
+| **1** | **QE180043** | **Nguyễn Châu Khánh Linh** | **Queue & Concurrency Lead** | Backend Worker, BullMQ Core, Exponential Backoff, DLQ & Telemetry |
+| **2** | **QE180099** | **Nguyễn Tường Vy** | **Git Engine & Heuristics Lead** | Git CLI Pipeline, Ephemeral Bare Clone, AES-256 PAT, Bắt gian lận commit |
+| **3** | **QE190078** | **Đào Minh Nghĩa** | **Data Architect & Scoring Lead** | Prisma ORM 12 bảng, Thuật toán Multi-Email, Công thức 40/40/20 & Backend Duyệt điểm AI |
+| **4** | **QE190127** | **Ngô Sử Việt Anh** | **Frontend Lead (Batch & Queue)** | Web React: Quản lý bài nộp, Giám sát hàng đợi realtime, DLQ & UI Giảng viên duyệt điểm AI |
+| **5** | **QE190151** | **Lê Nguyễn Anh Mai** | **Frontend Lead (Git UI) & QA Lead** | Web React: Git Analytics UI, Báo cáo Free-Rider, Bộ Unit Test >= 80%, Kịch bản Demo & Slide |
 
 ---
 
-## 1. Ma Trận Trách Nhiệm Cốt Lõi (RACI Matrix Theo 4 Milestones)
+## 🔍 1. Đánh Giá Hiện Trạng Thực Tế & Rà Soát Ranh Giới Nhiệm Vụ
 
-| Thành Viên / Vai Trò | Trọng Tâm Kỹ Thuật | Milestone 2 (Tuần 3-5, 20%) | Milestone 3 (Tuần 6-8, 25%) | Final Defense (Tuần 9-10, 40%) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Thành Viên 1**<br>*(Queue & Concurrency Lead)* | BullMQ Core, Worker Daemon, Telemetry & Stress Test | Xây dựng BullMQ, Priority Queue, Retry 3 lần, DLQ, Concurrency 1-10. Chống treo hàng đợi khi bị test tải P2P. | Viết API Telemetry 2s, hoàn thiện cơ chế Replay DLQ, hỗ trợ tích hợp WebSockets/SSE. | **Stress Testing k6 (100 concurrent requests)**, tối ưu hiệu năng hàng đợi Redis. |
-| **Thành Viên 2**<br>*(Git Engine & Heuristics)* | Git CLI Parser, Bare Clone Sandbox, Fraud Detection | Thiết lập môi trường chạy Git CLI, chuẩn bị cơ chế Bare Clone sandbox an toàn và mã hóa AES-256 PAT. | Lập trình Git Diff Parser, bộ lọc file rác (`node_modules`), thuật toán bắt gian lận (*whitespace & self-revert*), GitHub PR API. | Chuẩn bị dữ liệu demo bắt gian lận commit và hỗ trợ tối ưu thời gian phân tích repo Git. |
-| **Thành Viên 3**<br>*(Data Architect & Scoring Engine)* | Prisma ORM, Multi-Email Matching, Scoring Formula | Quản lý Prisma schema, migrations, seed data ban đầu, API cấu hình System Settings. | Thuật toán Author Matching đa email (`@fpt` & `@gmail`), Bộ tính điểm $40/40/20$, cờ Free-Rider. | **Tối ưu Database Indexes & Redis Cache (< 100ms)**, đồng bộ dữ liệu đợt chấm lớn. |
-| **Thành Viên 4**<br>*(Frontend - Batch Grading UI)* | Giao diện React/Vite: Quản lý đợt chấm & Giám sát | Dựng màn hình Submissions List, Batch Config Modal chọn độ ưu tiên, Queue Monitor Dashboard realtime. | Dựng Job Details Modal (xem stack trace), màn hình DLQ và Modal chỉnh Concurrency Worker. | Tinh chỉnh giao diện, xử lý responsive, tối ưu UX khi hàng đợi nhận số lượng lớn jobs. |
-| **Thành Viên 5**<br>*(Frontend - Git UI & QA Lead)* | Giao diện React/Vite: Git Analytics & Kiểm Thử | Dựng Form nộp Git Repo, Modal nhập PAT bảo mật, màn hình Stepper 4 bước hiển thị tiến trình. | Dựng Báo cáo đóng góp %, Member Details Modal, Flagged Commits Modal. **Viết Unit Test (Vitest) $\ge 80\%$**. | **Tổng đạo diễn Demo bảo vệ trước Hội đồng** (Slide, kịch bản bắt Free-Rider, tài liệu User Manual). |
-
----
-
-## 2. Chi Tiết Nhiệm Vụ Từng Thành Viên Theo Từng Cột Mốc
+Trong quá trình triển khai mã nguồn ban đầu:
+- **Thành viên 1** và **Thành viên 2** đã hoàn thành xuất sắc các module nền tảng kỹ thuật backend nặng nhất (BullMQ Worker, Mock Dispatcher, Git CLI Bare Clone, Heuristics detection).
+- Do tính chất tích hợp liên thông, Thành viên 1 & 2 đã chủ động viết trước khung Controller và Route ban đầu (`gradingController.ts`, `gitController.ts`).
+- Vì vậy, kế hoạch hành động dưới đây **tái cơ cấu và tối ưu hóa nhiệm vụ cho 3 Thành viên còn lại (Thành viên 3, 4, 5)**:
+  1. Loại bỏ các đầu việc bị trùng lặp.
+  2. Bổ sung trọn vẹn nghiệp vụ **"Giảng viên phê duyệt sau khi AI chấm xong" (Human-in-the-Loop AI Grading Review)** xuyên suốt từ Database -> API -> UI -> Testing.
+  3. Phân chia khối lượng công việc cân bằng, chuẩn chỉ theo đúng tiêu chí đánh giá khắt khe của môn SWP391.
 
 ---
 
-### 👤 THÀNH VIÊN 1: Queue & Concurrency Engineer (Backend Worker & Telemetry)
-*Trách nhiệm chính: Đảm bảo hàng đợi hoạt động bền bỉ, không bao giờ bị nghẽn/treo dưới tải nặng.*
+## 🌟 2. Đặc Tả Nghiệp Vụ Mới: Giảng Viên Duyệt Điểm Sau Khi AI Chấm (Human-in-the-Loop AI Review)
 
-- **Milestone 2 (Tuần 3–5 - Trọng số 20%):**
-  - Cấu hình Redis kết nối thư viện **BullMQ** native trong `apps/api` và `apps/worker`.
-  - Triển khai **Priority Queue**: `Exam (100) > Assignment (50) > Practice (10)` (`BR-01`).
-  - Kiểm soát giới hạn đợt chấm: Tối đa 3 batches đồng thời/lớp (`BR-02`).
-  - Lập trình **Mock Execution Dispatcher**: Đo `runtimeDurationMs` và sinh kết quả giả lập test cases.
-  - Cơ chế chịu lỗi: Tự động thử lại với Exponential Backoff $2^{\text{retryCount}}$ giây (2s, 4s, 8s) (`BR-04`, `BR-05`).
-  - Cơ chế **Dead-Letter Queue (DLQ)**: Quản lý các job thất bại sau 3 lần (`status = 'dead'`), lưu mã lỗi `errorClassification` và `stackTrace`.
-  - **Phòng vệ P2P Testing (École 42):** Cấu hình `stalledInterval`, `lockDuration` và timeout bảo vệ để tránh việc nhóm đối thủ nạp tải nặng làm tê liệt/treo hàng đợi.
+Hệ thống AI/Worker thực hiện chấm tự động (chạy test cases, đo thời gian thực thi). Tuy nhiên, kết quả của AI không được tự ý công bố ngay cho sinh viên mà bắt buộc phải qua khâu thẩm định của Giảng viên phụ trách lớp.
 
-- **Milestone 3 (Tuần 6–8 - Trọng số 25%):**
-  - Viết API `GET /api/grading/telemetry`: Thống kê số lượng job (`waiting`, `active`, `completed`, `failed`) phục vụ cập nhật chu kỳ 2 giây (`BR-03`).
-  - Viết API xử lý DLQ: `POST /api/dlq/:id/retry` (reset retryCount về 0 - `BR-06`) và `POST /api/dlq/:id/dismiss`.
-  - Lập trình tính năng **Dynamic Worker Concurrency**: Đổi số worker chạy song song (1 đến 10) tại runtime khi Admin thay đổi cài đặt (`BR-07`, `UC-05`).
+```
+[Bài nộp của Sinh viên]
+        │
+        ▼
+[BullMQ Queue & Worker] ──(AI chấm tự động)──► Trạng thái: completed
+                                               Trạng thái duyệt: Pending Review
+                                                       │
+                                                       ▼
+                                          [Giảng viên xem chi tiết]
+                                          (Điểm số, logs, test cases)
+                                           ┌───────────┴───────────┐
+                                           ▼                       ▼
+                                   [Approve / Phê duyệt]   [Reject / Từ chối]
+                                   - Chốt điểm chính thức  - Trả về chấm lại /
+                                   - Lưu nhận xét          - Gửi feedback cho SV
+```
 
-- **Final Defense (Tuần 9–10 - Trọng số 40%):**
-  - **Stress Testing với k6:** Viết kịch bản `stress-test.js` mô phỏng 100 requests đồng thời nạp vào hàng đợi Redis để đo throughput và latency.
-  - Chụp biểu đồ kết quả stress test k6 phục vụ làm slide thuyết trình và chèn vào báo cáo.
+### Các Quy Tắc Nghiệp Vụ Cốt Lõi (Business Rules):
+- **`BR-14` (AI Review Eligibility):** Chỉ những bài nộp có trạng thái chấm `status = 'completed'` mới được phép mở tính năng thẩm định cho giảng viên.
+- **`BR-15` (Review Decision Domain):** Quyết định duyệt chỉ nhận một trong hai giá trị hợp lệ: `'approved'` (Chấp thuận) hoặc `'rejected'` (Từ chối). Bắt buộc lưu kèm lý do/nhận xét (`reviewComment`).
+- **`BR-16` (Lecturer Ownership & Authorization):** Chỉ Giảng viên được phân công phụ trách lớp học tương ứng mới có quyền duyệt điểm cho bài nộp của lớp đó (Role: `lecturer` và sở hữu `classId`).
 
----
-
-### 👤 THÀNH VIÊN 2: Git Engine & Heuristics Specialist (Git CLI & Fraud Detection)
-*Trách nhiệm chính: Xây dựng đường ống bóc tách kho Git an toàn và phát hiện các thủ thuật gian lận commit.*
-
-- **Milestone 2 (Tuần 3–5 - Trọng số 20%):**
-  - Lập trình module mã hóa token GitHub PAT bằng chuẩn **AES-256** trước khi lưu trữ (`BR-08`).
-  - Kiểm tra ràng buộc `BR-09`: Mỗi nhóm chỉ được có tối đa 1 phân tích repo đang ở trạng thái `pending`/`cloning`.
-  - Thiết lập dịch vụ `EphemeralBareCloner`: Chạy lệnh `git clone --bare` vào thư mục tạm an toàn (`scratch/clones/<uuid>`), tự động dọn sạch thư mục sau khi phân tích xong (`UC-07`).
-
-- **Milestone 3 (Tuần 6–8 - Trọng số 25%):**
-  - **Commit Stream Log Parser:** Sử dụng Git CLI (`git rev-list`, `git log`, `git diff-tree`) để trích xuất commit hashes, tác giả, ngày giờ, số dòng thêm/xóa (`UC-08`).
-  - **Dependency & Noise Sanitizer:** Lập trình bộ lọc loại bỏ toàn bộ file rác sinh tự động theo `BR-13` (`node_modules/`, `dist/`, `build/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`) để chỉ giữ lại LOC thật.
-  - **Commit Heuristic Auditor (Bắt gian lận commit - BR-10):**
-    - Thuật toán nhận diện commit **Whitespace-only** (chỉ sửa format, thêm tab/space để farm LOC).
-    - Thuật toán nhận diện commit **Self-revert** (tác giả tự hủy/revert commit liền trước của chính mình).
-    - Đánh dấu cờ `isSuspicious = true` và ghi nhận `suspiciousReason` vào bảng `git_commits`.
-  - **GitHub REST API Client:** Tích hợp API `/repos/{owner}/{repo}/pulls?state=all` để thống kê chính xác số PR của từng thành viên (`UC-09`).
-
-- **Final Defense (Tuần 9–10 - Trọng số 40%):**
-  - Chuẩn bị sẵn 1 repository Git đặc biệt chứa các commit gian lận (whitespace farming và self-revert) để demo bắt quả tang trực tiếp trước Hội đồng.
-  - Tối ưu hóa tốc độ clone và bóc tách dữ liệu repo.
+### Phân Bổ Trách Nhiệm Tính Năng Này Giữa 3 Thành Viên:
+- **Thành viên 3 (Backend & Database):** Bổ sung trường dữ liệu vào Prisma Schema, chạy migration, viết API endpoint `POST /api/grading/jobs/:id/review` và kiểm soát chặt các ràng buộc `BR-14`, `BR-15`, `BR-16`.
+- **Thành viên 4 (Frontend UI/UX):** Xây dựng bảng điều khiển duyệt điểm trên `Job Details Modal`: hiển thị kết quả AI chấm, bộ nút bấm Approve / Reject, form nhập ý kiến nhận xét của Giảng viên, cập nhật tức thì badge trạng thái.
+- **Thành viên 5 (QA & Demo):** Viết kịch bản kiểm thử API/UI cho tính năng duyệt điểm, phân vai kịch bản demo trực tiếp trước Hội đồng chấm thi.
 
 ---
 
-### 👤 THÀNH VIÊN 3: Data Architect & Scoring Engine (Database, Matching & Scoring)
-*Trách nhiệm chính: Quản trị cấu trúc dữ liệu, thuật toán gom email sinh viên và công thức tính điểm đóng góp.*
-
-- **Milestone 2 (Tuần 3–5 - Trọng số 20%):**
-  - Quản trị toàn bộ 10 bảng Prisma Schema: Duy trì quan hệ khóa ngoại (FK), Transaction Integrity và chuẩn hóa 3NF để chuẩn bị cho buổi P2P Review chéo giữa các nhóm.
-  - Xây dựng file `seed.ts` nạp sẵn dữ liệu mẫu (Users, Classes, Teams, Submissions) phục vụ dev và test nội bộ.
-  - Xây dựng API đọc/ghi `system_settings` (`worker_concurrency`, `free_riding_threshold`).
-
-- **Milestone 3 (Tuần 6–8 - Trọng số 25%):**
-  - **Thuật Toán Author Matching Đa Email:**
-    - Bóc tách và so khớp tác giả Git với `users.id` dựa trên cả email trường (`@fpt.edu.vn`), email cá nhân (`@gmail.com`) lưu trong `gitEmails` và `githubUsername`.
-    - Đảm bảo 100% sinh viên dùng email cá nhân vẫn được tính điểm chính xác, không bị bỏ sót.
-  - **Weighted Metric Calculator (Bộ tính điểm đóng góp):**
-    - Áp dụng công thức chuẩn của môn học:
-      $$\text{contributionPercentage} = 40\% \times \text{locShare} + 40\% \times \text{commitShare} + 20\% \text{prShare} \quad (\text{BR-11})$$
-    - Xử lý triệt để ngoại lệ chia cho 0 nếu cả nhóm chưa có hoạt động nào (`13.1.E1`).
-  - **Free-Rider Auto-Detection Job:**
-    - Đọc ngưỡng cấu hình từ `system_settings` (mặc định 5%, dải 1%–20% theo `BR-12`).
-    - So sánh tỷ lệ đóng góp của từng thành viên, tự động kích hoạt cờ `isFreeRiding = true` và lưu vào bảng `member_contributions`.
-
-- **Final Defense (Tuần 9–10 - Trọng số 40%):**
-  - **Tối ưu hóa Database Indexes & Redis Caching (< 100ms):**
-    - Đánh Index trên các cột tìm kiếm thường xuyên: `grading_jobs(batchId, status)` và `git_commits(repoId, authorEmail)`.
-    - Cache Redis cho API Telemetry và Báo cáo đóng góp để đảm bảo độ trễ phản hồi client đạt chuẩn dưới 100ms theo tiêu chí chấm điểm cuối kỳ.
+## 📋 3. Chi Tiết Kế Hoạch Hành Động Cho Từng Thành Viên
 
 ---
 
-### 👤 THÀNH VIÊN 4: Frontend Engineer - Batch Grading UI (Web React/Vite)
-*Trách nhiệm chính: Xây dựng giao diện trực quan, mượt mà cho phần điều phối chấm bài và giám sát hàng đợi.*
+### 👤 THÀNH VIÊN 1: Queue & Concurrency Engineer
+*(Đã hoàn thành phần lớn khối lượng Milestone 2 & Tiếp tục tối ưu hóa tải)*
 
-- **Milestone 2 (Tuần 3–5 - Trọng số 20%):**
-  - Xây dựng màn hình **Submissions List** (Trang 28):
-    - Bộ lọc theo Lớp, Trạng thái (Not graded, Completed, Failed), ô tìm kiếm sinh viên/tiêu đề.
-    - Bảng danh sách bài nộp có checkbox chọn nhiều dòng, nút "Start grading".
-  - Xây dựng **Batch Config Modal** (Trang 30):
-    - Nhập tên đợt chấm, chọn độ ưu tiên (Exam, Assignment, Practice).
-    - Validate ràng buộc tối đa 3 đợt chấm đồng thời (`BR-02`), điều hướng sang Dashboard.
-  - Xây dựng **Queue Monitor Dashboard** (Trang 31):
-    - Bộ 4 thẻ chỉ số (Metric Cards): `Waiting`, `Active`, `Completed`, `Failed`.
-    - Cơ chế **Auto-refresh mỗi 2 giây** gọi API Telemetry (`BR-03`).
-    - Bảng hiển thị từng Job ID, trạng thái và số lần retry.
-
-- **Milestone 3 (Tuần 6–8 - Trọng số 25%):**
-  - Xây dựng **Job Details Modal** (Trang 33): Xem chi tiết thời gian chạy `runtimeDurationMs`, số lần thử lại, phân loại lỗi và crash stack trace.
-  - Xây dựng màn hình & Modal **Dead-Letter Queue (DLQ)** (Trang 34, 35, 36):
-    - Bảng danh sách các job bị dead.
-    - Modal xem chi tiết nguyên nhân lỗi DLQ.
-    - Nút "Trigger manual retry" (mở modal chọn lại priority và reset retryCount về 0 theo `BR-06`).
-    - Nút "Dismiss job" để đóng job lỗi vĩnh viễn.
-  - Xây dựng **Worker Concurrency Modal** (Trang 44): Giao diện cho Admin điều chỉnh số lượng worker (1–10).
-
-- **Final Defense (Tuần 9–10 - Trọng số 40%):**
-  - Kiểm thử trải nghiệm người dùng (UX/UI): Đảm bảo giao diện không giật lag khi hiển thị 100+ jobs cùng lúc.
-  - Cố định lỗi giao diện (Defects) nếu có trong đợt thi UAT chéo với nhóm đối thủ.
+- **Trách nhiệm chính:** Quản trị hàng đợi BullMQ, Worker Daemon, cơ chế chịu lỗi và giám sát hiệu năng.
+- **Danh sách nhiệm vụ đã bàn giao:**
+  - [x] Cấu hình BullMQ Queue `grading-queue` kết nối Redis với cơ chế fallback in-memory an toàn.
+  - [x] Lập trình gán độ ưu tiên: `Exam (100) > Assignment (50) > Practice (10)` (`BR-01`).
+  - [x] Lập trình kiểm soát giới hạn tối đa 3 đợt chấm đồng thời trên mỗi lớp (`BR-02`).
+  - [x] Lập trình Mock Execution Dispatcher giả lập thời gian chạy và kết quả test cases.
+  - [x] Lập trình cơ chế Exponential Backoff tự động retry 3 lần với thời gian chờ 2s, 4s, 8s (`BR-04`, `BR-05`).
+  - [x] Lập trình Dead-Letter Queue (DLQ) lưu trữ `status = 'dead'`, mã lỗi và stack trace.
+  - [x] Lập trình API `GET /api/grading/telemetry` phục vụ polling nhịp tim 2 giây (`BR-03`).
+  - [x] Lập trình Dynamic Worker Concurrency cho phép đổi số worker chạy song song từ 1 đến 10 (`BR-07`).
+- **Kế hoạch giai đoạn tới (Milestone 3 & Final Defense):**
+  - **Stress Testing với k6:** Viết kịch bản nạp tải 100 requests đồng thời vào hàng đợi Redis để đo đạc độ trễ và thông lượng.
+  - Tối ưu hóa cấu hình hàng đợi BullMQ (`lockDuration`, `stalledInterval`) đảm bảo hệ thống không bao giờ bị nghẽn trong các bài test đánh giá chéo (P2P Testing).
 
 ---
 
-### 👤 THÀNH VIÊN 5: Frontend Engineer - Git UI & QA Lead (Web React/Vite & Kiểm Thử)
-*Trách nhiệm chính: Xây dựng giao diện báo cáo đóng góp, chủ trì bộ kiểm thử Unit Test $\ge 80\%$ và demo chung kết.*
+### 👤 THÀNH VIÊN 2: Git Engine & Heuristics Lead
+*(Đã hoàn thành phần lớn khối lượng Milestone 2 & Tiếp tục hoàn thiện phân tích)*
 
-- **Milestone 2 (Tuần 3–5 - Trọng số 20%):**
-  - Xây dựng màn hình **Git Repo Submission** (Trang 37): Form nhập link repo GitHub, nhánh phân tích (mặc định "main"), nút bật toggle Private/Public.
-  - Xây dựng **PAT Auth Modal** (Trang 38): Form nhập Personal Access Token an toàn (ẩn ký tự, thông báo quyền `repo:read`).
-  - Xây dựng **Analysis Progress Screen** (Trang 39): Màn hình Stepper 4 bước sinh động: *Cloning -> Parsing commits -> Filtering noise -> Scoring*.
-
-- **Milestone 3 (Tuần 6–8 - Trọng số 25%):**
-  - Xây dựng **Team Contribution Report** (Trang 40):
-    - Biểu đồ phân bổ tỷ lệ % đóng góp trực quan giữa các thành viên.
-    - Bảng danh sách thành viên, số lượng PR, % đóng góp thực tế.
-    - **Badge cảnh báo đỏ "Free-riding"** nổi bật cho những ai bị dưới ngưỡng.
-    - Phân quyền: Giảng viên xem tất cả nhóm; Sinh viên chỉ xem nhóm của mình.
-  - Xây dựng các Modal chuyên sâu (Trang 41, 42, 45):
-    - **Member Details Modal**: Biểu đồ cột thể hiện tần suất commit theo ngày, bảng thống kê lines added/deleted, tổng net lines.
-    - **Flagged Commits Modal**: Bảng liệt kê chi tiết các commit gian lận bị bắt (email, ngày commit, lý do).
-    - **Free-Riding Threshold Modal**: Giao diện cho Admin cấu hình ngưỡng (1%–20%).
-  - **Chủ trì kiểm thử chất lượng (Yêu cầu bắt buộc Milestone 3):**
-    - Cấu hình **Vitest / Jest** và viết bộ **Unit Test đạt độ bao phủ $\ge 80\%$** cho toàn bộ hàm tính toán nghiệp vụ (Backoff delay, Noise filter, Heuristic regex, Scoring formula).
-
-- **Final Defense (Tuần 9–10 - Trọng số 40% - Tổng Đạo Diễn Demo):**
-  - Chuẩn bị slide báo cáo thuyết trình kiến trúc trước Hội đồng.
-  - Chuẩn bị sẵn kịch bản Demo trực tiếp trên máy chiếu:
-    1. Demo 1: Bấm chấm bài thi -> Hàng đợi BullMQ phân luồng ưu tiên mượt mà.
-    2. Demo 2: Nộp repo có commit sửa khoảng trắng -> Hệ thống bắt quả tang trong Flagged Commits Modal.
-    3. Demo 3: Hiển thị báo cáo nhóm -> Bật cờ đỏ cảnh báo sinh viên Free-Rider.
-  - Biên soạn tài liệu Hướng Dẫn Sử Dụng (User Manual) đầy đủ để nộp kèm mã nguồn cuối kỳ.
+- **Trách nhiệm chính:** Pipeline xử lý kho Git an toàn, bộ lọc nhiễu và thuật toán phát hiện gian lận commit.
+- **Danh sách nhiệm vụ đã bàn giao:**
+  - [x] Mã hóa mật khẩu/token GitHub PAT bằng thuật toán **AES-256-CBC** trước khi lưu trữ (`BR-08`).
+  - [x] Kiểm tra ràng buộc mỗi nhóm chỉ có tối đa 1 phân tích repo đang chạy (`BR-09`).
+  - [x] Thiết lập dịch vụ `EphemeralBareCloner`: clone bare vào thư mục tạm `scratch/clones/` và tự động dọn sạch sau khi xử lý xong (`UC-07`).
+  - [x] Tích hợp Git CLI trích xuất commit hashes, tác giả, ngày giờ, số dòng thêm/xóa (`UC-08`).
+  - [x] Viết bộ lọc loại bỏ toàn bộ file sinh tự động (`node_modules`, `dist`, `package-lock.json`...) để bảo toàn LOC sạch (`BR-13`).
+  - [x] Xây dựng thuật toán bắt gian lận commit **Whitespace-only** (sửa khoảng trắng để farm LOC) (`BR-10`).
+  - [x] Xây dựng thuật toán bắt gian lận commit **Self-revert** (tác giả tự hủy commit của chính mình) (`BR-10`).
+  - [x] Kết nối GitHub REST API đếm chính xác số lượng Pull Requests của từng thành viên (`UC-09`).
+- **Kế hoạch giai đoạn tới (Milestone 3 & Final Defense):**
+  - Chuẩn bị 1 repository Git mẫu đặc biệt chứa đầy đủ các chiêu trò gian lận (whitespace farming, self-revert) phục vụ buổi demo trực tiếp trước Hội đồng.
+  - Tối ưu hóa thời gian thực thi lệnh Git CLI đối với các repository có lịch sử commit lớn.
 
 ---
 
-## 3. Lộ Trình 4 Cột Mốc Thời Gian (Gantt Chart)
+### 👤 THÀNH VIÊN 3: Data Architect & Scoring Engine (Kế hoạch hành động cụ thể)
+
+- **Vai trò:** Quản trị cấu trúc dữ liệu, thuật toán ánh xạ sinh viên, công thức tính điểm đóng góp và Backend cho nghiệp vụ Giảng viên duyệt điểm.
+- **Kế hoạch công việc chi tiết:**
+
+#### Task 3.1: Quản trị Cơ sở Dữ liệu Prisma ORM (12 Bảng Chuẩn Hóa 3NF)
+- Quản trị file `packages/database/prisma/schema.prisma` đảm bảo toàn vẹn quan hệ khóa ngoại (Foreign Keys), Index và Unique constraints.
+- Đảm bảo 12 bảng đáp ứng chuẩn hóa 3NF:
+  1. `users`: Thông tin người dùng cốt lõi.
+  2. `user_git_emails`: Chuẩn hóa 1NF cho mảng email tác giả Git.
+  3. `classes`: Lớp học do giảng viên quản lý.
+  4. `teams`: Nhóm dự án của sinh viên trong lớp.
+  5. `team_members`: Bảng liên kết nhiều-nhiều (N-N) giữa Users và Teams.
+  6. `submissions`: Bài nộp của sinh viên.
+  7. `grading_batches`: Đợt chấm bài theo lớp.
+  8. `grading_jobs`: Tác vụ chấm trong hàng đợi BullMQ.
+  9. `git_repos`: Kho Git được nộp để phân tích.
+  10. `git_commits`: Chi tiết từng commit bóc tách từ kho Git.
+  11. `member_contributions`: Điểm số đóng góp và cờ cảnh báo Free-Rider.
+  12. `system_settings`: Cấu hình hệ thống toàn cục.
+- Viết file `seed.ts` hoàn chỉnh: Khởi tạo sẵn tài khoản Giảng viên, Sinh viên, Lớp học, Nhóm, Bài nộp mẫu phục vụ việc chạy thử nghiệm mượt mà.
+
+#### Task 3.2: Triển Khai Backend Tính Năng Giảng Viên Duyệt Điểm AI (`UC-04b`)
+- Cập nhật bảng `grading_jobs` trong `schema.prisma`:
+  - Thêm cột `reviewStatus`: Kiểu String, mặc định `'pending'` (`'pending'` | `'approved'` | `'rejected'`).
+  - Thêm cột `reviewedBy`: Khóa ngoại liên kết tới `users.id` (Giảng viên thực hiện duyệt).
+  - Thêm cột `reviewedAt`: Thời điểm giảng viên phê duyệt.
+  - Thêm cột `reviewComment`: Nhận xét hoặc lý do từ chối của giảng viên.
+- Xây dựng API `POST /api/grading/jobs/:id/review`:
+  - Kiểm tra điều kiện `BR-14`: Job phải có `status === 'completed'`. Nếu chưa hoàn thành chấm, trả về mã lỗi HTTP 400 `BR_14_JOB_NOT_COMPLETED`.
+  - Kiểm tra điều kiện `BR-15`: Quyết định gửi lên phải là `'approved'` hoặc `'rejected'`. Nếu sai, trả về HTTP 400 `BR_15_INVALID_STATUS`.
+  - Kiểm tra điều kiện `BR-16`: Xác thực người thực hiện có quyền Giảng viên của lớp chứa bài nộp.
+  - Cập nhật cơ sở dữ liệu và trả về kết quả thẩm định mới nhất cho giao diện.
+
+#### Task 3.3: Thuật Toán Ánh Xạ Tác Giả Git Đa Email (Author Matching Engine)
+- Sinh viên FPT thường commit bằng email cá nhân (`@gmail.com`) trong khi tài khoản trường là `@fpt.edu.vn`.
+- Lập trình module ánh xạ tự động:
+  - Quét email tác giả trong commit đối chiếu với bảng `user_git_emails`.
+  - Đối chiếu `githubUsername` với tài khoản GitHub đã đăng ký.
+  - Gán chính xác `userId` vào bảng `git_commits`, đảm bảo không bỏ sót bất kỳ đóng góp nào của sinh viên.
+
+#### Task 3.4: Bộ Tính Điểm Đóng Góp 40/40/20 & Tự Động Bắt Free-Rider
+- Áp dụng công thức tính tỷ lệ đóng góp chuẩn xác theo `BR-11`:
+  $$\text{contributionPercentage} = 40\% \times \text{locShare} + 40\% \times \text{commitShare} + 20\% \times \text{prShare}$$
+- Xử lý triệt để ngoại lệ chia cho 0 nếu cả nhóm chưa có hoạt động nào (`13.1.E1`).
+- Đọc ngưỡng cấu hình từ `system_settings` (mặc định 5%, dải 1% - 20% theo `BR-12`).
+- Tự động gắn cờ `isFreeRiding = true` vào bảng `member_contributions` nếu sinh viên đạt tỷ lệ dưới ngưỡng.
+
+#### Task 3.5: Quản Trị Cài Đặt Hệ Thống & Tối Ưu Hiệu Năng
+- Cung cấp API đọc/ghi cài đặt hệ thống: `GET /api/system/settings` và `PATCH /api/system/settings`.
+- Đánh Index trên các cột truy vấn thường xuyên: `grading_jobs(batchId, status)` và `git_commits(repoId, authorEmail)`.
+- Cấu hình Redis Cache cho các dữ liệu thống kê, đảm bảo thời gian phản hồi API dưới 100ms.
+
+---
+
+### 👤 THÀNH VIÊN 4: Frontend Engineer - Batch Grading, Queue & Review UI (Kế hoạch hành động cụ thể)
+
+- **Vai trò:** Xây dựng toàn bộ giao diện quản trị chấm bài hàng loạt, giám sát hàng đợi thời gian thực và Giao diện Giảng viên duyệt điểm AI.
+- **Kế hoạch công việc chi tiết:**
+
+#### Task 4.1: Màn Hình Quản Lý Bài Nộp (`Submissions List`)
+- Bảng danh sách bài nộp có phân trang, hỗ trợ bộ lọc:
+  - Lọc theo Lớp học (`Class`).
+  - Lọc theo Trạng thái chấm (`Not graded`, `Completed`, `Failed`).
+  - Ô tìm kiếm theo tên sinh viên hoặc tiêu đề bài tập.
+- Checkbox chọn từng dòng hoặc chọn tất cả các bài nộp.
+- Nút bấm hành động nổi bật: "Bắt đầu chấm đợt bài đã chọn" (Start Grading).
+
+#### Task 4.2: Modal Cấu Hình Đợt Chấm (`Batch Config Modal`)
+- Form nhập:
+  - Tên đợt chấm (`batchName`).
+  - Chọn độ ưu tiên: `Exam (Cao nhất)`, `Assignment (Trung bình)`, `Practice (Thấp)`.
+  - Hiển thị số lượng bài nộp đã chọn.
+- Kiểm tra ràng buộc `BR-02` (tối đa 3 đợt chấm đang chạy đồng thời trên mỗi lớp). Hiển thị cảnh báo trực quan nếu vượt ngưỡng.
+- Tự động điều hướng sang màn hình Dashboard Giám sát sau khi bấm tạo thành công.
+
+#### Task 4.3: Dashboard Giám Sát Hàng Đợi Thời Gian Thực (`Queue Monitor Dashboard`)
+- Bộ 4 thẻ chỉ số tổng quan (Metric Cards) hiển thị sinh động:
+  - `Waiting` (Chờ xử lý - Vàng)
+  - `Active` (Đang chấm - Xanh dương)
+  - `Completed` (Đã hoàn thành - Xanh lá)
+  - `Failed` (Lỗi / Thất bại - Đỏ)
+- Cơ chế **Auto-refresh mỗi 2 giây** gọi API Telemetry (`BR-03`) với hiệu ứng nhịp tim Live Heartbeat.
+- Bảng danh sách Jobs chi tiết: Hiển thị ID bài nộp, tên sinh viên, độ ưu tiên, trạng thái, số lần thử lại (`retryCount`).
+
+#### Task 4.4: Modal Chi Tiết Job & Giao Diện Giảng Viên Duyệt Điểm AI (`UC-04b`)
+- Hiển thị thông số kỹ thuật của Job:
+  - Thời gian thực thi `runtimeDurationMs`.
+  - Số lần thử lại (1/3, 2/3, 3/3).
+  - Phân loại lỗi và khung hiển thị crash stack trace (nếu bị lỗi).
+- **Khu Vực Giảng Viên Duyệt Điểm (Human-in-the-Loop Review Panel):**
+  - Hiển thị Badge trạng thái duyệt hiện tại:
+    - `Pending Review` (Chờ duyệt - Huy hiệu màu cam/vàng).
+    - `Approved` (Đã duyệt - Huy hiệu màu xanh lá).
+    - `Rejected` (Từ chối - Huy hiệu màu đỏ).
+  - Khung xem kết quả AI chấm (Điểm dự kiến, tóm tắt test cases passed).
+  - Khung nhập nhận xét của Giảng viên (`Lecturer Review Comment / Feedback`).
+  - Hai nút hành động:
+    - Nút **"Phê Duyệt (Approve)"**: Xác nhận kết quả chấm của AI, chuyển trạng thái sang `approved`.
+    - Nút **"Từ Chối (Reject)"**: Bác bỏ kết quả chấm, chuyển trạng thái sang `rejected`, yêu cầu chấm lại.
+  - Vô hiệu hóa nút bấm nếu Job chưa hoàn thành (`status !== 'completed'`) theo đúng quy tắc `BR-14`.
+
+#### Task 4.5: Màn Hình Quản Lý Hàng Đợi Chết (`Dead-Letter Queue - DLQ`)
+- Bảng danh sách các job bị dừng vĩnh viễn (`status = 'dead'`).
+- Xem chi tiết nguyên nhân lỗi dẫn tới việc đưa vào DLQ.
+- Nút **"Manual Retry"**: Mở modal cho phép chọn lại độ ưu tiên và reset số lần thử lại về 0 theo `BR-06`.
+- Nút **"Dismiss Job"**: Xác nhận đóng và loại bỏ job lỗi khỏi danh sách chờ xử lý.
+
+#### Task 4.6: Modal Cài Đặt Concurrency Worker Cho Quản Trị Viên
+- Màn hình/Modal cho phép Admin điều chỉnh số lượng worker chạy song song (thanh trượt từ 1 đến 10 worker).
+- Tích hợp gọi API cập nhật tức thì vào runtime của hệ thống (`BR-07`).
+
+---
+
+### 👤 THÀNH VIÊN 5: Frontend Engineer - Git UI & QA/Testing Lead (Kế hoạch hành động cụ thể)
+
+- **Vai trò:** Xây dựng toàn bộ giao diện phân tích kho Git, hiển thị biểu đồ đóng góp nhóm, chủ trì kiểm thử hệ thống (Unit Test & API Test) và đạo diễn buổi demo trước Hội đồng.
+- **Kế hoạch công việc chi tiết:**
+
+#### Task 5.1: Giao Diện Nộp Kho Git (`Git Repo Submission Screen`)
+- Form nhập:
+  - Chọn Nhóm sinh viên (`Team`).
+  - Nhập URL repository GitHub (`https://github.com/owner/repo`).
+  - Nhánh phân tích (mặc định là `"main"`).
+- Nút Toggle chuyển đổi giữa Public Repo và Private Repo:
+  - Nếu chọn Private: Mở **PAT Auth Modal** cho phép người dùng nhập GitHub Personal Access Token an toàn (trường password che dấu ký tự, thông báo rõ chỉ cần quyền tối thiểu `repo:read`).
+
+#### Task 5.2: Màn Hình Tiến Trình Phân Tích Kho Git (`Analysis Progress Screen`)
+- Màn hình hiển thị Stepper 4 bước sinh động theo thời gian thực:
+  - *Bước 1: Cloning repository (Bare clone sandbox cách ly).*
+  - *Bước 2: Parsing commits (Bóc tách lịch sử commit bằng Git CLI).*
+  - *Bước 3: Filtering noise (Lọc sạch các file thư viện và rác sinh tự động).*
+  - *Bước 4: Scoring & Heuristics (Tính điểm đóng góp và quét gian lận).*
+- Tự động kiểm tra trạng thái và chuyển tiếp mượt mà sang Màn hình Báo cáo khi hoàn tất.
+
+#### Task 5.3: Màn Hình Báo Cáo Đóng Góp Nhóm (`Team Contribution Report`)
+- Biểu đồ phân bổ tỷ lệ % đóng góp trực quan giữa các thành viên trong nhóm.
+- Bảng tổng hợp số liệu chi tiết:
+  - Tên sinh viên & Avatar.
+  - Số lượng Commit hợp lệ.
+  - Số lượng Dòng code ròng (Net LOC = Lines Added - Lines Deleted).
+  - Số lượng Pull Request đã tạo/merge.
+  - Tỷ lệ phần trăm đóng góp thực tế theo công thức $40/40/20$.
+  - **Huy hiệu cảnh báo đỏ nổi bật "Free-Riding"** đối với thành viên có mức đóng góp dưới ngưỡng quy định.
+- Phân quyền giao diện: Giảng viên xem được báo cáo của toàn bộ các nhóm; Sinh viên chỉ xem được báo cáo nhóm của mình.
+
+#### Task 5.4: Các Modal Phân Tích Chuyên Sâu & Cấu Hình Ngưỡng
+- **Member Details Modal:**
+  - Biểu đồ cột thể hiện tần suất commit theo từng ngày trong suốt thời gian làm bài.
+  - Bảng chi tiết từng commit: Mã hash, ngày giờ, số dòng thêm/xóa.
+- **Flagged Commits Modal (Bắt gian lận commit):**
+  - Danh sách các commit bị hệ thống phát hiện hành vi bất thường.
+  - Hiển thị rõ lý do: `Whitespace-only` (chỉ sửa dấu cách/format mã nguồn) hoặc `Self-revert` (tự đảo ngược commit của chính mình).
+- **Free-Riding Threshold Modal:**
+  - Giao diện dành riêng cho Admin điều chỉnh ngưỡng phát hiện thành viên lười biếng (từ 1% đến 20%, mặc định 5%).
+
+#### Task 5.5: QA & Testing Lead (Đảm bảo điểm số tối đa cho đồ án SWP391)
+- **Xây dựng bộ Unit Test tự động (Vitest / Jest):**
+  - Viết Unit Test cho toàn bộ các hàm nghiệp vụ cốt lõi:
+    - Công thức Exponential Backoff delay ($2^{\text{retryCount}}$).
+    - Bộ lọc đường dẫn loại bỏ file rác (`node_modules/`, `dist/`...).
+    - Biểu thức chính quy (Regex) và logic Heuristic phát hiện commit gian lận.
+    - Công thức tính điểm đóng góp $40/40/20$ và xử lý ngoại lệ chia cho 0.
+    - Logic thẩm định Giảng viên duyệt điểm (`BR-14`, `BR-15`, `BR-16`).
+  - **Cam kết đạt độ bao phủ kiểm thử (Code Coverage) >= 80%** (Tiêu chí bắt buộc của môn học).
+- **Kịch bản kiểm thử API (Postman / REST Client):**
+  - Soạn sẵn Collection kiểm thử toàn diện các mã lỗi HTTP (400, 401, 403, 404, 500) và các Business Rules từ `BR-01` đến `BR-16`.
+- **Tổng đạo diễn buổi Demo bảo vệ trước Hội đồng chấm thi:**
+  - Chuẩn bị sẵn 3 kịch bản Demo trực tiếp trên máy chiếu:
+    1. *Kịch bản 1:* Nạp bài nộp đồng loạt -> Hàng đợi BullMQ xử lý ưu tiên Bài thi (Exam) trước Bài tập (Assignment) -> Giảng viên mở modal kiểm tra kết quả AI và bấm "Approve".
+    2. *Kịch bản 2:* Giả lập lỗi chấm thi -> Hệ thống tự động retry 3 lần theo khoảng cách 2s, 4s, 8s -> Job chuyển vào DLQ -> Thao tác "Manual Replay" đưa job quay lại hàng đợi.
+    3. *Kịch bản 3:* Nộp link repository Git có commit sửa khoảng trắng -> Hệ thống quét ra cờ `isSuspicious = true` -> Hiển thị cảnh báo sinh viên Free-Rider trên biểu đồ đóng góp.
+  - Hoàn thiện Slide thuyết trình kiến trúc hệ thống và Tài liệu Hướng Dẫn Sử Dụng (User Manual).
+
+---
+
+## 📊 4. Ma Trận Trách Nhiệm Chi Tiết (RACI Matrix)
+
+*Ghi chú: **R** (Responsible - Người trực tiếp làm), **A** (Accountable - Người chịu trách nhiệm chính), **C** (Consulted - Người được tham vấn/hỗ trợ), **I** (Informed - Người nhận thông báo/kết quả)*
+
+| Hạng Mục Nhiệm Vụ | TV1 (Linh)<br>Queue Lead | TV2 (Vy)<br>Git Lead | TV3 (Nghĩa)<br>Data/Scoring | TV4 (Việt Anh)<br>Grading UI | TV5 (Mai)<br>Git UI & QA |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **BullMQ Worker & Mock Dispatcher** | **R / A** | I | C | I | I |
+| **Priority Queue & Concurrency Slider** | **R / A** | I | C | R *(UI)* | I |
+| **Exponential Backoff & DLQ Replay** | **R / A** | I | C | R *(UI)* | C *(Test)* |
+| **Bare Clone Sandbox & AES-256 PAT** | I | **R / A** | C | I | R *(UI)* |
+| **Commit Parser & Heuristics Detection** | I | **R / A** | C | I | R *(UI)* |
+| **Prisma Schema 12 Bảng & Seed Data** | C | C | **R / A** | I | I |
+| **Author Matching & Điểm 40/40/20** | I | C | **R / A** | I | R *(UI)* |
+| **Backend Giảng Viên Duyệt Điểm (`UC-04b`)** | I | I | **R / A** | C | C |
+| **Giao Diện Giảng Viên Duyệt Điểm (`UC-04b`)** | I | I | C | **R / A** | C *(Test)* |
+| **UI Giám Sát Hàng Đợi (Telemetry 2s)** | C | I | I | **R / A** | I |
+| **UI Báo Cáo Đóng Góp & Cờ Free-Rider** | I | C | C | I | **R / A** |
+| **Bộ Unit Test Coverage >= 80%** | C | C | C | C | **R / A** |
+| **Kịch Bản Demo & Slide Thuyết Trình** | C | C | C | C | **R / A** |
+
+---
+
+## 🗓️ 5. Lộ Trình Triển Khai Chi Tiết (Tuần 3 Đến Tuần 10)
 
 ```mermaid
 gantt
-    title Kế Hoạch 10 Tuần SWP391-RBL (Subsystem 5)
+    title Kế Hoạch 10 Tuần Nhóm 2 SWP391 - Phân Hệ 5
     dateFormat  YYYY-MM-DD
-    section Milestone 1 (15%)
-    Monorepo Setup, Prisma Schema 10 bảng, Git origin/main :done, 2026-09-15, 7d
-    P2P Review SRS & DB Schema, Thuyết trình Slide       :done, 2026-09-22, 5d
-    section Milestone 2 (20%)
-    Thành viên 1: BullMQ Core, Priority, Retry & DLQ     :active, 2026-09-27, 10d
-    Thành viên 4: UI Submissions List, Batch Config & Queue Monitor :active, 2026-09-27, 10d
-    P2P Testing: Chống treo hàng đợi trước bài test nhóm bạn :2026-10-07, 4d
-    section Milestone 3 (25%)
-    Thành viên 2: Git Bare Clone, Diff Parser, Heuristics :2026-10-11, 10d
-    Thành viên 3: Multi-Email Matching, Scoring Formula  :2026-10-11, 10d
-    Thành viên 5: UI Git Analytics, Báo cáo Free-Rider    :2026-10-11, 10d
-    Thành viên 3 & 5: Viết Unit Test độ phủ >= 80%        :2026-10-18, 5d
-    P2P UAT & Nghiệm thu hệ thống chạy thực tế            :2026-10-23, 4d
-    section Final Defense (40%)
-    Thành viên 1 & 3: Stress Testing k6 100 requests & Cache <100ms :2026-10-27, 5d
-    Cả nhóm: Chuẩn bị 3 kịch bản Demo, Slide & Bảo vệ Hội đồng      :2026-11-01, 6d
+    section Milestone 2 (Tuần 3 - 5: 20%)
+    TV1: BullMQ Core, Priority, Retry & DLQ Backend       :done, 2026-09-25, 8d
+    TV2: Bare Clone Sandbox, AES-256 PAT, Noise Filter     :done, 2026-09-25, 8d
+    TV3: Schema 12 bảng, Migration, API Review Backend     :active, 2026-10-03, 7d
+    TV4: UI Submissions List, Batch Modal, Review UI       :active, 2026-10-03, 7d
+    TV5: UI Git Submission, Stepper 4 bước, Kịch bản test :active, 2026-10-03, 7d
+    section Milestone 3 (Tuần 6 - 8: 25%)
+    TV3: Thuật toán Matching, Tính điểm 40/40/20, Free-Rider :2026-10-10, 10d
+    TV4: Hoàn thiện DLQ UI, Dynamic Concurrency Modal       :2026-10-10, 10d
+    TV5: UI Báo cáo nhóm, Flagged Commits, Unit Test >=80%   :2026-10-10, 10d
+    Cả nhóm: Chạy thử nghiệm liên thông toàn hệ thống        :2026-10-20, 5d
+    section Final Defense (Tuần 9 - 10: 40%)
+    TV1 & TV3: Stress testing k6 100 requests & Cache <100ms :2026-10-25, 5d
+    TV4 & TV5: Tinh chỉnh responsive UX, Hoàn thiện tài liệu :2026-10-25, 5d
+    TV5 & Cả nhóm: Tập dượt 3 kịch bản Demo trước Hội đồng  :2026-10-30, 6d
 ```
 
 ---
 
-## 4. Bảng Checklist Tự Đánh Giá Chéo (P2P Checklist Cho Cả Nhóm)
+## ✅ 6. Bảng Tiêu Chí Nghiệm Thu Đồ Án (P2P Checklist Cho Cả Nhóm)
 
-Trước mỗi buổi review hoặc nộp bài, 5 bạn hãy dùng bảng này để kiểm tra chéo lẫn nhau:
+Trước khi nộp bài hoặc bước vào các buổi đánh giá chéo giữa các nhóm, cả 5 bạn cần kiểm tra lần lượt các tiêu chí sau:
 
-- [ ] **Code Quality:** Không còn warning/error TypeScript, chạy `npm run build` ở root thành công 100%.
-- [ ] **Git Contribution:** Cả 5 thành viên đều có commits và PRs trên GitHub theo đúng nhánh tính năng cá nhân.
-- [ ] **Business Rules:** Đã tuân thủ đủ 13 Business Rules (`BR-01` đến `BR-13`) đã định nghĩa trong `packages/shared`.
-- [ ] **Test Coverage:** Lệnh test chạy xanh và độ bao phủ đạt tối thiểu 80%.
-- [ ] **Demo Data:** Các kịch bản demo (Job ưu tiên, commit gian lận, sinh viên Free-rider) đã được nạp sẵn và hoạt động trơn tru.
+- [ ] **1. Chuẩn Hóa Mã Nguồn:** Chạy lệnh `npm run build` tại thư mục gốc thành công 100%, không còn bất kỳ cảnh báo hoặc lỗi TypeScript nào.
+- [ ] **2. Cơ Sở Dữ Liệu:** Đủ 12 bảng trong `packages/database/prisma/schema.prisma`, lệnh `npm run db:seed` nạp dữ liệu mẫu không phát sinh lỗi.
+- [ ] **3. Phân Hệ Hàng Đợi (Queue):**
+  - Tạo đợt chấm bài gán đúng độ ưu tiên `Exam (100) > Assignment (50) > Practice (10)`.
+  - Giới hạn tối đa 3 đợt chấm đồng thời trên mỗi lớp hoạt động chính xác (`BR-02`).
+  - Khi gặp lỗi giả lập, hệ thống tự động retry 3 lần sau 2s, 4s, 8s trước khi đưa vào DLQ.
+  - Tính năng Replay DLQ reset số lần retry về 0 và đẩy job quay lại trạng thái chờ.
+  - Thanh trượt điều chỉnh Concurrency hoạt động tức thì từ 1 đến 10 worker.
+- [ ] **4. Nghiệp Vụ Giảng Viên Duyệt Điểm AI (`UC-04b`):**
+  - Bài nộp sau khi AI chấm xong ở trạng thái `Pending Review`.
+  - Giảng viên xem được đầy đủ chi tiết điểm số, test cases và nhật ký thực thi.
+  - Nút bấm `Approve` và `Reject` hoạt động mượt mà, lưu đúng nhận xét và người duyệt vào cơ sở dữ liệu.
+- [ ] **5. Phân Tích Kho Git & Bắt Gian Lận:**
+  - Token GitHub PAT được mã hóa AES-256 an toàn trong cơ sở dữ liệu.
+  - Quá trình Bare Clone diễn ra trong thư mục tạm và tự động dọn sạch 100%.
+  - Bộ lọc loại trừ thành công các file rác sinh tự động (`node_modules/`, lock files...).
+  - Quét ra cờ cảnh báo `isSuspicious = true` đối với các commit chỉ sửa khoảng trắng hoặc tự revert.
+  - Công thức tính điểm $40/40/20$ tính toán chuẩn xác và kích hoạt cờ đỏ đối với sinh viên Free-Rider dưới ngưỡng.
+- [ ] **6. Chất Lượng Kiểm Thử & Demo:**
+  - Bộ Unit Test tự động (Vitest) chạy thành công với độ bao phủ đạt trên 80%.
+  - Chuẩn bị sẵn tài khoản, dữ liệu và thiết bị để trình diễn mượt mà 3 kịch bản demo trước Hội đồng.
