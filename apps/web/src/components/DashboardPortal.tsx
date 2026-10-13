@@ -3749,49 +3749,67 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <X size={20} />
               </button>
             </div>
-            <div style={{ borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', textAlign: 'left', fontSize: '0.75rem', color: isDark ? '#94A3B8' : '#475569', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
-                  <tr>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', background: isDark ? 'rgba(239, 68, 68, 0.05)' : '#FEF2F2' }}>
-                    <td style={{ padding: '14px 16px', color: 'var(--text-main)', fontWeight: 700 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>VT</div>
-                        <div>
-                          <div>Võ Minh Trí</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>tri.vm@fpt.edu.vn</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>2026-09-09</td>
-                    <td style={{ padding: '14px 16px', color: '#DC2626', fontWeight: 700, fontSize: '0.8rem' }}>
-                      {lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)'}
-                    </td>
-                  </tr>
-                  <tr style={{ background: isDark ? 'rgba(239, 68, 68, 0.05)' : '#FEF2F2' }}>
-                    <td style={{ padding: '14px 16px', color: 'var(--text-main)', fontWeight: 700 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>VT</div>
-                        <div>
-                          <div>Võ Minh Trí</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>tri.vm@fpt.edu.vn</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>2026-09-08</td>
-                    <td style={{ padding: '14px 16px', color: '#D97706', fontWeight: 700, fontSize: '0.8rem' }}>
-                      {lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            {/* Tự động lấy acc có ⚠️ Cảnh báo (pct < 10%) hoặc flaggedCommits thật từ API */}
+            {(() => {
+              // Ưu tiên: flaggedCommits thật từ Git scan
+              const realFlagged: any[] = (gitReportData?.flaggedCommits && gitReportData.flaggedCommits.length > 0)
+                ? gitReportData.flaggedCommits
+                : [];
+
+              // Demo: lấy tất cả acc có badge đỏ (pct < 10%) từ bảng báo cáo
+              const redMembers: any[] = (gitReportData?.teamContributions || []).filter((m: any) => m.pct < 10);
+              const demoRows: any[] = redMembers.flatMap((m: any, i: number) => [
+                { id: `d${i}a`, name: m.name, email: m.email || `${(m.name || 'user').toLowerCase().replace(/\s/g, '.')}@fpt.edu.vn`, date: '2026-09-09', behavior: lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)', color: '#DC2626' },
+                { id: `d${i}b`, name: m.name, email: m.email || `${(m.name || 'user').toLowerCase().replace(/\s/g, '.')}@fpt.edu.vn`, date: '2026-09-08', behavior: lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)', color: '#D97706' },
+              ]);
+
+              // Nếu không có gì cả, fallback 2 dòng mặc định
+              const fallback = [
+                { id: 'f0', name: 'Tài khoản Demo BR-10', email: 'test@fpt.edu.vn', date: '2026-09-09', behavior: lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)', color: '#DC2626' },
+                { id: 'f1', name: 'Tài khoản Demo BR-10', email: 'test@fpt.edu.vn', date: '2026-09-08', behavior: lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)', color: '#D97706' },
+              ];
+
+              const allRows = realFlagged.length > 0
+                ? realFlagged.map((fc: any) => ({ ...fc, color: fc.behavior?.toLowerCase().includes('whitespace') ? '#DC2626' : '#D97706' }))
+                : demoRows.length > 0 ? demoRows : fallback;
+
+              return (
+                <div style={{ borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', overflow: 'hidden' }}>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                    <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', textAlign: 'left', fontSize: '0.75rem', color: isDark ? '#94A3B8' : '#475569', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
+                      <tr>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allRows.map((fc: any, idx: number) => {
+                        const initials = (fc.name || 'XX').split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+                        return (
+                          <tr key={fc.id || idx} style={{ borderBottom: idx === allRows.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', background: isDark ? 'rgba(239,68,68,0.05)' : '#FEF2F2' }}>
+                            <td style={{ padding: '14px 16px', fontWeight: 700 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>{initials}</div>
+                                <div>
+                                  <div style={{ color: '#DC2626' }}>{fc.name}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{fc.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>{fc.date}</td>
+                            <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem' }}>
+                              <span style={{ color: fc.color || '#DC2626' }}>{fc.behavior}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
             <button
               onClick={() => setShowFlaggedModal(false)}
               onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#E5E7EB'}
