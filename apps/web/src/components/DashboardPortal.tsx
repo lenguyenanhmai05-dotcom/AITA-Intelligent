@@ -2659,7 +2659,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 {/* Legend */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
                   {(gitReportData?.teamContributions || []).map((m: any) => (
-                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: m.name.includes('Trí') ? '#DC2626' : 'var(--text-main)' }}>
+                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
                       <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: m.color }} />
                       {m.name} <span style={{ color: 'var(--text-muted)' }}>({Number(m.pct).toFixed(2)}%)</span>
                     </div>
@@ -2693,7 +2693,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       statusColor: m.pct >= 30 ? 'green' : (m.pct < 10 ? 'red' : 'gray')
                     })) : (gitAnalysisJobId ? [{name: (lang==='vi'?'Đang tải dữ liệu từ GitHub... (vui lòng chờ khoảng 30s)':'Loading data from GitHub... (please wait ~30s)'), initials: '...', commits: 0, prs: 0, loc: '...', pct: 0, status: '...', statusColor: 'gray', color: '#94A3B8'}] : [])).map((row: any, idx: number, arr: any[]) => (
                       <tr key={row.name} style={{ borderBottom: idx === arr.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '16px 20px', fontWeight: row.statusColor === 'red' ? 800 : 700, color: row.statusColor === 'red' ? '#DC2626' : 'var(--text-main)' }}>
+                        <td style={{ padding: '16px 20px', fontWeight: 700, color: 'var(--text-main)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: row.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                               {row.initials}
@@ -2705,8 +2705,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#F1F5F9' : '#334155', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.prs}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'right', color: row.color, fontWeight: 800, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.loc}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 900, color: row.color, fontFamily: 'monospace', fontSize: '1rem' }}>{row.pct.toFixed(1)}%</td>
-                        {currentRole !== 'student' && (
-<td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                           {row.statusColor === 'red' ? (
                             <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isDark ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', color: isDark ? '#FCA5A5' : '#DC2626', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid #FECACA', display: 'inline-block' }}>
                               {row.status}
@@ -2725,7 +2724,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             </span>
                           )}
                         </td>
-)}
                       </tr>
                     ))}
                   </tbody>
