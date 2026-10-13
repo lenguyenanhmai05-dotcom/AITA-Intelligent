@@ -2672,12 +2672,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                   <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
                     <tr>
-                      <th style={{ width: '28%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
-                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
-                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
-                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
-                      <th style={{ width: '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
-                      <th style={{ width: '18%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                      <th style={{ width: currentRole === 'student' ? '32%' : '28%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
+                      {currentRole !== 'student' && (
+                        <th style={{ width: '18%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -2705,25 +2707,27 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#F1F5F9' : '#334155', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.prs}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'right', color: row.color, fontWeight: 800, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.loc}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 900, color: row.color, fontFamily: 'monospace', fontSize: '1rem' }}>{row.pct.toFixed(1)}%</td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          {row.statusColor === 'red' ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isDark ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', color: isDark ? '#FCA5A5' : '#DC2626', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid #FECACA', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          ) : row.statusColor === 'blue' ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#DBEAFE', color: isDark ? '#93C5FD' : '#1D4ED8', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          ) : row.statusColor === 'green' ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: isDark ? '#4ADE80' : '#166534', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(156, 163, 175, 0.1)' : '#F1F5F9', color: 'var(--text-muted)', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(156, 163, 175, 0.2)' : '1px solid #E2E8F0', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          )}
-                        </td>
+                        {currentRole !== 'student' && (
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            {row.statusColor === 'red' ? (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isDark ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', color: isDark ? '#FCA5A5' : '#DC2626', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid #FECACA', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            ) : row.statusColor === 'blue' ? (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#DBEAFE', color: isDark ? '#93C5FD' : '#1D4ED8', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            ) : row.statusColor === 'green' ? (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: isDark ? '#4ADE80' : '#166534', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(156, 163, 175, 0.1)' : '#F1F5F9', color: 'var(--text-muted)', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(156, 163, 175, 0.2)' : '1px solid #E2E8F0', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
