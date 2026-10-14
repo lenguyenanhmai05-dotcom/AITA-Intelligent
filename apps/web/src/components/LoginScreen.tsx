@@ -566,18 +566,81 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
             {/* Error or Success Alert */}
             {authError && (
               <div style={{
-                background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
-                border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #FCA5A5',
-                color: isDark ? '#F87171' : '#B91C1C',
-                padding: '10px 14px',
-                borderRadius: '10px',
-                fontSize: '0.8rem',
+                background: isDark ? 'rgba(239, 68, 68, 0.14)' : '#FEF2F2',
+                border: isDark ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1.5px solid #FCA5A5',
+                color: isDark ? '#FCA5A5' : '#B91C1C',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                fontSize: '0.80rem',
                 marginBottom: '16px',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: '8px',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)',
+                lineHeight: 1.5,
               }}>
-                <span>⚠️ {authError}</span>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                  <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+                  <span style={{ fontWeight: 600 }}>{authError}</span>
+                </div>
+
+                {/* Quick button to switch to Lecturer if role mismatch */}
+                {(authError.includes('Giảng viên') || authError.includes('Lecturer')) && selectedRole !== 'lecturer' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('lecturer');
+                      setAuthError(null);
+                    }}
+                    style={{
+                      alignSelf: 'flex-start',
+                      marginLeft: '26px',
+                      background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(217, 100, 31, 0.3)',
+                    }}
+                  >
+                    <span>🎓 {lang === 'vi' ? 'Chuyển sang vai trò Giảng viên & Đăng nhập' : 'Switch to Lecturer Role'}</span>
+                  </button>
+                )}
+
+                {/* Quick button to switch to Admin if role mismatch */}
+                {(authError.includes('Quản trị viên') || authError.includes('Admin')) && selectedRole !== 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('admin');
+                      setAuthError(null);
+                    }}
+                    style={{
+                      alignSelf: 'flex-start',
+                      marginLeft: '26px',
+                      background: 'linear-gradient(135deg, #10B981, #059669)',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    <span>🛡️ {lang === 'vi' ? 'Chuyển sang vai trò Quản trị viên & Đăng nhập' : 'Switch to Admin Role'}</span>
+                  </button>
+                )}
               </div>
             )}
 
