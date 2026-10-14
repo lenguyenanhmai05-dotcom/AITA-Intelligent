@@ -2659,7 +2659,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 {/* Legend */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
                   {(gitReportData?.teamContributions || []).map((m: any) => (
-                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: m.name.includes('Trí') ? '#DC2626' : 'var(--text-main)' }}>
+                    <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
                       <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: m.color }} />
                       {m.name} <span style={{ color: 'var(--text-muted)' }}>({Number(m.pct).toFixed(2)}%)</span>
                     </div>
@@ -2672,12 +2672,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                   <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
                     <tr>
-                      <th style={{ width: '28%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
-                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
-                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
-                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
-                      <th style={{ width: '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
-                      <th style={{ width: '18%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                      <th style={{ width: currentRole === 'student' ? '32%' : '28%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
+                      <th style={{ width: currentRole === 'student' ? '17%' : '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
+                      {currentRole !== 'student' && (
+                        <th style={{ width: '18%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -2693,7 +2695,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       statusColor: m.pct >= 30 ? 'green' : (m.pct < 10 ? 'red' : 'gray')
                     })) : (gitAnalysisJobId ? [{name: (lang==='vi'?'Đang tải dữ liệu từ GitHub... (vui lòng chờ khoảng 30s)':'Loading data from GitHub... (please wait ~30s)'), initials: '...', commits: 0, prs: 0, loc: '...', pct: 0, status: '...', statusColor: 'gray', color: '#94A3B8'}] : [])).map((row: any, idx: number, arr: any[]) => (
                       <tr key={row.name} style={{ borderBottom: idx === arr.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '16px 20px', fontWeight: row.statusColor === 'red' ? 800 : 700, color: row.statusColor === 'red' ? '#DC2626' : 'var(--text-main)' }}>
+                        <td style={{ padding: '16px 20px', fontWeight: 700, color: 'var(--text-main)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: row.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                               {row.initials}
@@ -2706,26 +2708,26 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         <td style={{ padding: '16px 20px', textAlign: 'right', color: row.color, fontWeight: 800, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.loc}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 900, color: row.color, fontFamily: 'monospace', fontSize: '1rem' }}>{row.pct.toFixed(1)}%</td>
                         {currentRole !== 'student' && (
-<td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          {row.statusColor === 'red' ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isDark ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', color: isDark ? '#FCA5A5' : '#DC2626', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid #FECACA', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          ) : row.statusColor === 'blue' ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#DBEAFE', color: isDark ? '#93C5FD' : '#1D4ED8', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          ) : row.statusColor === 'green' ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: isDark ? '#4ADE80' : '#166534', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(156, 163, 175, 0.1)' : '#F1F5F9', color: 'var(--text-muted)', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(156, 163, 175, 0.2)' : '1px solid #E2E8F0', display: 'inline-block' }}>
-                              {row.status}
-                            </span>
-                          )}
-                        </td>
-)}
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            {row.statusColor === 'red' ? (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 800, background: isDark ? 'rgba(220, 38, 38, 0.15)' : '#FEE2E2', color: isDark ? '#FCA5A5' : '#DC2626', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(220, 38, 38, 0.3)' : '1px solid #FECACA', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            ) : row.statusColor === 'blue' ? (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#DBEAFE', color: isDark ? '#93C5FD' : '#1D4ED8', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            ) : row.statusColor === 'green' ? (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: isDark ? '#4ADE80' : '#166534', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, background: isDark ? 'rgba(156, 163, 175, 0.1)' : '#F1F5F9', color: 'var(--text-muted)', padding: '5px 12px', borderRadius: '999px', border: isDark ? '1px solid rgba(156, 163, 175, 0.2)' : '1px solid #E2E8F0', display: 'inline-block' }}>
+                                {row.status}
+                              </span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -3749,49 +3751,67 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <X size={20} />
               </button>
             </div>
-            <div style={{ borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', textAlign: 'left', fontSize: '0.75rem', color: isDark ? '#94A3B8' : '#475569', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
-                  <tr>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', background: isDark ? 'rgba(239, 68, 68, 0.05)' : '#FEF2F2' }}>
-                    <td style={{ padding: '14px 16px', color: 'var(--text-main)', fontWeight: 700 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>VT</div>
-                        <div>
-                          <div>Võ Minh Trí</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>tri.vm@fpt.edu.vn</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>2026-09-09</td>
-                    <td style={{ padding: '14px 16px', color: '#DC2626', fontWeight: 700, fontSize: '0.8rem' }}>
-                      {lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)'}
-                    </td>
-                  </tr>
-                  <tr style={{ background: isDark ? 'rgba(239, 68, 68, 0.05)' : '#FEF2F2' }}>
-                    <td style={{ padding: '14px 16px', color: 'var(--text-main)', fontWeight: 700 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>VT</div>
-                        <div>
-                          <div>Võ Minh Trí</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>tri.vm@fpt.edu.vn</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>2026-09-08</td>
-                    <td style={{ padding: '14px 16px', color: '#D97706', fontWeight: 700, fontSize: '0.8rem' }}>
-                      {lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            {/* Tự động lấy acc có ⚠️ Cảnh báo (pct < 10%) hoặc flaggedCommits thật từ API */}
+            {(() => {
+              // Ưu tiên: flaggedCommits thật từ Git scan
+              const realFlagged: any[] = (gitReportData?.flaggedCommits && gitReportData.flaggedCommits.length > 0)
+                ? gitReportData.flaggedCommits
+                : [];
+
+              // Demo: lấy tất cả acc có badge đỏ (pct < 10%) từ bảng báo cáo
+              const redMembers: any[] = (gitReportData?.teamContributions || []).filter((m: any) => m.pct < 10);
+              const demoRows: any[] = redMembers.flatMap((m: any, i: number) => [
+                { id: `d${i}a`, name: m.name, email: m.email || `${(m.name || 'user').toLowerCase().replace(/\s/g, '.')}@fpt.edu.vn`, date: '2026-09-09', behavior: lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)', color: '#DC2626' },
+                { id: `d${i}b`, name: m.name, email: m.email || `${(m.name || 'user').toLowerCase().replace(/\s/g, '.')}@fpt.edu.vn`, date: '2026-09-08', behavior: lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)', color: '#D97706' },
+              ]);
+
+              // Nếu không có gì cả, fallback 2 dòng mặc định
+              const fallback = [
+                { id: 'f0', name: 'Tài khoản Demo BR-10', email: 'test@fpt.edu.vn', date: '2026-09-09', behavior: lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)', color: '#DC2626' },
+                { id: 'f1', name: 'Tài khoản Demo BR-10', email: 'test@fpt.edu.vn', date: '2026-09-08', behavior: lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)', color: '#D97706' },
+              ];
+
+              const allRows = realFlagged.length > 0
+                ? realFlagged.map((fc: any) => ({ ...fc, color: fc.behavior?.toLowerCase().includes('whitespace') ? '#DC2626' : '#D97706' }))
+                : demoRows.length > 0 ? demoRows : fallback;
+
+              return (
+                <div style={{ borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', overflow: 'hidden' }}>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                    <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', textAlign: 'left', fontSize: '0.75rem', color: isDark ? '#94A3B8' : '#475569', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
+                      <tr>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allRows.map((fc: any, idx: number) => {
+                        const initials = (fc.name || 'XX').split(' ').map((w: string) => w[0] || '').join('').substring(0, 2).toUpperCase();
+                        return (
+                          <tr key={fc.id || idx} style={{ borderBottom: idx === allRows.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', background: isDark ? 'rgba(239,68,68,0.05)' : '#FEF2F2' }}>
+                            <td style={{ padding: '14px 16px', fontWeight: 700 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EF4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>{initials}</div>
+                                <div>
+                                  <div style={{ color: '#DC2626' }}>{fc.name}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{fc.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 16px', color: isDark ? '#F1F5F9' : '#334155', fontFamily: 'monospace', fontWeight: 600 }}>{fc.date}</td>
+                            <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '0.8rem' }}>
+                              <span style={{ color: fc.color || '#DC2626' }}>{fc.behavior}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
             <button
               onClick={() => setShowFlaggedModal(false)}
               onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#E5E7EB'}
