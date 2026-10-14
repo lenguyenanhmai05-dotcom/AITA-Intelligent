@@ -4,8 +4,7 @@ import {
   GraduationCap, 
   Code2, 
   CheckCircle2,
-  Sparkles,
-  Shield
+  Sparkles
 } from 'lucide-react';
 import { Language, translations } from '../translations';
 import { Theme, isAdminEmail } from '../App';
@@ -24,7 +23,7 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, theme = 'light', onToggleTheme, onLoginSuccess }) => {
   const t = translations[lang];
   const isDark = theme === 'dark';
-  const [selectedRole, setSelectedRole] = useState<'lecturer' | 'student' | 'admin'>('student');
+  const [selectedRole, setSelectedRole] = useState<'student' | 'lecturer'>('student');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
@@ -71,7 +70,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
     return () => clearTimeout(timer);
   }, [selectedRole]);
 
-  const handleRoleChange = (role: 'lecturer' | 'student' | 'admin') => {
+  const handleRoleChange = (role: 'lecturer' | 'student') => {
     setSelectedRole(role);
     setAuthError(null);
   };
@@ -80,15 +79,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
     setIsLoading(true);
     setAuthError(null);
 
-    let fallbackEmail = 'lenguyenlinhnhi2110@gmail.com';
-    let fallbackName = 'Lê Nguyễn Linh Nhi';
-    if (selectedRole === 'admin') {
-      fallbackEmail = 'lenguyenanhmai05@gmail.com';
-      fallbackName = 'Lê Nguyễn Anh Mai';
-    } else if (selectedRole === 'lecturer') {
-      fallbackEmail = 'lenguyenanhmai113@gmail.com';
-      fallbackName = 'Ánh Mai Lê Nguyễn';
-    }
+    let fallbackEmail = selectedRole === 'lecturer' 
+      ? 'lenguyenanhmai113@gmail.com' 
+      : 'lenguyenlinhnhi2110@gmail.com';
+    let fallbackName = selectedRole === 'lecturer' 
+      ? 'Ánh Mai Lê Nguyễn' 
+      : 'Lê Nguyễn Linh Nhi';
 
     const cleanEmail = (targetEmail && targetEmail.trim()) ? targetEmail.trim().toLowerCase() : fallbackEmail;
     // Tự động gán quyền Admin nếu email thuộc danh sách Admin tối cao
@@ -240,15 +236,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
 
   const handleGithubLogin = () => {
     setIsLoading(true);
-    let targetEmail = 'lenguyenlinhnhi2110@gmail.com';
-    let name = 'Lê Nguyễn Linh Nhi (Sinh viên)';
-    if (selectedRole === 'admin') {
-      targetEmail = 'lenguyenanhmai05@gmail.com';
-      name = 'Lê Nguyễn Anh Mai (Admin)';
-    } else if (selectedRole === 'lecturer') {
-      targetEmail = 'lenguyenanhmai113@gmail.com';
-      name = 'Ánh Mai Lê Nguyễn (Giảng viên)';
-    }
+    let targetEmail = selectedRole === 'lecturer' 
+      ? 'lenguyenanhmai113@gmail.com' 
+      : 'lenguyenlinhnhi2110@gmail.com';
+    let name = selectedRole === 'lecturer' 
+      ? 'Ánh Mai Lê Nguyễn (Giảng viên)' 
+      : 'Lê Nguyễn Linh Nhi (Sinh viên)';
     const finalRole: 'lecturer' | 'student' | 'admin' = isAdminEmail(targetEmail) ? 'admin' : selectedRole;
     setTimeout(() => {
       setIsLoading(false);
@@ -417,14 +410,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
               </div>
             </div>
 
-            {/* Segmented Role Selector: Sinh viên, Giảng viên & Quản trị viên */}
+            {/* Segmented Role Selector: Sinh viên & Giảng viên */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr',
+              gridTemplateColumns: '1fr 1fr',
               background: isDark ? 'var(--bg-surface-subtle)' : '#F1F5F9',
               padding: '4px',
               borderRadius: '12px',
-              gap: '4px',
+              gap: '6px',
               marginBottom: '10px',
             }}>
               <button
@@ -434,10 +427,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
-                  padding: '9px 6px',
+                  gap: '7px',
+                  padding: '11px 8px',
                   borderRadius: '9px',
-                  fontSize: '0.80rem',
+                  fontSize: '0.86rem',
                   fontWeight: 700,
                   transition: 'all 0.2s ease',
                   background: selectedRole === 'student' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
@@ -447,7 +440,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   cursor: 'pointer',
                 }}
               >
-                <Code2 size={15} />
+                <Code2 size={17} />
                 <span>{t.roleStudent}</span>
               </button>
 
@@ -458,10 +451,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
-                  padding: '9px 6px',
+                  gap: '7px',
+                  padding: '11px 8px',
                   borderRadius: '9px',
-                  fontSize: '0.80rem',
+                  fontSize: '0.86rem',
                   fontWeight: 700,
                   transition: 'all 0.2s ease',
                   background: selectedRole === 'lecturer' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
@@ -471,75 +464,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   cursor: 'pointer',
                 }}
               >
-                <GraduationCap size={15} />
+                <GraduationCap size={17} />
                 <span>{t.roleLecturer}</span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => handleRoleChange('admin')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '9px 6px',
-                  borderRadius: '9px',
-                  fontSize: '0.80rem',
-                  fontWeight: 700,
-                  transition: 'all 0.2s ease',
-                  background: selectedRole === 'admin' ? 'linear-gradient(135deg, #10B981, #059669)' : 'transparent',
-                  color: selectedRole === 'admin' ? '#FFFFFF' : (isDark ? 'var(--text-muted)' : '#475569'),
-                  boxShadow: selectedRole === 'admin' ? '0 4px 10px rgba(16, 185, 129, 0.25)' : 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                <Shield size={15} />
-                <span>{t.roleAdmin}</span>
-              </button>
             </div>
-
-            {/* Subtle Whitelist Security Badge for Lecturer or Admin */}
-            {selectedRole === 'lecturer' && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: '0.70rem',
-                fontWeight: 700,
-                color: 'var(--color-orange-zest)',
-                background: isDark ? 'rgba(217, 100, 31, 0.14)' : 'rgba(217, 100, 31, 0.08)',
-                border: isDark ? '1px solid rgba(217, 100, 31, 0.25)' : '1px solid rgba(217, 100, 31, 0.18)',
-                padding: '4px 10px',
-                borderRadius: '8px',
-                margin: '4px auto 8px auto',
-                width: 'fit-content',
-              }}>
-                <span>🔒 {lang === 'vi' ? 'Yêu cầu Admin phê duyệt (lenguyenanhmai113@gmail.com)' : 'Requires Admin Approval'}</span>
-              </div>
-            )}
-
-            {selectedRole === 'admin' && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                fontSize: '0.70rem',
-                fontWeight: 700,
-                color: '#059669',
-                background: isDark ? 'rgba(16, 185, 129, 0.14)' : '#ECFDF5',
-                border: isDark ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid #A7F3D0',
-                padding: '4px 10px',
-                borderRadius: '8px',
-                margin: '4px auto 8px auto',
-                width: 'fit-content',
-              }}>
-                <span>🛡️ {lang === 'vi' ? 'Đặc quyền Quản trị viên (lenguyenanhmai05@gmail.com)' : 'Administrator Authority'}</span>
-              </div>
-            )}
 
             {/* Micro instruction hint */}
             <p style={{
@@ -551,14 +479,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
               lineHeight: 1.4,
             }}>
               {lang === 'vi' 
-                ? (selectedRole === 'admin'
-                    ? 'Đăng nhập vào Dashboard quản trị để phê duyệt Giảng viên và giám sát hạ tầng.'
-                    : selectedRole === 'student'
+                ? (selectedRole === 'student'
                     ? 'Đăng nhập để xem đề bài và nộp bài làm lập trình.'
                     : 'Đăng nhập để xem danh sách sinh viên và tạo đợt chấm bài.')
-                : (selectedRole === 'admin'
-                    ? 'Sign in to Admin Dashboard to approve lecturers and manage system.'
-                    : selectedRole === 'student'
+                : (selectedRole === 'student'
                     ? 'Sign in to view assignments and submit code.'
                     : 'Sign in to review students and manage grading batches.')}
             </p>
@@ -613,34 +537,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   </button>
                 )}
 
-                {/* Quick button to switch to Admin if role mismatch */}
-                {(authError.includes('Quản trị viên') || authError.includes('Admin')) && selectedRole !== 'admin' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedRole('admin');
-                      setAuthError(null);
-                    }}
-                    style={{
-                      alignSelf: 'flex-start',
-                      marginLeft: '26px',
-                      background: 'linear-gradient(135deg, #10B981, #059669)',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      padding: '6px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.76rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-                    }}
-                  >
-                    <span>🛡️ {lang === 'vi' ? 'Chuyển sang vai trò Quản trị viên & Đăng nhập' : 'Switch to Admin Role'}</span>
-                  </button>
-                )}
+
               </div>
             )}
 
