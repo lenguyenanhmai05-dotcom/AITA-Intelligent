@@ -4,16 +4,27 @@ import { prisma } from '@aita/database';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aita-jwt-secret-key-swp391-2026';
 
+// Danh sách email Quản trị viên tối cao của hệ thống (System Administrator)
+export const SYSTEM_ADMIN_EMAILS: string[] = [
+  'lenguyenanhmai05@gmail.com',      // Admin / Team Lead
+  'tuongvy22102004@gmail.com',       // Admin / Co-Lead
+  'n133vy@gmail.com',
+  'khanhlinh9a4tqd@gmail.com',
+  'admin@aita.fpt.edu.vn',
+  'admin@fpt.edu.vn',
+];
+
+export const isSystemAdminEmail = (email: string): boolean => {
+  if (!email) return false;
+  return SYSTEM_ADMIN_EMAILS.includes(email.trim().toLowerCase());
+};
+
 // Danh sách email Giảng viên được phê duyệt (Approved Lecturer Whitelist)
 // Áp dụng cho mô hình thực tế khi nhà trường / bộ môn sử dụng tài khoản Gmail hoặc email nội bộ
 export const APPROVED_LECTURER_EMAILS: string[] = [
-  'lenguyenanhmai05@gmail.com',      // Admin / Team Lead
-  'tuongvy22102004@gmail.com',       // Admin / Co-Lead
   'giangnv@fpt.edu.vn',              // TS. Nguyễn Văn Giảng (Giảng viên FPT)
   'giangvien.aita@gmail.com',        // Tài khoản test Giảng viên
   'giangvien.aita@fpt.edu.vn',       // Giảng viên FPT
-  'admin@aita.fpt.edu.vn',
-  'admin@fpt.edu.vn',
   ...(process.env.APPROVED_LECTURERS ? process.env.APPROVED_LECTURERS.split(',').map((e) => e.trim().toLowerCase()) : []),
 ];
 
@@ -83,13 +94,19 @@ const loadRequestsFromDb = async () => {
       const parsed = JSON.parse(setting.settingValue);
       if (Array.isArray(parsed) && parsed.length > 0) {
         lecturerRequests = parsed;
-        // Thêm các email đã APPROVED vào whitelist
-        parsed.filter((r) => r.status === 'APPROVED').forEach((r) => {
+        // Thêm các email đã APPROVED vào whitelist và đồng bộ quyền lecturer trong DB
+        for (const r of parsed.filter((item: any) => item.status === 'APPROVED')) {
           const e = r.email.toLowerCase();
           if (!APPROVED_LECTURER_EMAILS.includes(e)) {
             APPROVED_LECTURER_EMAILS.push(e);
           }
-        });
+          try {
+            await prisma.user.updateMany({
+              where: { email: e },
+              data: { role: 'lecturer' },
+            });
+          } catch {}
+        }
       }
     }
   } catch (err: any) {
@@ -104,6 +121,11 @@ loadRequestsFromDb();
 export const isApprovedLecturer = (email: string): boolean => {
   if (!email) return false;
   const cleanEmail = email.trim().toLowerCase();
+
+  // Admin tối cao không tính là lecturer thông thường
+  if (isSystemAdminEmail(cleanEmail)) {
+    return false;
+  }
 
   // 1. Nếu nằm trong Whitelist Giảng viên được cấp phép
   if (APPROVED_LECTURER_EMAILS.some((e) => e.toLowerCase() === cleanEmail)) {
@@ -175,15 +197,59 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const isSystemAdmin = 
-      cleanEmail === 'lenguyenanhmai05@gmail.com' ||
-      cleanEmail === 'tuongvy22102004@gmail.com' ||
-      cleanEmail === 'admin@aita.fpt.edu.vn' ||
-      cleanEmail === 'admin@fpt.edu.vn';
-    const requestedRole = isSystemAdmin ? 'admin' : (role === 'lecturer' ? 'lecturer' : (role === 'admin' ? 'admin' : 'student'));
+    await loadRequestsFromDb();
 
-    // RÀNG BUỘC ROLE & QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
-    if (requestedRole === 'lecturer' && !isApprovedLecturer(cleanEmail) && !isSystemAdmin) {
+    const isSystemAdmin = isSystemAdminEmail(cleanEmail);
+    const requestedRole = isSystemAdmin 
+      ? 'admin' 
+      : (role === 'admin' ? 'admin' : (role === 'lecturer' ? 'lecturer' : 'student'));
+
+    // Tìm user trong DB trước
+    let dbUser: any = null;
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+    } catch (e: any) {
+      console.warn('Prisma lookup warning:', e.message);
+    }
+
+    const isApproved = isApprovedLecturer(cleanEmail);
+    const hasApprovedLecturerRecord = isApproved || dbUser?.role === 'lecturer';
+    const existingReq = lecturerRequests.find((r) => r.email.toLowerCase() === cleanEmail);
+
+    // 1. RÀNG BUỘC KHÓA VAI TRÒ: Nếu email đã đăng ký/phê duyệt Giảng viên mà chọn vai trò Sinh viên -> Khóa đăng nhập
+    if ((hasApprovedLecturerRecord || existingReq) && requestedRole === 'student' && !isSystemAdmin) {
+      return res.status(403).json({
+        success: false,
+        roleMismatch: true,
+        registeredRole: 'lecturer',
+        message: `⛔ Quyền truy cập bị khóa: Email "${cleanEmail}" đã được cấp quyền Giảng viên (Lecturer). Mail này chỉ dành cho Giảng viên, không thể đăng nhập bằng vai trò Sinh viên! Vui lòng chọn vai trò Giảng viên trên màn hình đăng nhập.`,
+      });
+    }
+
+    // 2. RÀNG BUỘC KHÓA VAI TRÒ: Nếu tài khoản đã là Sinh viên trong DB -> Khóa khi chọn Giảng viên nếu chưa duyệt
+    if (dbUser && dbUser.role === 'student' && requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
+      return res.status(403).json({
+        success: false,
+        roleMismatch: true,
+        registeredRole: 'student',
+        message: `⛔ Quyền truy cập bị từ chối: Tài khoản "${cleanEmail}" đã được đăng ký với vai trò Sinh viên, không có quyền truy cập Cổng Giảng viên!`,
+      });
+    }
+
+    // 3. RÀNG BUỘC KHÓA VAI TRÒ: Quản trị viên tối cao phải chọn vai trò Quản trị viên
+    if (isSystemAdmin && role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        roleMismatch: true,
+        registeredRole: 'admin',
+        message: `⛔ Tài khoản "${cleanEmail}" là Quản trị viên hệ thống (Admin). Vui lòng chọn vai trò Quản trị viên trên màn hình đăng nhập!`,
+      });
+    }
+
+    // 4. QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
+    if (requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
       const prefix = cleanEmail.split('@')[0];
       if (STUDENT_CODE_REGEX.test(prefix)) {
         return res.status(403).json({
@@ -192,9 +258,9 @@ export const login = async (req: Request, res: Response) => {
         });
       }
 
-      let existingReq = lecturerRequests.find((r) => r.email.toLowerCase() === cleanEmail);
-      if (!existingReq) {
-        existingReq = {
+      let reqItem = existingReq;
+      if (!reqItem) {
+        reqItem = {
           id: `req-${Date.now()}`,
           email: cleanEmail,
           fullName: fullName || cleanEmail.split('@')[0],
@@ -203,17 +269,17 @@ export const login = async (req: Request, res: Response) => {
           status: 'PENDING',
           requestedAt: formatVietnamDateTime(),
         };
-        lecturerRequests.unshift(existingReq);
+        lecturerRequests.unshift(reqItem);
         persistRequestsToDb();
       }
 
-      if (existingReq.status === 'REJECTED') {
+      if (reqItem.status === 'REJECTED') {
         return res.status(403).json({
           success: false,
           requiresApproval: true,
           status: 'REJECTED',
           message: `Hồ sơ đăng ký Giảng viên của email "${cleanEmail}" đã bị Quản trị viên từ chối.`,
-          applicant: existingReq,
+          applicant: reqItem,
         });
       }
 
@@ -222,7 +288,7 @@ export const login = async (req: Request, res: Response) => {
         requiresApproval: true,
         status: 'PENDING',
         message: 'Hồ sơ Giảng viên đang chờ Quản trị viên (Admin) phê duyệt.',
-        applicant: existingReq,
+        applicant: reqItem,
       });
     }
 
@@ -362,8 +428,12 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
 
     // Nhận email thật từ client hoặc Google OAuth token
     const userEmail = (email || 'lenguyenanhmai05@gmail.com').trim().toLowerCase();
-    const requestedRole = role === 'lecturer' ? 'lecturer' : 'student';
     await loadRequestsFromDb();
+
+    const isSystemAdmin = isSystemAdminEmail(userEmail);
+    const requestedRole = isSystemAdmin
+      ? 'admin'
+      : (role === 'admin' ? 'admin' : (role === 'lecturer' ? 'lecturer' : 'student'));
 
     let userName = name;
     if (!userName) {
@@ -378,15 +448,52 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
       }
     }
 
-    // Email cố định là Admin tối cao: lenguyenanhmai05@gmail.com, tuongvy22102004@gmail.com
-    const isSystemAdmin = 
-      userEmail === 'lenguyenanhmai05@gmail.com' || 
-      userEmail === 'tuongvy22102004@gmail.com' || 
-      userEmail === 'admin@aita.fpt.edu.vn' || 
-      userEmail === 'admin@fpt.edu.vn';
+    // Tìm user trong DB trước
+    let dbUser: any = null;
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { email: userEmail },
+      });
+    } catch (dbErr: any) {
+      console.warn(`[PostgreSQL Docker] Lookup error: ${dbErr.message}`);
+    }
 
-    // RÀNG BUỘC ROLE & QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
-    if (requestedRole === 'lecturer' && !isApprovedLecturer(userEmail) && !isSystemAdmin) {
+    const isApproved = isApprovedLecturer(userEmail);
+    const hasApprovedLecturerRecord = isApproved || dbUser?.role === 'lecturer';
+    const existingReq = lecturerRequests.find((r) => r.email.toLowerCase() === userEmail);
+
+    // 1. RÀNG BUỘC KHÓA VAI TRÒ: Nếu email đã đăng ký/phê duyệt Giảng viên mà chọn vai trò Sinh viên -> Khóa đăng nhập
+    if ((hasApprovedLecturerRecord || existingReq) && requestedRole === 'student' && !isSystemAdmin) {
+      return res.status(403).json({
+        success: false,
+        roleMismatch: true,
+        registeredRole: 'lecturer',
+        message: `⛔ Quyền truy cập bị khóa: Email "${userEmail}" đã được cấp quyền Giảng viên (Lecturer). Mail này chỉ dành cho Giảng viên, không thể đăng nhập bằng vai trò Sinh viên! Vui lòng chọn vai trò Giảng viên trên màn hình đăng nhập.`,
+      });
+    }
+
+    // 2. RÀNG BUỘC KHÓA VAI TRÒ: Nếu tài khoản đã là Sinh viên trong DB -> Khóa khi chọn Giảng viên nếu chưa duyệt
+    if (dbUser && dbUser.role === 'student' && requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
+      return res.status(403).json({
+        success: false,
+        roleMismatch: true,
+        registeredRole: 'student',
+        message: `⛔ Quyền truy cập bị từ chối: Tài khoản "${userEmail}" đã được đăng ký với vai trò Sinh viên, không có quyền truy cập Cổng Giảng viên!`,
+      });
+    }
+
+    // 3. RÀNG BUỘC KHÓA VAI TRÒ: Quản trị viên tối cao phải chọn vai trò Quản trị viên
+    if (isSystemAdmin && role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        roleMismatch: true,
+        registeredRole: 'admin',
+        message: `⛔ Tài khoản "${userEmail}" là Quản trị viên hệ thống (Admin). Vui lòng chọn vai trò Quản trị viên trên màn hình đăng nhập!`,
+      });
+    }
+
+    // 4. QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
+    if (requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
       const prefix = userEmail.split('@')[0];
       if (STUDENT_CODE_REGEX.test(prefix)) {
         return res.status(403).json({
@@ -395,9 +502,9 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
         });
       }
 
-      let existingReq = lecturerRequests.find((r) => r.email.toLowerCase() === userEmail);
-      if (!existingReq) {
-        existingReq = {
+      let reqItem = existingReq;
+      if (!reqItem) {
+        reqItem = {
           id: `req-${Date.now()}`,
           email: userEmail,
           fullName: userName,
@@ -406,17 +513,17 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
           status: 'PENDING',
           requestedAt: formatVietnamDateTime(),
         };
-        lecturerRequests.unshift(existingReq);
+        lecturerRequests.unshift(reqItem);
         persistRequestsToDb();
       }
 
-      if (existingReq.status === 'REJECTED') {
+      if (reqItem.status === 'REJECTED') {
         return res.status(403).json({
           success: false,
           requiresApproval: true,
           status: 'REJECTED',
           message: `Hồ sơ đăng ký Giảng viên của email "${userEmail}" đã bị Quản trị viên từ chối.`,
-          applicant: existingReq,
+          applicant: reqItem,
         });
       }
 
@@ -426,30 +533,18 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
         requiresApproval: true,
         status: 'PENDING',
         message: 'Hồ sơ Giảng viên đang chờ Quản trị viên (Admin) phê duyệt.',
-        applicant: existingReq,
+        applicant: reqItem,
       });
     }
 
     const userRole = isSystemAdmin 
       ? 'admin' 
-      : (requestedRole === 'lecturer' && isApprovedLecturer(userEmail) ? 'lecturer' : 'student');
+      : (requestedRole === 'lecturer' ? 'lecturer' : 'student');
 
     let user: any = null;
 
     // Đồng bộ vào Docker PostgreSQL
     try {
-      let dbUser = await prisma.user.findUnique({
-        where: { email: userEmail },
-      });
-
-      // Nếu user đã tồn tại trong DB với vai trò Sinh viên và không thuộc whitelist
-      if (dbUser && requestedRole === 'lecturer' && dbUser.role === 'student' && !isApprovedLecturer(userEmail) && !isSystemAdmin) {
-        return res.status(403).json({
-          success: false,
-          message: `⛔ Quyền truy cập bị từ chối: Tài khoản "${userEmail}" đã được đăng ký với vai trò Sinh viên, không có quyền truy cập Cổng Giảng viên!`,
-        });
-      }
-
       if (!dbUser) {
         dbUser = await prisma.user.create({
           data: {
@@ -464,7 +559,7 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
           },
         });
         console.log(`[PostgreSQL Docker] 👤 New Google SSO user registered: ${userEmail} (${userRole})`);
-      } else if ((isApprovedLecturer(userEmail) || isSystemAdmin) && dbUser.role !== userRole) {
+      } else if (dbUser.role !== userRole && (isSystemAdmin || (requestedRole === 'lecturer' && isApproved))) {
         // Chỉ cho phép update role nếu email thuộc danh sách phê duyệt hoặc admin
         dbUser = await prisma.user.update({
           where: { id: dbUser.id },
