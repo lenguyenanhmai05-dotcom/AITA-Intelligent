@@ -30,6 +30,71 @@ export const VietnamFlag: React.FC<{ size?: number; style?: React.CSSProperties 
   );
 };
 
+export const UsFlag: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = 18, style }) => {
+  const width = Math.round(size * 1.5);
+  return (
+    <svg
+      width={width}
+      height={size}
+      viewBox="0 0 38 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{
+        borderRadius: '3px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        flexShrink: 0,
+        ...style,
+      }}
+    >
+      <clipPath id="us-flag-clip">
+        <rect width="38" height="20" rx="3" />
+      </clipPath>
+      <g clipPath="url(#us-flag-clip)">
+        {/* White background for the 6 white stripes */}
+        <rect width="38" height="20" fill="#FFFFFF" />
+        {/* 7 Red stripes */}
+        <rect y="0" width="38" height="1.54" fill="#B22234" />
+        <rect y="3.08" width="38" height="1.54" fill="#B22234" />
+        <rect y="6.15" width="38" height="1.54" fill="#B22234" />
+        <rect y="9.23" width="38" height="1.54" fill="#B22234" />
+        <rect y="12.31" width="38" height="1.54" fill="#B22234" />
+        <rect y="15.38" width="38" height="1.54" fill="#B22234" />
+        <rect y="18.46" width="38" height="1.54" fill="#B22234" />
+        {/* Navy Blue Canton */}
+        <rect width="15.2" height="10.77" fill="#3C3B6E" />
+        {/* Star dots pattern in canton */}
+        <g fill="#FFFFFF">
+          <circle cx="2.5" cy="1.8" r="0.65" />
+          <circle cx="5.1" cy="1.8" r="0.65" />
+          <circle cx="7.6" cy="1.8" r="0.65" />
+          <circle cx="10.1" cy="1.8" r="0.65" />
+          <circle cx="12.7" cy="1.8" r="0.65" />
+          <circle cx="3.8" cy="3.6" r="0.65" />
+          <circle cx="6.4" cy="3.6" r="0.65" />
+          <circle cx="8.9" cy="3.6" r="0.65" />
+          <circle cx="11.4" cy="3.6" r="0.65" />
+          <circle cx="2.5" cy="5.4" r="0.65" />
+          <circle cx="5.1" cy="5.4" r="0.65" />
+          <circle cx="7.6" cy="5.4" r="0.65" />
+          <circle cx="10.1" cy="5.4" r="0.65" />
+          <circle cx="12.7" cy="5.4" r="0.65" />
+          <circle cx="3.8" cy="7.2" r="0.65" />
+          <circle cx="6.4" cy="7.2" r="0.65" />
+          <circle cx="8.9" cy="7.2" r="0.65" />
+          <circle cx="11.4" cy="7.2" r="0.65" />
+          <circle cx="2.5" cy="9.0" r="0.65" />
+          <circle cx="5.1" cy="9.0" r="0.65" />
+          <circle cx="7.6" cy="9.0" r="0.65" />
+          <circle cx="10.1" cy="9.0" r="0.65" />
+          <circle cx="12.7" cy="9.0" r="0.65" />
+        </g>
+      </g>
+    </svg>
+  );
+};
+
 export const UkFlag: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = 18, style }) => {
   const width = Math.round(size * 1.5);
   return (
@@ -84,8 +149,8 @@ export const LanguageFlagToggle: React.FC<LanguageFlagToggleProps> = ({
   };
 
   const tooltipText = isVi
-    ? 'Đang dùng Tiếng Việt (Bấm để chuyển sang Tiếng Anh / Click for English)'
-    : 'Using English (Click to switch to Vietnamese / Bấm để dùng Tiếng Việt)';
+    ? 'Đang dùng Tiếng Việt (Bấm để chuyển sang Tiếng Anh 🇺🇸)'
+    : 'Using English (Click to switch to Vietnamese 🇻🇳)';
 
   return (
     <button
@@ -96,55 +161,31 @@ export const LanguageFlagToggle: React.FC<LanguageFlagToggleProps> = ({
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '7px',
-        padding: variant === 'navbar' ? '6px 12px' : '6px 10px',
-        background: variant === 'navbar' ? '#FFFFFF' : '#F6F5ED',
-        border: '1.5px solid #E2E6D0',
-        borderRadius: '9999px',
+        justifyContent: 'center',
+        padding: '5px 8px',
+        background: variant === 'navbar' ? 'var(--bg-surface, #FFFFFF)' : '#F6F5ED',
+        border: '1px solid var(--border-light, #E2E6D0)',
+        borderRadius: '8px',
         cursor: 'pointer',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         boxShadow: variant === 'navbar' ? '0 1px 4px rgba(0, 0, 0, 0.05)' : 'none',
         userSelect: 'none',
+        flexShrink: 0,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = 'var(--color-orange-zest)';
         e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 4px 10px rgba(217, 100, 31, 0.15)';
+        e.currentTarget.style.boxShadow = '0 3px 8px rgba(217, 100, 31, 0.18)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#E2E6D0';
+        e.currentTarget.style.borderColor = 'var(--border-light, #E2E6D0)';
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = variant === 'navbar' ? '0 1px 4px rgba(0, 0, 0, 0.05)' : 'none';
       }}
     >
-      {/* Flag icon */}
+      {/* Flag icon only: Vietnam Flag -> click to show US Flag */}
       <span style={{ display: 'flex', alignItems: 'center' }}>
-        {isVi ? <VietnamFlag size={15} /> : <UkFlag size={15} />}
-      </span>
-
-      {/* Language label */}
-      <span
-        style={{
-          fontSize: '0.76rem',
-          fontWeight: 800,
-          letterSpacing: '0.04em',
-          color: 'var(--text-main)',
-        }}
-      >
-        {isVi ? 'VI' : 'EN'}
-      </span>
-
-      {/* Arrow / indicator */}
-      <span
-        style={{
-          fontSize: '0.65rem',
-          color: 'var(--text-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          opacity: 0.8,
-        }}
-      >
-        ⇄ {isVi ? 'EN' : 'VI'}
+        {isVi ? <VietnamFlag size={16} /> : <UsFlag size={16} />}
       </span>
     </button>
   );

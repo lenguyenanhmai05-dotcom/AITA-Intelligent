@@ -4,12 +4,14 @@ import {
   GraduationCap, 
   Code2, 
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Shield
 } from 'lucide-react';
 import { Language, translations } from '../translations';
-import { isAdminEmail, Theme } from '../App';
+import { Theme, isAdminEmail } from '../App';
 import { LanguageFlagToggle } from './FlagIcons';
 import { ThemeToggle } from './ThemeToggle';
+import { PendingApprovalCard } from './PendingApprovalCard';
 
 interface LoginScreenProps {
   lang: Language;
@@ -22,10 +24,15 @@ interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, theme = 'light', onToggleTheme, onLoginSuccess }) => {
   const t = translations[lang];
   const isDark = theme === 'dark';
-  const [selectedRole, setSelectedRole] = useState<'lecturer' | 'student'>('student');
+  const [selectedRole, setSelectedRole] = useState<'lecturer' | 'student' | 'admin'>('student');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+
+  // Trạng thái chờ phê duyệt Giảng viên từ Admin
+  const [pendingApplicant, setPendingApplicant] = useState<any | null>(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+  const [statusCheckMsg, setStatusCheckMsg] = useState<string | null>(null);
 
   const DEFAULT_GOOGLE_CLIENT_ID = '519099272779-ufs11c2mcuq06962j1j19euf0vth738e.apps.googleusercontent.com';
 
@@ -64,7 +71,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
     return () => clearTimeout(timer);
   }, [selectedRole]);
 
-  const handleRoleChange = (role: 'lecturer' | 'student') => {
+  const handleRoleChange = (role: 'lecturer' | 'student' | 'admin') => {
     setSelectedRole(role);
     setAuthError(null);
   };
@@ -72,24 +79,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
   const handleExecuteGoogleAuth = async (targetEmail?: string, displayName?: string, googleToken?: string) => {
     setIsLoading(true);
     setAuthError(null);
-    const fallbackEmail = selectedRole === 'lecturer' 
-      ? 'giangvien.aita@fpt.edu.vn' 
-      : 'sinhvien.aita@fpt.edu.vn';
-    const fallbackName = selectedRole === 'lecturer' 
-      ? 'TS. Nguyễn Văn Giảng' 
-      : 'Sinh viên FPT (AITA)';
+
+    let fallbackEmail = 'lenguyenlinhnhi2110@gmail.com';
+    let fallbackName = 'Lê Nguyễn Linh Nhi';
+    if (selectedRole === 'admin') {
+      fallbackEmail = 'lenguyenanhmai05@gmail.com';
+      fallbackName = 'Lê Nguyễn Anh Mai';
+    } else if (selectedRole === 'lecturer') {
+      fallbackEmail = 'lenguyenanhmai113@gmail.com';
+      fallbackName = 'Ánh Mai Lê Nguyễn';
+    }
 
     const cleanEmail = (targetEmail && targetEmail.trim()) ? targetEmail.trim().toLowerCase() : fallbackEmail;
-    const isTargetAdmin = isAdminEmail(cleanEmail);
-    
-    // Phân quyền chặt chẽ:
-    // 1. Nếu mail là admin cố định (lenguyenanhmai05@gmail.com) -> VÀO ADMIN QUẢN LÝ TẤT CẢ
-    // 2. Nếu mail khác -> VÀO SINH VIÊN hoặc GIẢNG VIÊN tùy theo tab đang chọn
-    const finalRole: 'lecturer' | 'student' | 'admin' = isTargetAdmin ? 'admin' : selectedRole;
-    const adminDisplayName = cleanEmail === 'tuongvy22102004@gmail.com'
-      ? 'Tường Vy'
-      : 'Lê Nguyễn Anh Mai';
-    const cleanName = displayName || (isTargetAdmin ? adminDisplayName : fallbackName);
+    // Tự động gán quyền Admin nếu email thuộc danh sách Admin tối cao
+    const finalRole: 'lecturer' | 'student' | 'admin' = isAdminEmail(cleanEmail) ? 'admin' : selectedRole;
+    const cleanName = displayName || fallbackName;
 
     try {
       const response = await fetch('/api/auth/google', {
@@ -103,14 +107,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
         }),
       });
       const result = await response.json();
-      if (result.success && result.data) {
+
+      // Trường hợp hồ sơ Giảng viên đang chờ Quản trị viên (Admin) phê duyệt
+      if (result.requiresApproval) {
+        setIsLoading(false);
+        setPendingApplicant(result.applicant || {
+          email: cleanEmail,
+          fullName: cleanName,
+          status: result.status || 'PENDING',
+          requestedAt: '2026-10-14 08:35',
+        });
+        return;
+      }
+
+      if (response.ok && result.success && result.data) {
         const { token, user } = result.data;
+        const actualRole = isAdminEmail(cleanEmail) ? 'admin' : (user.role || finalRole);
         localStorage.setItem('aita_token', token);
-        localStorage.setItem('aita_user', JSON.stringify({ ...user, role: finalRole }));
+        localStorage.setItem('aita_user', JSON.stringify({ ...user, role: actualRole }));
         
-        const roleName = finalRole === 'admin' 
-          ? (lang === 'vi' ? 'Quản trị viên Hệ thống' : 'System Administrator')
-          : finalRole === 'lecturer'
+        const roleName = actualRole === 'admin'
+          ? (lang === 'vi' ? 'Quản trị viên' : 'Administrator')
+          : actualRole === 'lecturer'
           ? (lang === 'vi' ? 'Giảng viên' : 'Lecturer')
           : (lang === 'vi' ? 'Sinh viên' : 'Student');
 
@@ -122,14 +140,50 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
 
         setTimeout(() => {
           setIsLoading(false);
-          onLoginSuccess(finalRole, user.email, user.fullName, token);
+          onLoginSuccess(actualRole, user.email, user.fullName, token);
         }, 350);
       } else {
-        throw new Error(result.message);
+        // Chặn đứng sinh viên truy cập cổng Giảng viên hoặc các lỗi xác thực
+        setIsLoading(false);
+        const errorMsg = result.message || (lang === 'vi' ? 'Đăng nhập không thành công.' : 'Login failed.');
+        setAuthError(errorMsg);
+        if (errorMsg.includes('mã số sinh viên')) {
+          setSelectedRole('student');
+        }
+      }
+    } catch (networkErr: any) {
+      setIsLoading(false);
+      setAuthError(networkErr?.message || (lang === 'vi' ? 'Lỗi kết nối máy chủ xác thực.' : 'Authentication server connection error.'));
+    }
+  };
+
+  const handleCheckPendingStatus = async () => {
+    if (!pendingApplicant?.email) return;
+    setIsCheckingStatus(true);
+    setStatusCheckMsg(null);
+    try {
+      const res = await fetch('/api/auth/check-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingApplicant.email }),
+      });
+      const data = await res.json();
+      if (data.isApproved && data.data) {
+        const { token, user } = data.data;
+        localStorage.setItem('aita_token', token);
+        localStorage.setItem('aita_user', JSON.stringify({ ...user, role: 'lecturer' }));
+        setStatusCheckMsg(lang === 'vi' ? '🎉 Hồ sơ đã được Admin phê duyệt thành công! Đang chuyển hướng vào Cổng Giảng viên...' : '🎉 Approved! Redirecting...');
+        setTimeout(() => {
+          setIsCheckingStatus(false);
+          onLoginSuccess('lecturer', user.email, user.fullName, token);
+        }, 800);
+      } else {
+        setIsCheckingStatus(false);
+        setStatusCheckMsg(data.message || (lang === 'vi' ? 'Hồ sơ vẫn đang chờ Admin duyệt. Vui lòng thử lại sau ít phút!' : 'Still pending approval.'));
       }
     } catch {
-      setIsLoading(false);
-      onLoginSuccess(finalRole, cleanEmail, cleanName);
+      setIsCheckingStatus(false);
+      setStatusCheckMsg(lang === 'vi' ? 'Không thể kết nối đến máy chủ xác thực.' : 'Connection error.');
     }
   };
 
@@ -186,11 +240,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
 
   const handleGithubLogin = () => {
     setIsLoading(true);
-    const targetEmail = selectedRole === 'lecturer' ? 'mai.le@fpt.edu.vn' : 'student.test@fpt.edu.vn';
-    const finalRole = isAdminEmail(targetEmail) ? 'admin' : selectedRole;
+    let targetEmail = 'lenguyenlinhnhi2110@gmail.com';
+    let name = 'Lê Nguyễn Linh Nhi (Sinh viên)';
+    if (selectedRole === 'admin') {
+      targetEmail = 'lenguyenanhmai05@gmail.com';
+      name = 'Lê Nguyễn Anh Mai (Admin)';
+    } else if (selectedRole === 'lecturer') {
+      targetEmail = 'lenguyenanhmai113@gmail.com';
+      name = 'Ánh Mai Lê Nguyễn (Giảng viên)';
+    }
+    const finalRole: 'lecturer' | 'student' | 'admin' = isAdminEmail(targetEmail) ? 'admin' : selectedRole;
     setTimeout(() => {
       setIsLoading(false);
-      onLoginSuccess(finalRole, targetEmail, selectedRole === 'lecturer' ? 'TS. Nguyễn Văn Giảng (GitHub)' : 'Sinh viên FPT (GitHub)');
+      onLoginSuccess(finalRole, targetEmail, name);
     }, 300);
   };
 
@@ -313,6 +375,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
             display: 'flex',
             flexDirection: 'column',
           }}>
+          {pendingApplicant ? (
+            <PendingApprovalCard
+              lang={lang}
+              isDark={isDark}
+              theme={theme}
+              pendingApplicant={pendingApplicant}
+              isCheckingStatus={isCheckingStatus}
+              statusCheckMsg={statusCheckMsg}
+              onCheckStatus={handleCheckPendingStatus}
+              onBack={() => {
+                setPendingApplicant(null);
+                setSelectedRole('student');
+                setStatusCheckMsg(null);
+              }}
+              onToggleTheme={onToggleTheme}
+              onToggleLang={onToggleLang}
+            />
+          ) : (
           <div>
             {/* Top Row: Title + Flag Toggle (Vietnam 🇻🇳 / UK 🇬🇧) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
@@ -337,14 +417,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
               </div>
             </div>
 
-            {/* Segmented Role Selector: Sinh viên & Giảng viên */}
+            {/* Segmented Role Selector: Sinh viên, Giảng viên & Quản trị viên */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: '1fr 1fr 1fr',
               background: isDark ? 'var(--bg-surface-subtle)' : '#F1F5F9',
               padding: '4px',
               borderRadius: '12px',
-              gap: '6px',
+              gap: '4px',
               marginBottom: '10px',
             }}>
               <button
@@ -354,10 +434,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '7px',
-                  padding: '11px 8px',
+                  gap: '6px',
+                  padding: '9px 6px',
                   borderRadius: '9px',
-                  fontSize: '0.86rem',
+                  fontSize: '0.80rem',
                   fontWeight: 700,
                   transition: 'all 0.2s ease',
                   background: selectedRole === 'student' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
@@ -367,7 +447,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   cursor: 'pointer',
                 }}
               >
-                <Code2 size={17} />
+                <Code2 size={15} />
                 <span>{t.roleStudent}</span>
               </button>
 
@@ -378,10 +458,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '7px',
-                  padding: '11px 8px',
+                  gap: '6px',
+                  padding: '9px 6px',
                   borderRadius: '9px',
-                  fontSize: '0.86rem',
+                  fontSize: '0.80rem',
                   fontWeight: 700,
                   transition: 'all 0.2s ease',
                   background: selectedRole === 'lecturer' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
@@ -391,10 +471,75 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                   cursor: 'pointer',
                 }}
               >
-                <GraduationCap size={17} />
+                <GraduationCap size={15} />
                 <span>{t.roleLecturer}</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => handleRoleChange('admin')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 6px',
+                  borderRadius: '9px',
+                  fontSize: '0.80rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                  background: selectedRole === 'admin' ? 'linear-gradient(135deg, #10B981, #059669)' : 'transparent',
+                  color: selectedRole === 'admin' ? '#FFFFFF' : (isDark ? 'var(--text-muted)' : '#475569'),
+                  boxShadow: selectedRole === 'admin' ? '0 4px 10px rgba(16, 185, 129, 0.25)' : 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <Shield size={15} />
+                <span>{t.roleAdmin}</span>
+              </button>
             </div>
+
+            {/* Subtle Whitelist Security Badge for Lecturer or Admin */}
+            {selectedRole === 'lecturer' && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                color: 'var(--color-orange-zest)',
+                background: isDark ? 'rgba(217, 100, 31, 0.14)' : 'rgba(217, 100, 31, 0.08)',
+                border: isDark ? '1px solid rgba(217, 100, 31, 0.25)' : '1px solid rgba(217, 100, 31, 0.18)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                margin: '4px auto 8px auto',
+                width: 'fit-content',
+              }}>
+                <span>🔒 {lang === 'vi' ? 'Yêu cầu Admin phê duyệt (lenguyenanhmai113@gmail.com)' : 'Requires Admin Approval'}</span>
+              </div>
+            )}
+
+            {selectedRole === 'admin' && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                color: '#059669',
+                background: isDark ? 'rgba(16, 185, 129, 0.14)' : '#ECFDF5',
+                border: isDark ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid #A7F3D0',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                margin: '4px auto 8px auto',
+                width: 'fit-content',
+              }}>
+                <span>🛡️ {lang === 'vi' ? 'Đặc quyền Quản trị viên (lenguyenanhmai05@gmail.com)' : 'Administrator Authority'}</span>
+              </div>
+            )}
 
             {/* Micro instruction hint */}
             <p style={{
@@ -406,8 +551,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
               lineHeight: 1.4,
             }}>
               {lang === 'vi' 
-                ? (selectedRole === 'student' ? 'Đăng nhập để xem đề bài và nộp bài làm lập trình.' : 'Đăng nhập để xem danh sách sinh viên và tạo đợt chấm bài.')
-                : (selectedRole === 'student' ? 'Sign in to view assignments and submit code.' : 'Sign in to review students and manage grading batches.')}
+                ? (selectedRole === 'admin'
+                    ? 'Đăng nhập vào Dashboard quản trị để phê duyệt Giảng viên và giám sát hạ tầng.'
+                    : selectedRole === 'student'
+                    ? 'Đăng nhập để xem đề bài và nộp bài làm lập trình.'
+                    : 'Đăng nhập để xem danh sách sinh viên và tạo đợt chấm bài.')
+                : (selectedRole === 'admin'
+                    ? 'Sign in to Admin Dashboard to approve lecturers and manage system.'
+                    : selectedRole === 'student'
+                    ? 'Sign in to view assignments and submit code.'
+                    : 'Sign in to review students and manage grading batches.')}
             </p>
 
             {/* Error or Success Alert */}
@@ -527,6 +680,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
               </button>
             </div>
           </div>
+          )}
 
           {/* Bottom Security Footer */}
           <div style={{

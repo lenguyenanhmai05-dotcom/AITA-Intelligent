@@ -10,6 +10,7 @@ import {
   getDeadLetterQueue,
   manualRetryJob,
   dismissJob,
+  reviewGradingJob,
 } from '../controllers/gradingController';
 
 const router = Router();
@@ -28,6 +29,9 @@ router.get('/telemetry', getTelemetry);
 
 // Job Detail (UC-02)
 router.get('/jobs/:id', getJobDetail);
+
+// Human-in-the-Loop AI Grading Review (UC-04b, BR-14, BR-15, BR-16)
+router.post('/jobs/:id/review', reviewGradingJob);
 
 // Dead-Letter Queue (UC-04)
 router.get('/dlq', getDeadLetterQueue);

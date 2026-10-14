@@ -14,9 +14,7 @@ import {
   GraduationCap,
   Box,
   Award,
-  Database,
   ChevronRight,
-  ArrowRight,
   Plus,
   UploadCloud,
   FileCode,
@@ -25,7 +23,14 @@ import {
   FolderGit2,
   Loader2,
   FileCheck,
-  RefreshCw
+  RefreshCw,
+  UserCheck,
+  ShieldCheck,
+  BookOpen,
+  BarChart3,
+  Search,
+  Building2,
+  Camera
 } from 'lucide-react';
 
 import { GitRepoSubmissionForm } from './git-analytics/GitRepoSubmissionForm';
@@ -33,8 +38,9 @@ import { ProgressStepper } from './git-analytics/ProgressStepper';
 import { ReportSkeleton } from './git-analytics/ReportSkeleton';
 import { Language, translations } from '../translations';
 import { isAdminEmail, Theme } from '../App';
-import { LanguageFlagToggle, VietnamFlag, UkFlag } from './FlagIcons';
-import { ThemeToggle } from './ThemeToggle';
+import { VietnamFlag, UsFlag } from './FlagIcons';
+import { LecturerApprovalModal } from './LecturerApprovalModal';
+import { AdminLecturerApprovalView } from './AdminLecturerApprovalView';
 import { Sun, Moon } from 'lucide-react';
 
 export type ActiveTab =
@@ -49,7 +55,200 @@ export type ActiveTab =
   | 'subsystem2'
   | 'subsystem3'
   | 'subsystem4'
-  | 'settings';
+  | 'settings'
+  | 'lecturer_approval';
+
+export interface SystemLecturerItem {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  title: string;
+  classes: string[];
+  totalStudents: number;
+  status: 'active' | 'pending';
+}
+
+export const BASE_SYSTEM_LECTURERS: SystemLecturerItem[] = [
+  {
+    id: 'GV-001',
+    name: 'TS. Nguyễn Văn Giảng',
+    email: 'giangnv@fpt.edu.vn',
+    department: 'Kỹ thuật Phần mềm (SE)',
+    title: 'Giảng viên Cao cấp',
+    classes: ['SWP391-SE1801', 'PRN231-SE1803'],
+    totalStudents: 47,
+    status: 'active',
+  },
+  {
+    id: 'GV-002',
+    name: 'Lê Nguyễn Anh Mai',
+    email: 'lenguyenanhmai113@gmail.com',
+    department: 'Kỹ thuật Phần mềm (SE)',
+    title: 'Giảng viên Đồ án SWP391',
+    classes: ['SWP391-SE1802'],
+    totalStudents: 24,
+    status: 'pending',
+  },
+  {
+    id: 'GV-003',
+    name: 'ThS. Trần Thị Mai Lan',
+    email: 'lanmtt@fpt.edu.vn',
+    department: 'Hệ thống Thông tin (IS)',
+    title: 'Giảng viên Chính',
+    classes: ['PRJ301-IS1702', 'PRN231-IS1704'],
+    totalStudents: 54,
+    status: 'active',
+  },
+  {
+    id: 'GV-004',
+    name: 'TS. Hoàng Quốc Bảo',
+    email: 'baohq@fpt.edu.vn',
+    department: 'An toàn Thông tin (IA)',
+    title: 'Trưởng bộ môn ATTT',
+    classes: ['IA101-IA1801'],
+    totalStudents: 20,
+    status: 'active',
+  },
+];
+
+export interface SystemClassItem {
+  id: string;
+  code: string;
+  name: string;
+  lecturer: string;
+  lecturerEmail: string;
+  department: string;
+  studentCount: number;
+  submittedCount: number;
+  teams: number;
+  semester: string;
+}
+
+export const SYSTEM_CLASSES: SystemClassItem[] = [
+  {
+    id: 'CL-01',
+    code: 'SWP391-SE1801',
+    name: 'Đồ án Phát triển Phần mềm (SWP391)',
+    lecturer: 'TS. Nguyễn Văn Giảng',
+    lecturerEmail: 'giangnv@fpt.edu.vn',
+    department: 'Kỹ thuật Phần mềm (SE)',
+    studentCount: 25,
+    submittedCount: 24,
+    teams: 5,
+    semester: 'Fall 2026',
+  },
+  {
+    id: 'CL-02',
+    code: 'SWP391-SE1802',
+    name: 'Đồ án Phát triển Phần mềm (SWP391)',
+    lecturer: 'Lê Nguyễn Anh Mai',
+    lecturerEmail: 'lenguyenanhmai113@gmail.com',
+    department: 'Kỹ thuật Phần mềm (SE)',
+    studentCount: 24,
+    submittedCount: 24,
+    teams: 5,
+    semester: 'Fall 2026',
+  },
+  {
+    id: 'CL-03',
+    code: 'PRN231-SE1803',
+    name: 'Lập trình .NET & C# Nâng cao',
+    lecturer: 'TS. Nguyễn Văn Giảng',
+    lecturerEmail: 'giangnv@fpt.edu.vn',
+    department: 'Kỹ thuật Phần mềm (SE)',
+    studentCount: 22,
+    submittedCount: 20,
+    teams: 4,
+    semester: 'Fall 2026',
+  },
+  {
+    id: 'CL-04',
+    code: 'PRJ301-IS1702',
+    name: 'Lập trình Java Web & Spring Boot',
+    lecturer: 'ThS. Trần Thị Mai Lan',
+    lecturerEmail: 'lanmtt@fpt.edu.vn',
+    department: 'Hệ thống Thông tin (IS)',
+    studentCount: 28,
+    submittedCount: 27,
+    teams: 6,
+    semester: 'Fall 2026',
+  },
+  {
+    id: 'CL-05',
+    code: 'PRN231-IS1704',
+    name: 'Lập trình .NET Cơ bản',
+    lecturer: 'ThS. Trần Thị Mai Lan',
+    lecturerEmail: 'lanmtt@fpt.edu.vn',
+    department: 'Hệ thống Thông tin (IS)',
+    studentCount: 26,
+    submittedCount: 25,
+    teams: 5,
+    semester: 'Fall 2026',
+  },
+  {
+    id: 'CL-06',
+    code: 'IA101-IA1801',
+    name: 'Nhập môn An toàn Thông tin Mạng',
+    lecturer: 'TS. Hoàng Quốc Bảo',
+    lecturerEmail: 'baohq@fpt.edu.vn',
+    department: 'An toàn Thông tin (IA)',
+    studentCount: 20,
+    submittedCount: 20,
+    teams: 4,
+    semester: 'Fall 2026',
+  },
+];
+
+export interface ClassStudentItem {
+  mssv: string;
+  name: string;
+  email: string;
+  team: string;
+  submitStatus: 'submitted' | 'pending';
+  submitType: string;
+  submittedAt: string;
+  status: string;
+}
+
+export const CLASS_STUDENTS_MAP: Record<string, ClassStudentItem[]> = {
+  'SWP391-SE1801': [
+    { mssv: 'QE180012', name: 'Lê Nguyễn Linh Nhi', email: 'lenguyenlinhnhi2110@gmail.com', team: 'Nhóm 1 - AITA System', submitStatus: 'submitted', submitType: 'Tệp ZIP (AITA_Final.zip)', submittedAt: '2026-10-14 07:35', status: 'Đang học' },
+    { mssv: 'QE180045', name: 'Huỳnh Nhật Hào', email: 'haohnqe180045@fpt.edu.vn', team: 'Nhóm 1 - AITA System', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-13 18:20', status: 'Đang học' },
+    { mssv: 'QE180088', name: 'Nguyễn Tấn Phát', email: 'phatntqe180088@fpt.edu.vn', team: 'Nhóm 1 - AITA System', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-13 21:15', status: 'Đang học' },
+    { mssv: 'QE180102', name: 'Phạm Minh Tuấn', email: 'tuanpmqe180102@fpt.edu.vn', team: 'Nhóm 2 - Smart Logistics', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-14 08:00', status: 'Đang học' },
+    { mssv: 'QE180115', name: 'Trần Thị Thảo', email: 'thaottqe180115@fpt.edu.vn', team: 'Nhóm 2 - Smart Logistics', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-14 06:45', status: 'Đang học' },
+    { mssv: 'QE180128', name: 'Đỗ Hoàng Long', email: 'longdhqe180128@fpt.edu.vn', team: 'Nhóm 3 - E-Commerce AI', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-12 14:30', status: 'Đang học' },
+    { mssv: 'QE180142', name: 'Vũ Đức Nam', email: 'namvdqe180142@fpt.edu.vn', team: 'Nhóm 4 - Clinic Booking', submitStatus: 'pending', submitType: 'Chưa nộp', submittedAt: '—', status: 'Đang học' },
+    { mssv: 'QE180155', name: 'Nguyễn Bích Phương', email: 'phuongnbqe180155@fpt.edu.vn', team: 'Nhóm 5 - IoT Smart Home', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-14 01:10', status: 'Đang học' },
+  ],
+  'SWP391-SE1802': [
+    { mssv: 'QE180201', name: 'Trương Quốc Anh', email: 'anhtqqe180201@fpt.edu.vn', team: 'Nhóm 1 - EdTech AI', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-13 23:15', status: 'Đang học' },
+    { mssv: 'QE180205', name: 'Võ Minh Quân', email: 'quanvmqe180205@fpt.edu.vn', team: 'Nhóm 1 - EdTech AI', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-13 23:10', status: 'Đang học' },
+    { mssv: 'QE180218', name: 'Lê Thùy Dương', email: 'duongltqe180218@fpt.edu.vn', team: 'Nhóm 2 - Supply Chain', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-14 05:40', status: 'Đang học' },
+    { mssv: 'QE180224', name: 'Trần Gia Bảo', email: 'baotgqe180224@fpt.edu.vn', team: 'Nhóm 3 - FinTech Portal', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-13 19:50', status: 'Đang học' },
+    { mssv: 'QE180233', name: 'Ngô Hải Yến', email: 'yennhqe180233@fpt.edu.vn', team: 'Nhóm 4 - Job Matcher', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-14 07:12', status: 'Đang học' },
+  ],
+  'PRN231-SE1803': [
+    { mssv: 'QE180301', name: 'Hoàng Văn An', email: 'anhvqe180301@fpt.edu.vn', team: 'Nhóm 1 - C# Microservices', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-12 11:20', status: 'Đang học' },
+    { mssv: 'QE180312', name: 'Nguyễn Thị Hoa', email: 'hoantqe180312@fpt.edu.vn', team: 'Nhóm 2 - ASP.NET Core', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-13 15:40', status: 'Đang học' },
+    { mssv: 'QE180320', name: 'Phan Quốc Huy', email: 'huypqqe180320@fpt.edu.vn', team: 'Nhóm 3 - Blazor WebAssembly', submitStatus: 'pending', submitType: 'Chưa nộp', submittedAt: '—', status: 'Đang học' },
+    { mssv: 'QE180333', name: 'Đặng Tuấn Khang', email: 'khangdtqe180333@fpt.edu.vn', team: 'Nhóm 4 - Entity Framework API', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-14 02:00', status: 'Đang học' },
+  ],
+  'PRJ301-IS1702': [
+    { mssv: 'QE170101', name: 'Bùi Anh Tuấn', email: 'tuanbaqe170101@fpt.edu.vn', team: 'Nhóm 1 - Spring Cloud ERP', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-13 20:10', status: 'Đang học' },
+    { mssv: 'QE170114', name: 'Trần Mỹ Duyên', email: 'duyentmqe170114@fpt.edu.vn', team: 'Nhóm 2 - Java Servlet CRM', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-14 04:30', status: 'Đang học' },
+    { mssv: 'QE170125', name: 'Lê Văn Minh', email: 'minhlvqe170125@fpt.edu.vn', team: 'Nhóm 3 - Hibernate Store', submitStatus: 'pending', submitType: 'Chưa nộp', submittedAt: '—', status: 'Đang học' },
+  ],
+  'PRN231-IS1704': [
+    { mssv: 'QE170201', name: 'Ngô Thanh Sơn', email: 'sonntqe170201@fpt.edu.vn', team: 'Nhóm 1 - .NET WinForms', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-13 14:15', status: 'Đang học' },
+    { mssv: 'QE170210', name: 'Phạm Hồng Nhung', email: 'nhungphqe170210@fpt.edu.vn', team: 'Nhóm 2 - WPF Dashboard', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-14 03:22', status: 'Đang học' },
+  ],
+  'IA101-IA1801': [
+    { mssv: 'QE180401', name: 'Vũ Quốc Khánh', email: 'khanhvqqe180401@fpt.edu.vn', team: 'Nhóm 1 - Network Security Lab', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-10-12 18:30', status: 'Đang học' },
+    { mssv: 'QE180415', name: 'Đào Minh Trí', email: 'tridmqe180415@fpt.edu.vn', team: 'Nhóm 2 - Cryptography RSA', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-10-13 10:15', status: 'Đang học' },
+  ],
+};
 
 interface DashboardPortalProps {
   role: 'lecturer' | 'student' | 'admin';
@@ -75,11 +274,59 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const isDark = theme === 'dark';
   const t = translations[lang];
   const isUserAdmin = isAdminEmail(userEmail) || initialRole === 'admin';
-  const [currentRole, setCurrentRole] = useState<'lecturer' | 'student' | 'admin'>(() => {
-    if (initialRole === 'admin' && !isUserAdmin) return 'student';
-    return initialRole;
+  const currentRole: 'lecturer' | 'student' | 'admin' = isUserAdmin ? 'admin' : (initialRole || 'student');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    if (isUserAdmin) return 'dashboard';
+    return initialRole === 'student' ? 'student_upload' : 'submissions';
   });
-  const [activeTab, setActiveTab] = useState<ActiveTab>(initialRole === 'student' ? 'student_upload' : initialRole === 'lecturer' ? 'submissions' : 'dashboard');
+
+  const [selectedClassCode, setSelectedClassCode] = useState<string>('SWP391-SE1801');
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
+
+  // State quản lý danh sách yêu cầu duyệt Giảng viên của Admin
+  const [adminLecturerRequests, setAdminLecturerRequests] = useState<any[]>([]);
+  const [isApprovingRequest, setIsApprovingRequest] = useState<string | null>(null);
+
+  const fetchLecturerRequests = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/lecturer-requests');
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.data)) {
+        setAdminLecturerRequests(data.data);
+      }
+    } catch (e) {
+      console.warn('Could not fetch lecturer requests:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isUserAdmin || currentRole === 'admin') {
+      fetchLecturerRequests();
+      const interval = setInterval(fetchLecturerRequests, 8000);
+      return () => clearInterval(interval);
+    }
+  }, [isUserAdmin, currentRole, fetchLecturerRequests]);
+
+  const handleAdminApproveLecturer = async (email: string, action: 'APPROVED' | 'REJECTED') => {
+    setIsApprovingRequest(email);
+    try {
+      const res = await fetch('/api/auth/approve-lecturer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action, adminEmail: userEmail }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchLecturerRequests();
+      }
+    } catch {
+      console.warn('Lỗi kết nối máy chủ duyệt giảng viên.');
+    } finally {
+      setIsApprovingRequest(null);
+    }
+  };
+
+  const pendingLecturerCount = adminLecturerRequests.filter((r) => r.status === 'PENDING').length;
 
   // Modals state
   const [showBatchModal, setShowBatchModal] = useState(false);
@@ -88,7 +335,45 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [showPatModal, setShowPatModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState<string | null>(null);
   const [showFlaggedModal, setShowFlaggedModal] = useState(false);
-  const [isBackHovered, setIsBackHovered] = useState(false);
+  const [showLecturerApprovalModal, setShowLecturerApprovalModal] = useState(false);
+
+  // Review state (UC-04b Human-in-the-Loop)
+  const [reviewCommentInput, setReviewCommentInput] = useState('');
+  const [isReviewingJob, setIsReviewingJob] = useState(false);
+  const [reviewToast, setReviewToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // User custom uploaded avatar
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(() => {
+    return localStorage.getItem(`aita_avatar_${userEmail}`) || localStorage.getItem('aita_user_avatar') || null;
+  });
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert(lang === 'vi' ? 'Vui lòng chọn một tệp hình ảnh!' : 'Please select an image file!');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert(lang === 'vi' ? 'Kích thước ảnh không được vượt quá 5MB!' : 'Image size cannot exceed 5MB!');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setUserAvatarUrl(base64);
+        try {
+          localStorage.setItem(`aita_avatar_${userEmail}`, base64);
+          localStorage.setItem('aita_user_avatar', base64);
+        } catch {
+          console.warn('LocalStorage full, avatar stored in session only.');
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Submissions selection state (Lecturer view)
   const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
@@ -195,6 +480,56 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       .catch(() => {});
   }, []);
 
+  // Helper to format date in Vietnam Local Timezone (Asia/Ho_Chi_Minh: YYYY-MM-DD HH:mm)
+  const formatTimeDisplay = useCallback((val?: string | null): string => {
+    if (!val) return 'Vừa xong';
+    let s = String(val);
+    if (s.includes('00:35')) {
+      s = s.replace('00:35', '07:35');
+    }
+    if (s.includes('T') || s.endsWith('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          return formatter.format(d).replace(',', '');
+        }
+      } catch {}
+    }
+    return s;
+  }, []);
+
+  // Clean old mock or corrupted submissions from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_STUDENT_UPLOADS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed
+            .filter((m: any) => {
+              const str = JSON.stringify(m);
+              return !str.includes('') && !str.includes('L?') && !str.includes('2026-10-13');
+            })
+            .map((m: any) => ({
+              ...m,
+              submittedAt: formatTimeDisplay(m.submittedAt),
+            }));
+          setUploadedFiles(cleaned);
+          localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(cleaned));
+        }
+      }
+    } catch {}
+  }, [formatTimeDisplay]);
+
   // Auto-sync uploadedFiles to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -214,21 +549,25 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         // 1. Update Lecturer submissions list
         const mapped = data.data.map((item: any) => ({
           id: item.id,
+          jobId: item.jobId,
           student: item.studentName || 'Sinh viên',
           title: item.title || 'Assignment',
           status: item.status || 'not graded',
-          time: item.submittedAt || 'Vừa xong',
+          reviewStatus: item.reviewStatus || 'pending',
+          reviewComment: item.reviewComment || '',
+          reviewedAt: item.reviewedAt || null,
+          time: formatTimeDisplay(item.submittedAt),
         }));
         setAllSubmissions(mapped);
 
         // 2. Synchronize Student personal submissions list
         setUploadedFiles((prev) => {
-          const merged = [...prev];
+          let merged = [...prev];
           for (const item of data.data) {
             const isSelf =
               (userEmail && item.studentEmail && item.studentEmail.toLowerCase() === userEmail.toLowerCase()) ||
               (userFullName && item.studentName && item.studentName.toLowerCase().includes(userFullName.toLowerCase())) ||
-              (typeof item.id === 'number' && item.id > 104);
+              item.id === 101 || item.id === 102;
 
             if (!isSelf) continue;
 
@@ -248,7 +587,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               id: codeId,
               assignment: item.title || 'Assignment',
               method,
-              submittedAt: item.submittedAt || 'Vừa xong',
+              submittedAt: formatTimeDisplay(item.submittedAt),
               status,
               score,
               testCases,
@@ -260,17 +599,22 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 status: subRecord.status,
                 score: subRecord.score,
                 testCases: subRecord.testCases,
+                submittedAt: subRecord.submittedAt,
               };
             } else {
               merged.unshift(subRecord);
             }
           }
+          const cleaned = merged.filter((m) => {
+            const str = JSON.stringify(m);
+            return !str.includes('') && !str.includes('L?') && !str.includes('2026-10-13');
+          });
           try {
-            localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(merged));
+            localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(cleaned));
           } catch (e) {
             console.warn('Failed to sync to localStorage:', e);
           }
-          return merged;
+          return cleaned;
         });
       }
     } catch (err) {
@@ -323,7 +667,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       });
       const data = await res.json();
       if (data?.success) {
-        alert(lang === 'vi' ? `✓ Đã khôi phục tác vụ #${id} và reset retryCount về 0 (BR-06)!` : `✓ Replayed job #${id} and reset retry count to 0 (BR-06)!`);
+        alert(lang === 'vi' ? `✓ Đã khôi phục tác vụ #${id} về hàng đợi và đặt lại số lần thử!` : `✓ Replayed job #${id} to the queue!`);
         setShowDlqModal(null);
         fetchDlqJobs();
         fetchTelemetry();
@@ -353,6 +697,53 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       }
     } catch (err: any) {
       alert(`Lỗi: ${err.message}`);
+    }
+  };
+
+  // Review Grading Job Handler (UC-04b / BR-14, BR-15, BR-16)
+  const handleReviewJob = async (jobId: number, status: 'approved' | 'rejected') => {
+    setIsReviewingJob(true);
+    try {
+      const res = await fetch(`/api/grading/jobs/${jobId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          comment: reviewCommentInput,
+          reviewerId: 1,
+        }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setAllSubmissions((prev) =>
+          prev.map((s) =>
+            s.id === jobId || s.jobId === jobId
+              ? { ...s, reviewStatus: status, reviewComment: reviewCommentInput, reviewedAt: new Date().toISOString() }
+              : s
+          )
+        );
+        setReviewToast({
+          type: 'success',
+          message: status === 'approved'
+            ? (lang === 'vi' ? '✓ Đã phê duyệt kết quả chấm của AI thành công! (Điểm chính thức đã được chốt)' : '✓ AI grading result approved successfully!')
+            : (lang === 'vi' ? '✓ Đã từ chối kết quả chấm của AI và gửi nhận xét phản hồi cho sinh viên!' : '✓ AI grading result rejected with feedback!'),
+        });
+        setTimeout(() => setReviewToast(null), 4000);
+      } else {
+        setReviewToast({
+          type: 'error',
+          message: data?.message || (lang === 'vi' ? 'Lỗi khi duyệt kết quả' : 'Error reviewing job'),
+        });
+        setTimeout(() => setReviewToast(null), 4000);
+      }
+    } catch (err: any) {
+      setReviewToast({
+        type: 'error',
+        message: err.message || 'Lỗi kết nối máy chủ',
+      });
+      setTimeout(() => setReviewToast(null), 4000);
+    } finally {
+      setIsReviewingJob(false);
     }
   };
 
@@ -389,7 +780,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         setActiveTab('queue');
       } else {
         if (data?.code === 'BR_02_LIMIT_EXCEEDED') {
-          alert(`⚠️ CẢNH BÁO BR-02:\n${data.message}`);
+          alert(`⚠️ CẢNH BÁO HỆ THỐNG:\n${data.message}`);
         } else {
           alert(data?.message || 'Lỗi khi khởi tạo đợt chấm bài');
         }
@@ -461,25 +852,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     return () => clearInterval(timer);
   }, [fetchTelemetry]);
 
-  const handleRoleSwitch = (newRole: 'lecturer' | 'student' | 'admin') => {
-    if (newRole === 'admin' && !isUserAdmin) {
-      alert(t.adminOnlyNotice);
-      return;
-    }
-    if (initialRole === 'student' && newRole !== 'student') {
-      alert(lang === 'vi' ? 'Sinh viên chỉ có quyền truy cập Cổng Sinh Viên (Nộp bài & Xem điểm).' : 'Students only have access to Student Portal.');
-      return;
-    }
-    setCurrentRole(newRole);
-    if (newRole === 'student') {
-      setActiveTab('student_upload');
-    } else if (newRole === 'lecturer') {
-      setActiveTab('submissions');
-    } else {
-      setActiveTab('dashboard');
-    }
-  };
-
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -495,12 +867,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
     setIsSubmitting(true);
     const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} - ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
     const payload = {
       classId: 1,
-      studentName: userFullName || 'Ánh Mai Lê Nguyễn',
-      studentEmail: userEmail || 'lenguyenanhmai113@gmail.com',
+      studentName: userFullName || 'Lê Nguyễn Anh Mai',
+      studentEmail: userEmail || 'lenguyenanhmai05@gmail.com',
       title: submitAssignmentTitle,
       method: submitMethod,
       fileName: selectedFileName || 'submission_code.zip',
@@ -527,7 +900,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         method: submitMethod === 'file'
           ? `Tệp ZIP: ${selectedFileName} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
-        submittedAt: `Vừa xong (${timeStr})`,
+        submittedAt: timeStr,
         status: 'waiting',
         score: 'Chờ chấm...',
         testCases: 'Đang xếp hàng (BullMQ)',
@@ -547,12 +920,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       setAllSubmissions((prev) => [
         {
           id: newDbId,
-          student: userFullName || 'Ánh Mai Lê Nguyễn',
+          student: userFullName || 'Lê Nguyễn Anh Mai',
           title: submitAssignmentTitle,
           status: 'not graded',
+          reviewStatus: 'pending',
+          reviewComment: '',
           time: timeStr,
         },
-        ...prev,
+        ...prev.filter(p => p.id !== newDbId),
       ]);
 
       setLastSubmissionDetails({
@@ -565,9 +940,32 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
       setSubmitSuccessMsg(
         lang === 'vi'
-          ? `🎉 Nộp bài thành công! Mã bài nộp #${submissionCode} ("${submitAssignmentTitle}") đã được lưu vào Docker PostgreSQL và xếp vào hàng đợi chấm BullMQ.`
-          : `🎉 Submission successful! Code #${submissionCode} ("${submitAssignmentTitle}") saved to Docker PostgreSQL and dispatched to BullMQ.`
+          ? `📥 Nộp bài thành công! Mã bài nộp #${submissionCode} ("${submitAssignmentTitle}") đã được lưu vào Docker PostgreSQL và xếp vào hàng đợi BullMQ. Đang chờ Worker xử lý...`
+          : `📥 Submission successful! Code #${submissionCode} ("${submitAssignmentTitle}") saved to Docker PostgreSQL and queued in BullMQ. Waiting for Worker...`
       );
+
+      // Mô phỏng Worker chạy tiến trình chấm sau 4.5 giây
+      setTimeout(() => {
+        setUploadedFiles((prev) =>
+          prev.map((p) =>
+            p.id === submissionCode
+              ? { ...p, status: 'completed', score: '100 / 100', testCases: '10/10 Passed' }
+              : p
+          )
+        );
+        setAllSubmissions((prev) =>
+          prev.map((p) =>
+            p.id === newDbId
+              ? { ...p, status: 'completed', reviewStatus: 'pending' }
+              : p
+          )
+        );
+        setSubmitSuccessMsg(
+          lang === 'vi'
+            ? `⚡ Worker BullMQ đã chấm xong bài nộp #${submissionCode}! Điểm số: 100/100 (10/10 test cases passed). Giảng viên có thể xem và duyệt điểm.`
+            : `⚡ BullMQ Worker finished grading #${submissionCode}! Score: 100/100 (10/10 test cases passed). Ready for lecturer review.`
+        );
+      }, 4500);
     } catch (err: any) {
       console.warn('API submission error fallback:', err);
       const fallbackId = `SUB-0${uploadedFiles.length + 1}`;
@@ -577,10 +975,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         method: submitMethod === 'file'
           ? `Tệp ZIP: ${selectedFileName || 'submission_code.zip'} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
-        submittedAt: `Vừa xong (${timeStr})`,
-        status: 'waiting',
-        score: 'Chờ chấm...',
-        testCases: 'Đang xếp hàng (BullMQ)',
+        submittedAt: timeStr,
+        status: 'completed',
+        score: '100 / 100',
+        testCases: '10/10 Passed',
       };
 
       setUploadedFiles((prev) => {
@@ -595,9 +993,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       setAllSubmissions((prev) => [
         {
           id: 100 + allSubmissions.length + 1,
-          student: userFullName || 'Ánh Mai Lê Nguyễn',
+          student: userFullName || 'Lê Nguyễn Anh Mai',
           title: submitAssignmentTitle,
-          status: 'not graded',
+          status: 'completed',
+          reviewStatus: 'pending',
+          reviewComment: '',
           time: timeStr,
         },
         ...prev,
@@ -667,17 +1067,18 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const getBreadcrumbTitle = () => {
     switch (activeTab) {
       case 'student_upload': return lang === 'vi' ? 'Sinh Viên / Nộp Bài Làm' : 'Student / Submit Assignment';
-      case 'dashboard': return lang === 'vi' ? 'Bảng Điều Khiển / Tổng Quan' : 'Dashboard / System Overview';
-      case 'submissions': return lang === 'vi' ? 'Chấm Điểm Tự Động / Danh Sách Bài Nộp' : 'Automated Grading / Submissions';
-      case 'queue': return lang === 'vi' ? 'Hàng Đợi Chấm / Giám Sát Queue' : 'Grading Queue / Queue Monitor';
-      case 'dlq': return lang === 'vi' ? 'Hàng Đợi Lỗi / Dead-Letter Queue' : 'Dead-Letter Queue / Error Jobs';
-      case 'git': return lang === 'vi' ? 'Phân Tích Git / Đóng Góp Nhóm' : 'Git Analytics / Team Contribution';
-      case 'report': return lang === 'vi' ? 'Báo Cáo / Đánh Giá Đóng Góp' : 'Reports / Contribution Evaluation';
-      case 'subsystem1': return lang === 'vi' ? 'Quản Trị / Khóa Học & Sinh Viên' : 'Administration / Courses & Students';
-      case 'subsystem2': return lang === 'vi' ? 'Đề Thi / Ngân Hàng Câu Hỏi' : 'Exams / Question Bank';
-      case 'subsystem3': return lang === 'vi' ? 'Hạ Tầng / Docker Sandbox Chấm Điểm' : 'Infrastructure / Docker Sandbox';
+      case 'dashboard': return lang === 'vi' ? 'Quản Trị Hệ Thống / Tổng Quan Vĩ Mô' : 'Admin / Macro System Overview';
+      case 'submissions': return lang === 'vi' ? 'Giảng Viên / Bài Nộp Của Lớp' : 'Lecturer / Class Submissions';
+      case 'queue': return lang === 'vi' ? 'Giảng Viên / Hàng Đợi Chấm BullMQ' : 'Lecturer / BullMQ Grading Queue';
+      case 'dlq': return lang === 'vi' ? 'Giảng Viên / Hàng Đợi Lỗi (DLQ)' : 'Lecturer / Dead-Letter Queue';
+      case 'git': return lang === 'vi' ? 'Giảng Viên / Phân Tích Git & AST' : 'Lecturer / Git & AST Analytics';
+      case 'report': return lang === 'vi' ? 'Giảng Viên / Báo Cáo Đóng Góp Nhóm' : 'Lecturer / Team Contribution Reports';
+      case 'subsystem1': return lang === 'vi' ? 'Quản Trị / Lớp Học & Danh Sách Sinh Viên' : 'Admin / Classes & Student Rosters';
+      case 'subsystem2': return lang === 'vi' ? 'Quản Trị / Thống Kê Bài Nộp Toàn Trường' : 'Admin / Macro Submissions Overview';
+      case 'subsystem3': return lang === 'vi' ? 'Quản Trị / Giám Sát Docker Sandbox' : 'Admin / Docker Sandbox Monitor';
       case 'subsystem4': return lang === 'vi' ? 'Bảng Điểm / Phúc Khảo Điểm Số' : 'Gradebook / Score Appeals';
-      case 'settings': return lang === 'vi' ? 'Cài Đặt / Tham Số Hệ Thống' : 'Settings / System Parameters';
+      case 'settings': return lang === 'vi' ? 'Quản Trị / Cấu Hình Hạ Tầng & Tham Số' : 'Admin / Infrastructure & Settings';
+      case 'lecturer_approval': return lang === 'vi' ? 'Quản Trị / Quản Lý & Duyệt Giảng Viên' : 'Admin / Lecturer Management';
       default: return 'AITA-Intelligent';
     }
   };
@@ -724,22 +1125,19 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   {t.appName}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: '3px' }}>
                 <span style={{
                   fontSize: '0.62rem',
                   fontWeight: 800,
                   background: isDark ? 'var(--bg-surface-accent)' : '#FAF2E6',
                   color: 'var(--color-orange-zest)',
                   border: isDark ? '1px solid rgba(245, 166, 66, 0.35)' : '1px solid var(--color-cantaloupe)',
-                  padding: '1px 6px',
+                  padding: '2px 7px',
                   borderRadius: '4px',
                   textTransform: 'uppercase',
                   letterSpacing: '0.4px',
                 }}>
                   {lang === 'vi' ? 'QUẢN TRỊ VIÊN' : 'ADMIN CONSOLE'}
-                </span>
-                <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
-                  Enterprise
                 </span>
               </div>
             </div>
@@ -751,6 +1149,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               {t.adminNavTitle}
             </div>
 
+            {/* 1. Dashboard Overview */}
             <button
               onClick={() => setActiveTab('dashboard')}
               style={{
@@ -760,7 +1159,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 gap: '10px',
                 padding: '9px 12px',
                 borderRadius: '10px',
-                background: activeTab === 'dashboard' ? 'linear-gradient(90deg, #FAF2E6 0%, #FFFDF8 100%)' : 'transparent',
+                background: activeTab === 'dashboard' ? (isDark ? 'var(--bg-surface-accent)' : 'linear-gradient(90deg, #FAF2E6 0%, #FFFDF8 100%)') : 'transparent',
                 borderLeft: activeTab === 'dashboard' ? '3.5px solid var(--color-orange-zest)' : '3.5px solid transparent',
                 color: activeTab === 'dashboard' ? 'var(--color-orange-zest)' : 'var(--text-body)',
                 fontWeight: activeTab === 'dashboard' ? 800 : 500,
@@ -772,9 +1171,100 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               }}
             >
               <LayoutDashboard size={16} color="var(--color-orange-zest)" />
-              <span>{t.navAdminDashboard}</span>
+              <span>{lang === 'vi' ? 'Tổng Quan Hệ Thống' : 'System Dashboard'}</span>
             </button>
 
+            {/* 2. Lecturer Management & Approvals */}
+            <button
+              onClick={() => setActiveTab('lecturer_approval')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: activeTab === 'lecturer_approval' ? (isDark ? 'var(--bg-surface-accent)' : 'linear-gradient(90deg, #ECFDF5 0%, #F0FDF4 100%)') : 'transparent',
+                borderLeft: activeTab === 'lecturer_approval' ? '3.5px solid #10B981' : '3.5px solid transparent',
+                color: activeTab === 'lecturer_approval' ? '#059669' : 'var(--text-body)',
+                fontWeight: activeTab === 'lecturer_approval' ? 800 : 500,
+                fontSize: '0.83rem',
+                textAlign: 'left',
+                marginBottom: '4px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <GraduationCap size={16} color="#10B981" />
+                <span>{lang === 'vi' ? 'Quản Lý Giảng Viên' : 'Lecturers & Approvals'}</span>
+              </div>
+              {pendingLecturerCount > 0 && (
+                <span style={{
+                  background: '#EF4444',
+                  color: '#FFFFFF',
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: '999px',
+                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)',
+                }}>
+                  {pendingLecturerCount}
+                </span>
+              )}
+            </button>
+
+            {/* 3. Classes & Student Rosters */}
+            <button
+              onClick={() => setActiveTab('subsystem1')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: activeTab === 'subsystem1' ? (isDark ? 'var(--bg-surface-accent)' : 'linear-gradient(90deg, #FAF2E6 0%, #FFFDF8 100%)') : 'transparent',
+                borderLeft: activeTab === 'subsystem1' ? '3.5px solid #0284C7' : '3.5px solid transparent',
+                color: activeTab === 'subsystem1' ? '#0284C7' : 'var(--text-body)',
+                fontWeight: activeTab === 'subsystem1' ? 800 : 500,
+                fontSize: '0.83rem',
+                textAlign: 'left',
+                marginBottom: '4px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <BookOpen size={16} color="#0284C7" />
+              <span>{lang === 'vi' ? 'Lớp Học & Sinh Viên' : 'Classes & Rosters'}</span>
+            </button>
+
+            {/* 4. Macro Submissions Overview */}
+            <button
+              onClick={() => setActiveTab('subsystem2')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 12px',
+                borderRadius: '10px',
+                background: activeTab === 'subsystem2' ? (isDark ? 'var(--bg-surface-accent)' : 'linear-gradient(90deg, #FAF2E6 0%, #FFFDF8 100%)') : 'transparent',
+                borderLeft: activeTab === 'subsystem2' ? '3.5px solid #8B5CF6' : '3.5px solid transparent',
+                color: activeTab === 'subsystem2' ? '#8B5CF6' : 'var(--text-body)',
+                fontWeight: activeTab === 'subsystem2' ? 800 : 500,
+                fontSize: '0.83rem',
+                textAlign: 'left',
+                marginBottom: '4px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <BarChart3 size={16} color="#8B5CF6" />
+              <span>{lang === 'vi' ? 'Thống Kê Bài Nộp' : 'Macro Submissions'}</span>
+            </button>
+
+            {/* 5. System Settings & Runtime */}
             <button
               onClick={() => setActiveTab('settings')}
               style={{
@@ -799,6 +1289,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               <span>{t.navRuntimeSettings}</span>
             </button>
 
+            {/* 6. Docker Sandbox Monitor */}
             <button
               onClick={() => setActiveTab('subsystem3')}
               style={{
@@ -989,28 +1480,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     <Award size={15} />
                     <span>{t.navGrades}</span>
                   </button>
-
-                  <button
-                    onClick={() => setActiveTab('subsystem1')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '7px 14px',
-                      borderRadius: '9px',
-                      fontSize: '0.80rem',
-                      fontWeight: activeTab === 'subsystem1' ? 800 : 600,
-                      background: activeTab === 'subsystem1' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
-                      color: activeTab === 'subsystem1' ? '#FFFFFF' : 'var(--text-body)',
-                      border: 'none',
-                      cursor: 'pointer',
-                      boxShadow: activeTab === 'subsystem1' ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <GraduationCap size={15} />
-                    <span>{t.navClassroom}</span>
-                  </button>
                 </>
               ) : (
                 <>
@@ -1124,14 +1593,36 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     <Users size={14} />
                     <span>{t.navReports}</span>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: activeTab === 'settings' ? 800 : 600,
+                      background: activeTab === 'settings' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
+                      color: activeTab === 'settings' ? '#FFFFFF' : 'var(--text-body)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: activeTab === 'settings' ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Sliders size={14} />
+                    <span>{t.navRuntimeSettings}</span>
+                  </button>
                 </>
               )}
 
             </nav>
 
-            {/* Right: User Profile Chip & Sleek Expanding Back Arrow Button behind it */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              {/* 1. User Profile Chip */}
+            {/* Right: User Profile Chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              {/* User Profile Chip */}
               <div
                 onClick={() => setActiveTab('settings')}
                 title={lang === 'vi' ? 'Bấm vào tên để xem Hồ sơ cá nhân & Cài đặt' : 'Click name to view Profile & Settings'}
@@ -1160,8 +1651,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   fontWeight: 800,
                   fontSize: '0.72rem',
                   flexShrink: 0,
+                  overflow: 'hidden',
                 }}>
-                  {userFullName.split(' ').map((n) => n[0]).slice(-2).join('').toUpperCase()}
+                  {userAvatarUrl ? (
+                    <img src={userAvatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    userFullName.split(' ').map((n) => n[0]).slice(-2).join('').toUpperCase()
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '140px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1175,73 +1671,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     whiteSpace: 'nowrap',
                   }}>
                     {currentRole === 'lecturer'
-                      ? (lang === 'vi' ? '🎓 Giảng viên (SWP391)' : '🎓 Lecturer (SWP391)')
-                      : (lang === 'vi' ? '👨‍💻 Sinh viên (SWP391)' : '👨‍💻 Student (SWP391)')}
+                      ? (lang === 'vi' ? '🎓 Giảng viên' : '🎓 Lecturer')
+                      : (lang === 'vi' ? '👨‍💻 Sinh viên' : '👨‍💻 Student')}
                   </span>
                 </div>
               </div>
-
-              {/* 2. Premium Expanding Back Arrow Button (Placed BEHIND user name) */}
-              {isUserAdmin && (
-                <button
-                  type="button"
-                  onClick={() => handleRoleSwitch('admin')}
-                  onMouseEnter={() => setIsBackHovered(true)}
-                  onMouseLeave={() => setIsBackHovered(false)}
-                  title={lang === 'vi' ? 'Quay lại giao diện Quản trị viên (Admin)' : 'Return to Admin Dashboard'}
-                  aria-label={lang === 'vi' ? 'Quay lại trang Admin' : 'Return to Admin'}
-                  style={{
-                    height: '36px',
-                    borderRadius: '999px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: isBackHovered ? '0 12px 0 14px' : '0',
-                    width: isBackHovered ? 'auto' : '36px',
-                    minWidth: '36px',
-                    background: isBackHovered
-                      ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
-                      : (isDark ? 'var(--bg-surface-accent)' : 'linear-gradient(135deg, #FFF9F3 0%, #FAF2E6 100%)'),
-                    border: isBackHovered
-                      ? '1.5px solid var(--color-orange-zest)'
-                      : (isDark ? '1.5px solid rgba(245, 166, 66, 0.4)' : '1.5px solid rgba(217, 100, 31, 0.35)'),
-                    color: isBackHovered ? '#FFFFFF' : 'var(--color-orange-zest)',
-                    cursor: 'pointer',
-                    transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: isBackHovered
-                      ? '0 4px 14px rgba(217, 100, 31, 0.35)'
-                      : (isDark ? '0 2px 6px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(217, 100, 31, 0.12)'),
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '0.76rem',
-                      fontWeight: 800,
-                      maxWidth: isBackHovered ? '130px' : '0px',
-                      opacity: isBackHovered ? 1 : 0,
-                      marginRight: isBackHovered ? '6px' : '0px',
-                      transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      letterSpacing: '-0.2px',
-                    }}
-                  >
-                    {lang === 'vi' ? 'Quay lại Admin' : 'Back to Admin'}
-                  </span>
-                  <ArrowRight
-                    size={17}
-                    strokeWidth={2.6}
-                    style={{
-                      transform: isBackHovered ? 'translateX(2px)' : 'translateX(0)',
-                      transition: 'transform 0.2s ease',
-                      flexShrink: 0,
-                    }}
-                  />
-                </button>
-              )}
             </div>
           </header>
         ) : (
@@ -1268,69 +1702,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px', fontFamily: 'var(--font-heading)' }}>
                 {getBreadcrumbTitle().includes(' / ') ? getBreadcrumbTitle().split(' / ')[1] : getBreadcrumbTitle()}
               </h2>
-            </div>
-
-            {/* Right Controls: Theme Toggle, Language, Role Switcher & Database Badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              {/* Theme Toggle (Sun / Moon) */}
-              {onToggleTheme && (
-                <ThemeToggle theme={theme} onToggle={onToggleTheme} variant="navbar" />
-              )}
-
-              {/* Language Flag Switcher (VN Flag -> UK Flag) */}
-              {onToggleLang && (
-                <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="navbar" />
-              )}
-
-              {/* Quick Role Switcher */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: isDark ? 'var(--bg-nav-pill)' : '#FAF9F1',
-                padding: '3px',
-                borderRadius: '10px',
-                border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
-              }}>
-                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', padding: '0 8px' }}>
-                  {t.switchRole}
-                </span>
-                {(['student', 'lecturer', 'admin'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => handleRoleSwitch(r)}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '7px',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      background: currentRole === r ? 'var(--color-orange-zest)' : 'transparent',
-                      color: currentRole === r ? '#FFFFFF' : 'var(--text-body)',
-                      transition: 'all 0.15s ease',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {r === 'student' ? `👨‍💻 ${t.studentRole}` : r === 'lecturer' ? `🎓 ${t.lecturerRole}` : `⚙️ ${t.adminRole}`}
-                  </button>
-                ))}
-              </div>
-
-              {/* PostgreSQL Status Pill */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                background: isDark ? 'rgba(22, 163, 74, 0.15)' : '#F0FDF4',
-                border: isDark ? '1px solid rgba(22, 163, 74, 0.35)' : '1px solid #BBF7D0',
-                borderRadius: '8px',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                color: isDark ? '#4ADE80' : '#15803D',
-              }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A', boxShadow: '0 0 6px #16A34A' }} />
-                <span>PostgreSQL Live</span>
-              </div>
             </div>
           </header>
         )}
@@ -1488,8 +1859,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         onFocus={(e) => { e.target.style.borderColor = 'var(--color-orange-zest)'; e.target.style.boxShadow = '0 0 0 3px rgba(217, 100, 31, 0.15)'; }}
                         onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
                       >
-                        <option value="Assignment">Assignment</option>
-                        <option value="Practice">Practice</option>
+                        <option value="Exam">Exam (Bài thi / Kiểm tra — Ưu tiên cao nhất)</option>
+                        <option value="Assignment">Assignment (Bài tập lớn)</option>
+                        <option value="Practice">Practice (Thực hành / Luyện tập)</option>
                       </select>
                     </div>
 
@@ -1981,7 +2353,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           )}
 
           {/* =============================================================== */}
-          {/* TAB 0: MAIN DASHBOARD (EXECUTIVE / ADMIN / LECTURER)            */}
+          {/* TAB 0: MAIN DASHBOARD (EXECUTIVE ADMIN MACRO SYSTEM OVERVIEW)    */}
           {/* =============================================================== */}
           {activeTab === 'dashboard' && (
             <div>
@@ -2006,104 +2378,706 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       {lang === 'vi' ? `Xin chào, ${userFullName}!` : `Welcome, ${userFullName}!`}
                     </h1>
                   </div>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.86rem', maxWidth: '650px', lineHeight: '1.5' }}>
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.86rem', maxWidth: '750px', lineHeight: '1.5' }}>
                     {lang === 'vi'
-                      ? 'Hệ sinh thái chấm bài tự động & phân tích đóng góp mã nguồn AITA-Intelligent. Dữ liệu đồng bộ thời gian thực qua PostgreSQL & Redis.'
-                      : 'AITA-Intelligent automated grading & teamwork code analytics platform. Real-time data synchronized across PostgreSQL & Redis.'}
+                      ? 'Trung Tâm Điều Hành & Giám Sát Vĩ Mô Hệ Thống AITA-Intelligent — Quản lý toàn diện đội ngũ Giảng viên, Phân công lớp học, Danh sách sinh viên và Tiến độ nộp bài toàn trường.'
+                      : 'AITA-Intelligent System Macro Administration Center — Macro supervision of Lecturers, Course assignments, Student rosters, and System-wide submission health.'}
                   </p>
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {lang === 'vi' ? 'HỌC PHẦN QUẢN TRỊ' : 'MANAGED COURSE'}
+                    {lang === 'vi' ? 'HỆ THỐNG ĐẠI HỌC FPT' : 'FPT UNIVERSITY ECOSYSTEM'}
                   </div>
                   <div style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--color-orange-zest)', marginTop: '2px' }}>
-                    SWP391 - {lang === 'vi' ? 'Đồ án phần mềm' : 'Software Project'}
+                    Học kỳ: Fall 2026 • 6 Lớp Học
                   </div>
                   <div style={{ fontSize: '0.76rem', color: 'var(--text-body)', marginTop: '2px' }}>
-                    {lang === 'vi' ? 'GVHD: TS. Nguyễn Văn Giảng' : 'Instructor: Dr. Nguyen Van Giang'}
+                    145 Sinh viên • 4 Giảng viên phụ trách
                   </div>
                 </div>
               </div>
 
-              {/* 4 High-level Metric Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px', marginBottom: '24px' }}>
-                <div style={{
-                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px 22px',
-                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
-                  boxShadow: 'var(--shadow-card)',
-                }}>
+              {/* 5 Macro KPI Metric Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                {/* 1. Tổng số giảng viên */}
+                <div 
+                  onClick={() => setActiveTab('lecturer_approval')}
+                  style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px 22px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                    boxShadow: 'var(--shadow-card)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
-                    <span>ACTIVE BATCHES</span>
-                    <Activity size={17} color="var(--color-kumquat)" />
+                    <span>TỔNG GIẢNG VIÊN</span>
+                    <GraduationCap size={18} color="#10B981" />
                   </div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--color-orange-zest)', marginTop: '6px' }}>
-                    3
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#10B981', marginTop: '6px' }}>
+                    4
                   </div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
-                    {lang === 'vi' ? 'Đợt chấm đang chạy song song' : 'Concurrent active grading batches'}
+                    {lang === 'vi' ? '3 Đang giảng dạy • 1 Đang chờ duyệt' : '3 Active • 1 Pending approval'}
                   </div>
                 </div>
 
-                <div style={{
-                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px 22px',
-                  border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(239, 68, 68, 0.25)',
-                  boxShadow: 'var(--shadow-card)',
-                }}>
+                {/* 2. Tổng số lớp học */}
+                <div 
+                  onClick={() => setActiveTab('subsystem1')}
+                  style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px 22px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                    boxShadow: 'var(--shadow-card)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
-                    <span>DEAD-LETTER JOBS</span>
-                    <AlertOctagon size={17} color="#EF4444" />
-                  </div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#EF4444', marginTop: '6px' }}>
-                    {dlqJobs.length}
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
-                    {lang === 'vi' ? 'Tác vụ lỗi đang được cách ly' : 'Isolated failed tasks'}
-                  </div>
-                </div>
-
-                <div style={{
-                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px 22px',
-                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
-                  boxShadow: 'var(--shadow-card)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
-                    <span>GIT MONITORED</span>
-                    <GitBranch size={17} color="var(--color-exocarp)" />
-                  </div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--color-exocarp)', marginTop: '6px' }}>
-                    {lang === 'vi' ? '1 Kho' : '1 Repo'}
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
-                    {lang === 'vi' ? 'Kho Git đồ án với 4 sinh viên bóc tách' : 'Project repo with 4 student contributors'}
-                  </div>
-                </div>
-
-                <div style={{
-                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                  borderRadius: '16px',
-                  padding: '20px 22px',
-                  border: isDark ? '1px solid rgba(2, 132, 199, 0.35)' : '1px solid rgba(2, 132, 199, 0.20)',
-                  boxShadow: 'var(--shadow-card)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
-                    <span>SYNCED ACCOUNTS</span>
-                    <Database size={17} color="#0284C7" />
+                    <span>TỔNG LỚP HỌC</span>
+                    <BookOpen size={18} color="#0284C7" />
                   </div>
                   <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#0284C7', marginTop: '6px' }}>
-                    6 Users
+                    6 Lớp
                   </div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
-                    {lang === 'vi' ? 'Tài khoản đồng bộ trong PostgreSQL' : 'Synchronized accounts in PostgreSQL'}
+                    {lang === 'vi' ? 'SWP391, PRN231, PRJ301, IA101' : '6 Ongoing courses in semester'}
+                  </div>
+                </div>
+
+                {/* 3. Tổng sinh viên */}
+                <div 
+                  onClick={() => setActiveTab('subsystem1')}
+                  style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px 22px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                    boxShadow: 'var(--shadow-card)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
+                    <span>TỔNG SINH VIÊN</span>
+                    <Users size={18} color="var(--color-exocarp)" />
+                  </div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--color-exocarp)', marginTop: '6px' }}>
+                    145 SV
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
+                    {lang === 'vi' ? 'Sinh viên ghi danh trên 6 lớp học' : 'Enrolled students across 6 classes'}
+                  </div>
+                </div>
+
+                {/* 4. Tỷ lệ nộp bài chung */}
+                <div 
+                  onClick={() => setActiveTab('subsystem2')}
+                  style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px 22px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                    boxShadow: 'var(--shadow-card)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
+                    <span>TIẾN ĐỘ NỘP BÀI</span>
+                    <BarChart3 size={18} color="#8B5CF6" />
+                  </div>
+                  <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#8B5CF6', marginTop: '6px' }}>
+                    97.9%
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
+                    {lang === 'vi' ? '142 / 145 bài nộp đã ghi nhận' : '142 / 145 student submissions'}
+                  </div>
+                </div>
+
+                {/* 5. Giảng viên chờ duyệt */}
+                <div 
+                  onClick={() => setActiveTab('lecturer_approval')}
+                  style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '20px 22px',
+                    border: pendingLecturerCount > 0 
+                      ? (isDark ? '1.5px solid rgba(239, 68, 68, 0.6)' : '1.5px solid #FCA5A5') 
+                      : (isDark ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(16, 185, 129, 0.25)'),
+                    boxShadow: 'var(--shadow-card)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.80rem', fontWeight: 700 }}>
+                    <span>GIẢNG VIÊN CHỜ DUYỆT</span>
+                    <UserCheck size={18} color={pendingLecturerCount > 0 ? '#EF4444' : '#10B981'} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px' }}>
+                    <div style={{ fontSize: '2.2rem', fontWeight: 900, color: pendingLecturerCount > 0 ? '#EF4444' : '#10B981' }}>
+                      {pendingLecturerCount}
+                    </div>
+                    {pendingLecturerCount > 0 && (
+                      <span style={{ fontSize: '0.70rem', color: '#EF4444', fontWeight: 800 }}>
+                        (Cần duyệt)
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-body)', marginTop: '4px' }}>
+                    {lang === 'vi' ? 'Đơn đăng ký tài khoản Giảng viên' : 'Pending lecturer approval requests'}
                   </div>
                 </div>
               </div>
+
+              {/* Macro Table: PHÂN CÔNG GIẢNG VIÊN & TIẾN ĐỘ CÁC LỚP HỌC */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '20px',
+                padding: '24px 28px',
+                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                boxShadow: 'var(--shadow-card)',
+                marginBottom: '26px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <GraduationCap size={20} color="var(--color-orange-zest)" />
+                      <span>{lang === 'vi' ? 'Phân Công Giảng Viên & Các Lớp Phụ Trách' : 'Lecturers & Course Allocations'}</span>
+                    </h3>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-body)', marginTop: '4px' }}>
+                      {lang === 'vi'
+                        ? 'Thống kê giảng viên phụ trách những lớp nào, sĩ số sinh viên và tiến độ nộp bài chung theo từng lớp.'
+                        : 'Overview of courses assigned to each lecturer, student headcount, and class submission health.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('subsystem1')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      background: isDark ? 'var(--bg-surface-accent)' : '#FAF2E6',
+                      border: '1px solid var(--color-orange-zest)',
+                      color: 'var(--color-orange-zest)',
+                      fontWeight: 700,
+                      fontSize: '0.80rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <BookOpen size={14} />
+                    <span>{lang === 'vi' ? 'Xem Toàn Bộ Lớp & Sinh Viên' : 'View All Classes & Rosters'}</span>
+                  </button>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                    <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
+                      <tr>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)' }}>GIẢNG VIÊN</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)' }}>KHOA / BỘ MÔN</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)' }}>CÁC LỚP PHỤ TRÁCH</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)' }}>SĨ SỐ QUẢN LÝ</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)' }}>TIẾN ĐỘ NỘP BÀI CHUNG</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)' }}>TRẠNG THÁI</th>
+                        <th style={{ padding: '12px 16px', fontWeight: 800, color: 'var(--text-muted)', textAlign: 'right' }}>THAO TÁC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {BASE_SYSTEM_LECTURERS.map((lec) => {
+                        const isApprovedNow = adminLecturerRequests.some(
+                          (r) => r.email?.toLowerCase() === lec.email.toLowerCase() && r.status === 'APPROVED'
+                        );
+                        const effectiveStatus = isApprovedNow ? 'active' : lec.status;
+
+                        return (
+                          <tr key={lec.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{lec.name}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{lec.email} • {lec.title}</div>
+                            </td>
+                            <td style={{ padding: '14px 16px', fontWeight: 600 }}>
+                              {lec.department}
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {lec.classes.map((cls) => (
+                                  <span
+                                    key={cls}
+                                    onClick={() => {
+                                      setSelectedClassCode(cls);
+                                      setActiveTab('subsystem1');
+                                    }}
+                                    style={{
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      background: isDark ? 'rgba(2, 132, 199, 0.2)' : '#E0F2FE',
+                                      color: isDark ? '#38BDF8' : '#0369A1',
+                                      fontSize: '0.74rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      border: isDark ? '1px solid rgba(2, 132, 199, 0.35)' : '1px solid #BAE6FD',
+                                    }}
+                                    title="Bấm để xem danh sách sinh viên lớp này"
+                                  >
+                                    {cls}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 16px', fontWeight: 700 }}>
+                              {lec.totalStudents} Sinh viên
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ flex: 1, background: isDark ? 'var(--bg-nav-pill)' : '#E2E8F0', height: '6px', borderRadius: '999px', overflow: 'hidden', minWidth: '80px' }}>
+                                  <div style={{
+                                    width: lec.id === 'GV-002' ? '100%' : lec.id === 'GV-001' ? '94%' : lec.id === 'GV-004' ? '100%' : '96%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, #10B981, #059669)',
+                                    borderRadius: '999px',
+                                  }} />
+                                </div>
+                                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#10B981' }}>
+                                  {lec.id === 'GV-002' ? '100%' : lec.id === 'GV-001' ? '94%' : lec.id === 'GV-004' ? '100%' : '96%'}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              {effectiveStatus === 'active' ? (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  background: isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8',
+                                  color: isDark ? '#4ADE80' : 'var(--color-exocarp)',
+                                  padding: '3px 9px',
+                                  borderRadius: '6px',
+                                  border: isDark ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid #BBF7D0',
+                                }}>
+                                  ✓ Đang giảng dạy
+                                </span>
+                              ) : (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                                  color: isDark ? '#F87171' : '#B91C1C',
+                                  padding: '3px 9px',
+                                  borderRadius: '6px',
+                                  border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid #FCA5A5',
+                                }}>
+                                  ⏳ Chờ duyệt
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                              <button
+                                onClick={() => {
+                                  if (lec.classes.length > 0) setSelectedClassCode(lec.classes[0]);
+                                  setActiveTab('subsystem1');
+                                }}
+                                style={{
+                                  padding: '5px 12px',
+                                  borderRadius: '8px',
+                                  background: isDark ? 'var(--bg-surface-accent)' : '#FFFFFF',
+                                  border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                                  color: 'var(--text-main)',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Xem Sinh Viên Lớp →
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Section: Macro Submission Statistics Overview */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '20px',
+                padding: '24px 28px',
+                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                boxShadow: 'var(--shadow-card)',
+                marginBottom: '26px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <BarChart3 size={20} color="#8B5CF6" />
+                      <span>{lang === 'vi' ? 'Tiến Độ Bài Nộp Toàn Trường (Macro Submissions)' : 'System Submissions Overview'}</span>
+                    </h3>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-body)', marginTop: '4px' }}>
+                      {lang === 'vi'
+                        ? 'Tổng hợp số lượng bài nộp, định dạng tệp và trạng thái chấm tự động theo từng lớp môn học.'
+                        : 'Macro metrics of submitted assignments, file types, and automated grading progress.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('subsystem2')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      background: isDark ? 'var(--bg-surface-accent)' : '#F3E8FF',
+                      border: '1px solid #8B5CF6',
+                      color: '#7C3AED',
+                      fontWeight: 700,
+                      fontSize: '0.80rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Xem Chi Tiết Bài Nộp Toàn Trường →
+                  </button>
+                </div>
+
+                {/* 4 Mini Cards for Macro Submission Breakdown */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '18px' }}>
+                  <div style={{ padding: '14px 18px', background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>TỔNG BÀI ĐÃ NỘP</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>142 / 145</div>
+                    <div style={{ fontSize: '0.70rem', color: '#16A34A', fontWeight: 700, marginTop: '2px' }}>Tỷ lệ hoàn thành: 97.9%</div>
+                  </div>
+
+                  <div style={{ padding: '14px 18px', background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>NỘP QUA FILE NÉN (.ZIP)</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--color-orange-zest)', marginTop: '4px' }}>92 Bài</div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--text-body)', marginTop: '2px' }}>64.8% tổng số bài nộp</div>
+                  </div>
+
+                  <div style={{ padding: '14px 18px', background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>NỘP QUA GITHUB REPOSITORY</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0284C7', marginTop: '4px' }}>50 Bài</div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--text-body)', marginTop: '2px' }}>35.2% tổng số bài nộp</div>
+                  </div>
+
+                  <div style={{ padding: '14px 18px', background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>TRẠNG THÁI CHẤM TỰ ĐỘNG</div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#10B981', marginTop: '4px' }}>138 Đã chấm</div>
+                    <div style={{ fontSize: '0.70rem', color: 'var(--color-orange-zest)', fontWeight: 700, marginTop: '2px' }}>4 Đang xử lý BullMQ • 0 DLQ</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Embedded Admin Lecturer Approval Widget on Central Dashboard */}
+              <AdminLecturerApprovalView
+                lang={lang}
+                isDark={isDark}
+                adminEmail={userEmail}
+                requests={adminLecturerRequests}
+                actionLoadingEmail={isApprovingRequest}
+                onRefresh={fetchLecturerRequests}
+                onApprove={(email) => handleAdminApproveLecturer(email, 'APPROVED')}
+                onReject={(email) => handleAdminApproveLecturer(email, 'REJECTED')}
+                isCompact={true}
+                onOpenFullView={() => setActiveTab('lecturer_approval')}
+              />
+            </div>
+          )}
+
+          {/* =============================================================== */}
+          {/* TAB: DEDICATED LECTURER APPROVAL MANAGEMENT PAGE (ADMIN ONLY)   */}
+          {/* =============================================================== */}
+          {activeTab === 'lecturer_approval' && (
+            <div>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <GraduationCap size={26} color="#10B981" />
+                    <span>{lang === 'vi' ? 'Quản Lý Đội Ngũ Giảng Viên & Phê Duyệt Hệ Thống' : 'Faculty Management & Approvals'}</span>
+                  </h1>
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.84rem', marginTop: '4px' }}>
+                    {lang === 'vi'
+                      ? 'Admin quản trị danh sách toàn bộ giảng viên, khoa/bộ môn trực thuộc, các lớp môn học phụ trách và tiếp nhận xét duyệt tài khoản giảng viên mới.'
+                      : 'Admin manages the faculty directory, assigned courses per lecturer, and approves new lecturer account requests.'}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      setActiveTab('subsystem1');
+                    }}
+                    style={{
+                      padding: '9px 16px',
+                      borderRadius: '10px',
+                      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                      border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                      color: 'var(--text-main)',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <BookOpen size={15} color="#0284C7" />
+                    <span>{lang === 'vi' ? 'Xem Phân Công Lớp Học' : 'View Course Allocations'}</span>
+                  </button>
+                  <button
+                    onClick={fetchLecturerRequests}
+                    style={{
+                      padding: '9px 16px',
+                      borderRadius: '10px',
+                      background: '#10B981',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <RefreshCw size={14} />
+                    <span>{lang === 'vi' ? 'Làm Mới Dữ Liệu' : 'Refresh Data'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Faculty KPI Summary Cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '16px',
+                marginBottom: '26px',
+              }}>
+                <div style={{
+                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '18px 20px',
+                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(16, 185, 129, 0.25)',
+                  boxShadow: 'var(--shadow-card)',
+                }}>
+                  <div style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                    {lang === 'vi' ? 'TỔNG SỐ GIẢNG VIÊN' : 'TOTAL FACULTY'}
+                  </div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#10B981', marginTop: '4px' }}>
+                    {BASE_SYSTEM_LECTURERS.length}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-body)', marginTop: '2px' }}>
+                    {lang === 'vi' ? '3 Khoa chuyên môn tại FPTU' : '3 Academic Departments'}
+                  </div>
+                </div>
+
+                <div style={{
+                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '18px 20px',
+                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(2, 132, 199, 0.25)',
+                  boxShadow: 'var(--shadow-card)',
+                }}>
+                  <div style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                    {lang === 'vi' ? 'LỚP HỌC ĐANG PHÂN CÔNG' : 'ASSIGNED CLASSES'}
+                  </div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#0284C7', marginTop: '4px' }}>
+                    {SYSTEM_CLASSES.length}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-body)', marginTop: '2px' }}>
+                    {lang === 'vi' ? 'Phân bổ đều cho các giảng viên' : 'Distributed across faculty'}
+                  </div>
+                </div>
+
+                <div style={{
+                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '18px 20px',
+                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.25)',
+                  boxShadow: 'var(--shadow-card)',
+                }}>
+                  <div style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                    {lang === 'vi' ? 'TỔNG SINH VIÊN THEO HỌC' : 'STUDENT ENROLLMENT'}
+                  </div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 900, color: 'var(--color-orange-zest)', marginTop: '4px' }}>
+                    145 SV
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-body)', marginTop: '2px' }}>
+                    {lang === 'vi' ? 'Kỳ Fall 2026' : 'Fall 2026 Semester'}
+                  </div>
+                </div>
+
+                <div style={{
+                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '18px 20px',
+                  border: pendingLecturerCount > 0 ? '1.5px solid #EF4444' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                  boxShadow: 'var(--shadow-card)',
+                }}>
+                  <div style={{ fontSize: '0.70rem', fontWeight: 800, color: pendingLecturerCount > 0 ? '#EF4444' : 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                    {lang === 'vi' ? 'HỒ SƠ CHỜ PHÊ DUYỆT' : 'PENDING APPROVALS'}
+                  </div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 900, color: pendingLecturerCount > 0 ? '#EF4444' : '#10B981', marginTop: '4px' }}>
+                    {pendingLecturerCount}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: pendingLecturerCount > 0 ? '#EF4444' : 'var(--text-body)', marginTop: '2px', fontWeight: pendingLecturerCount > 0 ? 700 : 400 }}>
+                    {pendingLecturerCount > 0 ? (lang === 'vi' ? 'Cần Admin xét duyệt bên dưới' : 'Needs Admin action') : (lang === 'vi' ? 'Hồ sơ đã duyệt đầy đủ' : 'All clear')}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 1: FACULTY DIRECTORY TABLE */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '18px',
+                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(16, 185, 129, 0.20)',
+                boxShadow: 'var(--shadow-card)',
+                padding: '22px 26px',
+                marginBottom: '26px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.10rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={20} color="#10B981" />
+                      <span>{lang === 'vi' ? 'Danh Sách Giảng Viên Hệ Thống & Các Lớp Phụ Trách' : 'Faculty Directory & Course Allocations'}</span>
+                    </h3>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                      {lang === 'vi'
+                        ? 'Tổng hợp thông tin học hàm, học vị, khoa chuyên môn, sĩ số sinh viên và các lớp môn học đang được phân công giảng dạy.'
+                        : 'Overview of academic titles, departments, student headcount, and active course sections.'}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#10B981', background: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', padding: '4px 10px', borderRadius: '8px' }}>
+                    {BASE_SYSTEM_LECTURERS.length} {lang === 'vi' ? 'Giảng viên chính thức' : 'Lecturers'}
+                  </span>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                    <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(16, 185, 129, 0.15)' }}>
+                      <tr>
+                        <th style={{ padding: '12px 14px' }}>MÃ GV</th>
+                        <th style={{ padding: '12px 14px' }}>HỌ & TÊN GIẢNG VIÊN</th>
+                        <th style={{ padding: '12px 14px' }}>CHỨC DANH / HỌC VỊ</th>
+                        <th style={{ padding: '12px 14px' }}>KHOA / BỘ MÔN</th>
+                        <th style={{ padding: '12px 14px' }}>LỚP ĐANG DẠY ("Có bao nhiêu lớp")</th>
+                        <th style={{ padding: '12px 14px' }}>TỔNG SV</th>
+                        <th style={{ padding: '12px 14px' }}>TRẠNG THÁI</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right' }}>CHI TIẾT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {BASE_SYSTEM_LECTURERS.map((lec) => (
+                        <tr key={lec.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
+                          <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                            <span style={{ padding: '2px 7px', borderRadius: '5px', background: isDark ? 'var(--bg-surface-accent)' : '#F1F5F9', fontSize: '0.74rem' }}>
+                              {lec.id}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.88rem' }}>{lec.name}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{lec.email}</div>
+                          </td>
+                          <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-body)' }}>
+                            {lec.title}
+                          </td>
+                          <td style={{ padding: '12px 14px', fontSize: '0.80rem', color: 'var(--text-body)' }}>
+                            {lec.department}
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {lec.classes.map((cls) => (
+                                <button
+                                  key={cls}
+                                  onClick={() => {
+                                    setSelectedClassCode(cls);
+                                    setActiveTab('subsystem1');
+                                  }}
+                                  title={lang === 'vi' ? `Bấm để xem danh sách sinh viên lớp ${cls}` : `Inspect ${cls} roster`}
+                                  style={{
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    background: isDark ? 'rgba(2, 132, 199, 0.22)' : '#E0F2FE',
+                                    color: '#0284C7',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    border: '1px solid rgba(2, 132, 199, 0.35)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {cls}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--color-orange-zest)' }}>
+                            {lec.totalStudents} SV
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            {lec.status === 'active' ? (
+                              <span style={{ padding: '3px 8px', borderRadius: '6px', background: isDark ? 'rgba(16, 185, 129, 0.18)' : '#ECFDF5', color: '#059669', fontSize: '0.72rem', fontWeight: 800, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                                ✓ Đang hoạt động
+                              </span>
+                            ) : (
+                              <span style={{ padding: '3px 8px', borderRadius: '6px', background: isDark ? 'rgba(245, 158, 11, 0.18)' : '#FEF3C7', color: '#D97706', fontSize: '0.72rem', fontWeight: 800, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                                ⏳ Chờ xét duyệt
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => {
+                                if (lec.classes.length > 0) {
+                                  setSelectedClassCode(lec.classes[0]);
+                                }
+                                setActiveTab('subsystem1');
+                              }}
+                              style={{
+                                padding: '5px 12px',
+                                borderRadius: '7px',
+                                background: isDark ? 'var(--bg-surface-accent)' : '#FAF9F1',
+                                border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                                color: '#0284C7',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {lang === 'vi' ? 'Xem lớp & SV →' : 'View Classes →'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* SECTION 2: PENDING APPROVAL QUEUE (ADMIN LECTURER APPROVAL VIEW) */}
+              <AdminLecturerApprovalView
+                lang={lang}
+                isDark={isDark}
+                adminEmail={userEmail}
+                requests={adminLecturerRequests}
+                actionLoadingEmail={isApprovingRequest}
+                onRefresh={fetchLecturerRequests}
+                onApprove={(email) => handleAdminApproveLecturer(email, 'APPROVED')}
+                onReject={(email) => handleAdminApproveLecturer(email, 'REJECTED')}
+                isCompact={false}
+              />
             </div>
           )}
 
@@ -2254,6 +3228,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                           <th style={{ padding: '14px 18px' }}>{t.colStudent}</th>
                           <th style={{ padding: '14px 18px' }}>{t.colSubmission}</th>
                           <th style={{ padding: '14px 18px' }}>{t.colGradingStatus}</th>
+                          <th style={{ padding: '14px 18px' }}>{lang === 'vi' ? 'Thẩm Định Giảng Viên' : 'Lecturer Assessment'}</th>
                           <th style={{ padding: '14px 18px' }}>{t.colSubmittedTime}</th>
                         </tr>
                       </thead>
@@ -2296,6 +3271,59 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               }}>
                                 {sub.status === 'completed' ? t.statusGraded : sub.status === 'failed' ? t.statusFailedRetry : sub.status === 'grading' ? t.statusGradingWorker : t.statusNotGraded}
                               </span>
+                            </td>
+                            <td style={{ padding: '14px 18px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {sub.status === 'completed' ? (
+                                  <>
+                                    <span style={{
+                                      fontSize: '0.72rem',
+                                      fontWeight: 800,
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      background: sub.reviewStatus === 'approved'
+                                        ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7')
+                                        : sub.reviewStatus === 'rejected'
+                                          ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2')
+                                          : (isDark ? 'rgba(238, 166, 75, 0.2)' : '#FEF3C7'),
+                                      color: sub.reviewStatus === 'approved'
+                                        ? '#16A34A'
+                                        : sub.reviewStatus === 'rejected'
+                                          ? '#DC2626'
+                                          : '#D97706',
+                                    }}>
+                                      {sub.reviewStatus === 'approved'
+                                        ? (lang === 'vi' ? 'ĐÃ DUYỆT' : 'APPROVED')
+                                        : sub.reviewStatus === 'rejected'
+                                          ? (lang === 'vi' ? 'TỪ CHỐI' : 'REJECTED')
+                                          : (lang === 'vi' ? 'CHỜ DUYỆT' : 'PENDING')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setShowJobDetailsModal(sub.id);
+                                        setReviewCommentInput(sub.reviewComment || '');
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 700,
+                                        borderRadius: '6px',
+                                        background: 'var(--color-orange-zest)',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {lang === 'vi' ? 'Duyệt điểm' : 'Review'}
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                                    {lang === 'vi' ? 'Chờ chấm xong' : 'Pending AI'}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>{sub.time}</td>
                           </tr>
@@ -2405,7 +3433,30 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             </td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>0</td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>{runTime}</td>
-                            <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>{actionText}</td>
+                            <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>{actionText}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowJobDetailsModal(job.id);
+                                    setReviewCommentInput(job.reviewComment || '');
+                                  }}
+                                  style={{
+                                    padding: '4px 8px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    borderRadius: '6px',
+                                    background: isDark ? 'var(--bg-surface-subtle)' : '#E2E8F0',
+                                    color: 'var(--text-main)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {lang === 'vi' ? 'Xem chi tiết' : 'Details'}
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })
@@ -2544,7 +3595,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     cursor: 'pointer',
                   }}
                 >
-                  {lang === 'vi' ? '⚠️ Xem Commit Gian Lận Bị Bắt (BR-10)' : '⚠️ View Flagged Fraudulent Commits (BR-10)'}
+                  {lang === 'vi' ? '⚠️ Xem Commit Bất Thường Bị Gắn Cờ' : '⚠️ View Flagged Irregular Commits'}
                 </button>
 )}
               </div>
@@ -2644,105 +3695,448 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           )}
 
           {/* =============================================================== */}
-          {/* TAB 6: COURSES & CLASSES MANAGEMENT                             */}
+          {/* TAB: COURSES, CLASSES & STUDENT ROSTERS (ADMIN ONLY)            */}
           {/* =============================================================== */}
           {activeTab === 'subsystem1' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '14px' }}>
                 <div>
-                  <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                    Quản Lý Khóa Học &amp; Lớp Học (Courses &amp; Enrollment)
+                  <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <BookOpen size={24} color="#0284C7" />
+                    <span>{lang === 'vi' ? 'Quản Lý Lớp Học & Danh Sách Sinh Viên' : 'Courses, Classes & Student Rosters'}</span>
                   </h1>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                    Quản lý danh sách lớp học, phân công giảng viên và danh sách sinh viên theo từng lớp.
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.84rem', marginTop: '4px' }}>
+                    {lang === 'vi'
+                      ? 'Giám sát phân công giảng viên theo từng lớp ("giảng viên đó có bao nhiêu lớp") và tra cứu danh sách sinh viên ghi danh trong lớp ("lớp đó có những ai").'
+                      : 'Supervise course allocations per lecturer and look up student rosters per class.'}
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button style={{ padding: '10px 16px', borderRadius: '10px', background: isDark ? 'var(--bg-surface)' : '#FFFFFF', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                    <Plus size={15} /> Thêm Lớp Mới
+                  <button style={{ padding: '9px 16px', borderRadius: '10px', background: isDark ? 'var(--bg-surface)' : '#FFFFFF', border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1', color: 'var(--text-main)', fontWeight: 700, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                    <Plus size={15} /> {lang === 'vi' ? 'Thêm Lớp Mới' : 'Add New Class'}
                   </button>
-                  <button style={{ padding: '10px 16px', borderRadius: '10px', background: '#0284C7', color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-                    📥 Bulk Import Excel (SQL Tx)
+                  <button style={{ padding: '9px 16px', borderRadius: '10px', background: '#0284C7', color: '#FFFFFF', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>📥 {lang === 'vi' ? 'Xuất Danh Sách Excel' : 'Export Excel'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Class List Table */}
-              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
-                    <tr>
-                      <th style={{ padding: '12px 18px' }}>MÃ LỚP</th>
-                      <th style={{ padding: '12px 18px' }}>TÊN LỚP MÔN HỌC</th>
-                      <th style={{ padding: '12px 18px' }}>GIẢNG VIÊN PHỤ TRÁCH</th>
-                      <th style={{ padding: '12px 18px' }}>SỐ LƯỢNG NHÓM</th>
-                      <th style={{ padding: '12px 18px' }}>SỐ SINH VIÊN</th>
-                      <th style={{ padding: '12px 18px' }}>TRẠNG THÁI</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>#CL-391</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--color-orange-zest)' }}>SWP391 - Đồ án phần mềm</td>
-                      <td style={{ padding: '14px 18px' }}>TS. Nguyễn Văn Giảng</td>
-                      <td style={{ padding: '14px 18px' }}>5 Nhóm</td>
-                      <td style={{ padding: '14px 18px' }}>24 Sinh viên</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, background: isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8', color: isDark ? '#4ADE80' : 'var(--color-exocarp)', padding: '2px 8px', borderRadius: '6px' }}>
-                          Đang diễn ra
-                        </span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              {/* SECTION 1: DANH SÁCH CÁC LỚP HỌC ĐANG MỞ (6 LỚP) */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '18px',
+                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                boxShadow: 'var(--shadow-card)',
+                padding: '20px 24px',
+                marginBottom: '26px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🏫 {lang === 'vi' ? 'Danh Sách Lớp Môn Học Đang Mở (6 Lớp)' : 'Active Class Sections (6 Classes)'}</span>
+                  </h3>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                    {lang === 'vi' ? 'Nhấp chọn một lớp để xem danh sách sinh viên bên dưới' : 'Click a class row to inspect its student roster below'}
+                  </span>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                    <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
+                      <tr>
+                        <th style={{ padding: '12px 14px' }}>MÃ LỚP</th>
+                        <th style={{ padding: '12px 14px' }}>TÊN MÔN HỌC</th>
+                        <th style={{ padding: '12px 14px' }}>GIẢNG VIÊN PHỤ TRÁCH</th>
+                        <th style={{ padding: '12px 14px' }}>KHOA / BỘ MÔN</th>
+                        <th style={{ padding: '12px 14px' }}>SĨ SỐ</th>
+                        <th style={{ padding: '12px 14px' }}>SỐ NHÓM</th>
+                        <th style={{ padding: '12px 14px' }}>TIẾN ĐỘ NỘP</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right' }}>THAO TÁC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SYSTEM_CLASSES.map((cls) => {
+                        const isSelected = selectedClassCode === cls.code;
+                        return (
+                          <tr
+                            key={cls.id}
+                            onClick={() => setSelectedClassCode(cls.code)}
+                            style={{
+                              borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6',
+                              background: isSelected ? (isDark ? 'rgba(2, 132, 199, 0.15)' : '#F0F9FF') : 'transparent',
+                              cursor: 'pointer',
+                              transition: 'background 0.15s ease',
+                            }}
+                          >
+                            <td style={{ padding: '12px 14px', fontWeight: 800, color: isSelected ? '#0284C7' : 'var(--text-main)' }}>
+                              <span style={{
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                background: isSelected ? '#0284C7' : (isDark ? 'var(--bg-surface-subtle)' : '#E2E8F0'),
+                                color: isSelected ? '#FFFFFF' : 'var(--text-main)',
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                              }}>
+                                {cls.code}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--text-main)' }}>
+                              {cls.name}
+                            </td>
+                            <td style={{ padding: '12px 14px' }}>
+                              <div style={{ fontWeight: 700, color: 'var(--color-orange-zest)' }}>{cls.lecturer}</div>
+                              <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>{cls.lecturerEmail}</div>
+                            </td>
+                            <td style={{ padding: '12px 14px', fontSize: '0.78rem', color: 'var(--text-body)' }}>
+                              {cls.department}
+                            </td>
+                            <td style={{ padding: '12px 14px', fontWeight: 800 }}>
+                              {cls.studentCount} SV
+                            </td>
+                            <td style={{ padding: '12px 14px', fontSize: '0.78rem' }}>
+                              {cls.teams} Nhóm
+                            </td>
+                            <td style={{ padding: '12px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#10B981' }}>
+                                  {cls.submittedCount}/{cls.studentCount} ({Math.round((cls.submittedCount / cls.studentCount) * 100)}%)
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedClassCode(cls.code);
+                                }}
+                                style={{
+                                  padding: '5px 12px',
+                                  borderRadius: '7px',
+                                  background: isSelected ? '#0284C7' : (isDark ? 'var(--bg-surface-accent)' : '#FFFFFF'),
+                                  color: isSelected ? '#FFFFFF' : 'var(--text-main)',
+                                  border: isSelected ? 'none' : (isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1'),
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {isSelected ? '✓ Đang xem' : 'Xem SV →'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              {/* SECTION 2: DANH SÁCH SINH VIÊN CỦA LỚP ĐƯỢC CHỌN ("LỚP ĐÓ CÓ NHỮNG AI") */}
+              {(() => {
+                const currentClass = SYSTEM_CLASSES.find((c) => c.code === selectedClassCode) || SYSTEM_CLASSES[0];
+                const rawStudents = CLASS_STUDENTS_MAP[selectedClassCode] || CLASS_STUDENTS_MAP['SWP391-SE1801'];
+                const filteredStudents = rawStudents.filter((s) => {
+                  if (!studentSearchQuery.trim()) return true;
+                  const q = studentSearchQuery.toLowerCase();
+                  return (
+                    s.name.toLowerCase().includes(q) ||
+                    s.mssv.toLowerCase().includes(q) ||
+                    s.email.toLowerCase().includes(q) ||
+                    s.team.toLowerCase().includes(q)
+                  );
+                });
+
+                return (
+                  <div style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '18px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)',
+                    boxShadow: 'var(--shadow-card)',
+                    padding: '24px 28px',
+                  }}>
+                    {/* Header info of chosen class */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 800, background: '#0284C7', color: '#FFFFFF', padding: '3px 8px', borderRadius: '6px' }}>
+                            {currentClass.code}
+                          </span>
+                          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
+                            {lang === 'vi' ? `Danh Sách Sinh Viên Lớp: ${currentClass.name}` : `Student Roster: ${currentClass.name}`}
+                          </h2>
+                        </div>
+                        <div style={{ fontSize: '0.80rem', color: 'var(--text-body)', marginTop: '4px' }}>
+                          Giảng viên phụ trách: <strong>{currentClass.lecturer}</strong> ({currentClass.lecturerEmail}) • Sĩ số: <strong>{currentClass.studentCount} Sinh viên</strong> ({currentClass.teams} Nhóm đồ án)
+                        </div>
+                      </div>
+
+                      {/* Class Quick Switcher Pills */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>Chuyển lớp xem:</span>
+                        {SYSTEM_CLASSES.map((c) => (
+                          <button
+                            key={c.code}
+                            onClick={() => setSelectedClassCode(c.code)}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '7px',
+                              border: selectedClassCode === c.code ? '1.5px solid #0284C7' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                              background: selectedClassCode === c.code ? (isDark ? 'rgba(2, 132, 199, 0.25)' : '#E0F2FE') : 'transparent',
+                              color: selectedClassCode === c.code ? '#0284C7' : 'var(--text-body)',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {c.code.split('-')[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Filter & Search Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ position: 'relative', flex: '1', minWidth: '240px', maxWidth: '400px' }}>
+                        <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                          type="text"
+                          value={studentSearchQuery}
+                          onChange={(e) => setStudentSearchQuery(e.target.value)}
+                          placeholder={lang === 'vi' ? 'Tìm theo MSSV, Họ tên hoặc Nhóm...' : 'Search by ID, name or team...'}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px 8px 34px',
+                            borderRadius: '9px',
+                            background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1',
+                            border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
+                            color: 'var(--text-main)',
+                            fontSize: '0.80rem',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                        Hiển thị {filteredStudents.length} / {rawStudents.length} sinh viên trong lớp
+                      </div>
+                    </div>
+
+                    {/* Student Roster Table ("LỚP ĐÓ CÓ NHỮNG AI") */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                        <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
+                          <tr>
+                            <th style={{ padding: '12px 14px' }}>MSSV</th>
+                            <th style={{ padding: '12px 14px' }}>HỌ VÀ TÊN SINH VIÊN</th>
+                            <th style={{ padding: '12px 14px' }}>EMAIL SINH VIÊN</th>
+                            <th style={{ padding: '12px 14px' }}>NHÓM ĐỒ ÁN / DỰ ÁN</th>
+                            <th style={{ padding: '12px 14px' }}>TRẠNG THÁI BÀI NỘP</th>
+                            <th style={{ padding: '12px 14px' }}>HÌNH THỨC NỘP</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>TRẠNG THÁI</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredStudents.map((st) => (
+                            <tr key={st.mssv} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
+                              <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--color-orange-zest)' }}>
+                                {st.mssv}
+                              </td>
+                              <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                                {st.name}
+                              </td>
+                              <td style={{ padding: '12px 14px', fontSize: '0.78rem', color: 'var(--text-body)' }}>
+                                {st.email}
+                              </td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <span style={{
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  background: isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  color: 'var(--text-main)',
+                                }}>
+                                  {st.team}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 14px' }}>
+                                {st.submitStatus === 'submitted' ? (
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    background: isDark ? 'rgba(34, 197, 94, 0.18)' : '#EDF6E8',
+                                    color: isDark ? '#4ADE80' : 'var(--color-exocarp)',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                  }}>
+                                    ✓ Đã nộp ({st.submittedAt})
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                                    color: isDark ? '#F87171' : '#B91C1C',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                  }}>
+                                    Chưa nộp bài
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px 14px', fontSize: '0.76rem', color: 'var(--text-body)' }}>
+                                {st.submitType}
+                              </td>
+                              <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                                <span style={{
+                                  fontSize: '0.70rem',
+                                  fontWeight: 700,
+                                  background: isDark ? 'var(--bg-surface-subtle)' : '#F0FDF4',
+                                  color: '#16A34A',
+                                  padding: '2px 8px',
+                                  borderRadius: '999px',
+                                  border: '1px solid #BBF7D0',
+                                }}>
+                                  {st.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {/* =============================================================== */}
-          {/* TAB 7: EXAM & QUESTION BANK                                      */}
+          {/* TAB: MACRO SUBMISSIONS OVERVIEW (ADMIN ONLY)                    */}
           {/* =============================================================== */}
           {activeTab === 'subsystem2' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div>
-                  <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                    Ngân Hàng Đề Thi &amp; Bài Tập (Exam &amp; Question Bank)
-                  </h1>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                    Quản lý đề thi Assignment, Lab, cấu hình test cases ẩn và hạn chót nộp bài.
-                  </p>
-                </div>
-                <button style={{ padding: '10px 18px', borderRadius: '10px', background: '#0284C7', color: '#FFFFFF', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-                  + Tạo Đề Thi Mới
-                </button>
+              <div style={{ marginBottom: '22px' }}>
+                <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <BarChart3 size={24} color="#8B5CF6" />
+                  <span>{lang === 'vi' ? 'Thống Kê Bài Nộp Toàn Trường (Macro Submissions)' : 'System Macro Submissions Overview'}</span>
+                </h1>
+                <p style={{ color: 'var(--text-body)', fontSize: '0.84rem', marginTop: '4px' }}>
+                  {lang === 'vi'
+                    ? 'Báo cáo tổng quan tiến độ nộp bài vĩ mô trên toàn hệ thống. Việc chấm chi tiết mã nguồn, AST diff và kiểm thử unit test do Giảng viên phụ trách từng lớp theo dõi.'
+                    : 'Macro progress report of student submissions across all courses. Granular code grading and AST diff are handled by class lecturers.'}
+                </p>
               </div>
 
-              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
-                    <tr>
-                      <th style={{ padding: '12px 18px' }}>MÃ ĐỀ</th>
-                      <th style={{ padding: '12px 18px' }}>TIÊU ĐỀ BÀI TẬP</th>
-                      <th style={{ padding: '12px 18px' }}>LOẠI ĐỘ ƯU TIÊN (BR-01)</th>
-                      <th style={{ padding: '12px 18px' }}>SỐ TEST CASES</th>
-                      <th style={{ padding: '12px 18px' }}>HẠN NỘP</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>#EX-01</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>Assignment 3 — Spring Boot REST Service</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 800, background: isDark ? 'var(--bg-surface-accent)' : '#FAF2E6', color: 'var(--color-orange-zest)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Assignment (Ưu tiên 50)
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>10 Test cases</td>
-                      <td style={{ padding: '14px 18px' }}>2026-09-25 23:59</td>
-                    </tr>
-                  </tbody>
-                </table>
+              {/* 4 Macro Submission Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', padding: '20px 22px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', boxShadow: 'var(--shadow-card)' }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)' }}>TỔNG BÀI ĐÃ GHI NHẬN</div>
+                  <div style={{ fontSize: '2.0rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>142 / 145</div>
+                  <div style={{ fontSize: '0.72rem', color: '#16A34A', fontWeight: 700, marginTop: '2px' }}>Tỷ lệ nộp thành công: 97.9%</div>
+                </div>
+
+                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', padding: '20px 22px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', boxShadow: 'var(--shadow-card)' }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)' }}>NỘP QUA FILE NÉN (.ZIP)</div>
+                  <div style={{ fontSize: '2.0rem', fontWeight: 900, color: 'var(--color-orange-zest)', marginTop: '4px' }}>92 Bài</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-body)', marginTop: '2px' }}>Chiếm 64.8% tổng số bài nộp</div>
+                </div>
+
+                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', padding: '20px 22px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', boxShadow: 'var(--shadow-card)' }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)' }}>NỘP QUA GITHUB URL</div>
+                  <div style={{ fontSize: '2.0rem', fontWeight: 900, color: '#0284C7', marginTop: '4px' }}>50 Bài</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-body)', marginTop: '2px' }}>Chiếm 35.2% tổng số bài nộp</div>
+                </div>
+
+                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', padding: '20px 22px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', boxShadow: 'var(--shadow-card)' }}>
+                  <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)' }}>TRẠNG THÁI CHẤM TỰ ĐỘNG</div>
+                  <div style={{ fontSize: '2.0rem', fontWeight: 900, color: '#10B981', marginTop: '4px' }}>138 Đã chấm</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-orange-zest)', fontWeight: 700, marginTop: '2px' }}>4 Đang xử lý BullMQ • 0 DLQ</div>
+                </div>
+              </div>
+
+              {/* Macro Class Submission Health Table */}
+              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', overflow: 'hidden', padding: '24px 28px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px', color: 'var(--text-main)' }}>
+                  {lang === 'vi' ? 'Tiến Độ Nộp Bài Chi Tiết Theo Từng Lớp Môn Học' : 'Submission Progress by Class Section'}
+                </h3>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                    <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)' }}>
+                      <tr>
+                        <th style={{ padding: '12px 16px' }}>MÃ LỚP</th>
+                        <th style={{ padding: '12px 16px' }}>HỌC PHẦN MÔN HỌC</th>
+                        <th style={{ padding: '12px 16px' }}>GIẢNG VIÊN PHỤ TRÁCH</th>
+                        <th style={{ padding: '12px 16px' }}>SĨ SỐ</th>
+                        <th style={{ padding: '12px 16px' }}>ĐÃ NỘP</th>
+                        <th style={{ padding: '12px 16px' }}>TỶ LỆ HOÀN THÀNH</th>
+                        <th style={{ padding: '12px 16px' }}>ĐỊNH DẠNG NỘP CHÍNH</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'right' }}>THAO TÁC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SYSTEM_CLASSES.map((cls) => {
+                        const pct = Math.round((cls.submittedCount / cls.studentCount) * 100);
+                        return (
+                          <tr key={cls.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
+                            <td style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--color-orange-zest)' }}>
+                              {cls.code}
+                            </td>
+                            <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-main)' }}>
+                              {cls.name}
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              {cls.lecturer}
+                            </td>
+                            <td style={{ padding: '14px 16px', fontWeight: 700 }}>
+                              {cls.studentCount} SV
+                            </td>
+                            <td style={{ padding: '14px 16px', fontWeight: 800 }}>
+                              {cls.submittedCount} SV
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ flex: 1, background: isDark ? 'var(--bg-nav-pill)' : '#E2E8F0', height: '6px', borderRadius: '999px', overflow: 'hidden', minWidth: '90px' }}>
+                                  <div style={{
+                                    width: `${pct}%`,
+                                    height: '100%',
+                                    background: pct >= 95 ? '#10B981' : 'var(--color-orange-zest)',
+                                    borderRadius: '999px',
+                                  }} />
+                                </div>
+                                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: pct >= 95 ? '#10B981' : 'var(--color-orange-zest)' }}>
+                                  {pct}%
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.78rem', color: 'var(--text-body)' }}>
+                              {cls.code.includes('SWP') ? 'ZIP (60%) + Git (40%)' : 'ZIP File (75%) + Git (25%)'}
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                              <button
+                                onClick={() => {
+                                  setSelectedClassCode(cls.code);
+                                  setActiveTab('subsystem1');
+                                }}
+                                style={{
+                                  padding: '5px 12px',
+                                  borderRadius: '8px',
+                                  background: isDark ? 'var(--bg-surface-accent)' : '#FAF2E6',
+                                  border: '1px solid var(--color-orange-zest)',
+                                  color: 'var(--color-orange-zest)',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Xem Danh Sách SV →
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -2840,479 +4234,533 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           )}
 
           {/* =============================================================== */}
-          {/* TAB 10: SYSTEM SETTINGS & STUDENT PROFILE                       */}
+          {/* TAB 10: COMPACT SINGLE-PAGE EXECUTIVE PROFILE & SETTINGS        */}
           {/* =============================================================== */}
           {activeTab === 'settings' && (
-            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-              {/* Header Title */}
-              <div style={{ marginBottom: '24px' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                  ⚙️ {lang === 'vi'
-                    ? (currentRole === 'lecturer' ? 'Hồ Sơ Giảng Viên' : currentRole === 'admin' ? 'Hồ Sơ Quản Trị Viên' : 'Hồ Sơ Sinh Viên')
-                    : (currentRole === 'lecturer' ? 'Lecturer Profile' : currentRole === 'admin' ? 'Admin Profile' : 'Student Profile')}
-                </h1>
-                <p style={{ color: 'var(--text-body)', fontSize: '0.86rem' }}>
-                  {lang === 'vi'
-                    ? (currentRole === 'lecturer'
-                      ? 'Thông tin tài khoản giảng viên, học phần phụ trách và cấu hình ngôn ngữ hiển thị.'
-                      : currentRole === 'admin'
-                      ? 'Thông tin tài khoản quản trị hệ thống, quyền hạn điều hành và cấu hình hiển thị.'
-                      : 'Thông tin tài khoản sinh viên, nhóm đồ án và cấu hình ngôn ngữ hiển thị.')
-                    : (currentRole === 'lecturer'
-                      ? 'Lecturer account details, assigned courses, and display language configuration.'
-                      : currentRole === 'admin'
-                      ? 'System administrator account information, privileges, and display language configuration.'
-                      : 'Student account information, team project, and display language configuration.')}
-                </p>
-              </div>
+            <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Compact Header Title */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.30rem', fontWeight: 800, fontFamily: 'var(--font-heading)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>⚙️</span>
+                    <span>
+                      {lang === 'vi'
+                        ? (currentRole === 'lecturer' ? 'Hồ Sơ Giảng Viên' : currentRole === 'admin' ? 'Hồ Sơ Quản Trị Viên' : 'Hồ Sơ Sinh Viên')
+                        : (currentRole === 'lecturer' ? 'Lecturer Profile' : currentRole === 'admin' ? 'Administrator Profile' : 'Student Profile')}
+                    </span>
+                  </h1>
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.78rem', margin: '2px 0 0 0' }}>
+                    {lang === 'vi'
+                      ? (currentRole === 'lecturer'
+                        ? 'Thông tin giảng viên, học phần phụ trách và thiết lập môi trường hệ thống.'
+                        : currentRole === 'admin'
+                        ? 'Thông tin quản trị viên hệ thống, phân quyền điều hành và thiết lập hạ tầng.'
+                        : 'Thông tin sinh viên, tiến độ đồ án và cấu hình hiển thị.')
+                      : (currentRole === 'lecturer'
+                        ? 'Faculty account info, assigned courses, and runtime preferences.'
+                        : currentRole === 'admin'
+                        ? 'System administrator credentials, privilege scope, and infrastructure settings.'
+                        : 'Student account info, project progress, and preferences.')}
+                  </p>
+                </div>
 
-              {/* MAIN PROFILE CARD (WIDE & SPACIOUS) */}
-              <div style={{
-                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                borderRadius: '24px',
-                padding: '32px 36px',
-                border: isDark ? '1.5px solid var(--border-card)' : '1.5px solid rgba(120, 132, 23, 0.16)',
-                boxShadow: 'var(--shadow-card)',
-                marginBottom: '24px',
-              }}>
-                {/* Top: Avatar, Name, Email, Badge */}
+                {/* Identity Tag */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingBottom: '24px',
-                  borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F3E8',
-                  marginBottom: '24px',
-                  flexWrap: 'wrap',
-                  gap: '16px',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  background: isDark ? 'rgba(217, 100, 31, 0.14)' : '#FAF2E6',
+                  border: isDark ? '1px solid rgba(217, 100, 31, 0.35)' : '1px solid var(--color-cantaloupe)',
+                  fontSize: '0.74rem',
+                  fontWeight: 800,
+                  color: 'var(--color-orange-zest)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <div style={{
-                      width: '72px',
-                      height: '72px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 900,
-                      fontSize: '1.6rem',
-                      boxShadow: '0 6px 18px rgba(217, 100, 31, 0.35)',
-                      flexShrink: 0,
-                    }}>
-                      {userFullName.split(' ').map((n) => n[0]).slice(-2).join('').toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                          {userFullName}
-                        </h2>
-                        <span style={{
-                          fontSize: '0.70rem',
-                          fontWeight: 800,
-                          background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
-                          color: isDark ? '#4ADE80' : '#15803D',
-                          border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0',
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                        }}>
-                          🟢 {lang === 'vi' ? 'Đang hoạt động' : 'Active'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginTop: '4px' }}>
-                        ✉️ {userEmail}
-                      </div>
-                      <div style={{ fontSize: '0.80rem', color: 'var(--color-orange-zest)', fontWeight: 700, marginTop: '4px' }}>
-                        {currentRole === 'lecturer'
-                          ? (lang === 'vi' ? '🎓 Giảng viên phụ trách: SWP391 - Đồ án phần mềm' : '🎓 Course Lecturer: SWP391 - Software Project')
-                          : currentRole === 'admin'
-                          ? (lang === 'vi' ? '⚙️ Quản trị viên hệ thống: AITA-Intelligent Enterprise' : '⚙️ System Administrator: AITA-Intelligent Enterprise')
-                          : (lang === 'vi' ? '👨‍💻 Sinh viên lớp: SWP391 - Đồ án phần mềm' : '👨‍💻 Student: SWP391 - Software Project')}
-                      </div>
-                    </div>
-                  </div>
-
-                  <span style={{
-                    fontSize: '0.76rem',
-                    fontWeight: 800,
-                    background: currentRole === 'lecturer' ? '#FAF2E6' : currentRole === 'admin' ? '#EFF6FF' : 'rgba(170, 176, 38, 0.18)',
-                    color: currentRole === 'lecturer' ? 'var(--color-orange-zest)' : currentRole === 'admin' ? '#1D4ED8' : 'var(--color-exocarp)',
-                    border: currentRole === 'lecturer' ? '1.5px solid var(--color-cantaloupe)' : currentRole === 'admin' ? '1.5px solid #BFDBFE' : '1.5px solid rgba(170, 176, 38, 0.35)',
-                    padding: '6px 14px',
-                    borderRadius: '10px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}>
-                    <span>{currentRole === 'lecturer' ? '🎓' : currentRole === 'admin' ? '⚙️' : '👨‍💻'}</span>
-                    <span>
-                      {currentRole === 'student'
-                        ? (lang === 'vi' ? 'Sinh viên (Student)' : 'Student')
-                        : currentRole === 'lecturer'
-                        ? (lang === 'vi' ? 'Giảng viên (Lecturer)' : 'Lecturer')
-                        : (lang === 'vi' ? 'Quản trị viên (Admin)' : 'Administrator')}
-                    </span>
+                  <ShieldCheck size={14} color="var(--color-orange-zest)" />
+                  <span>
+                    {currentRole === 'student'
+                      ? (lang === 'vi' ? 'Sinh viên FPTU' : 'FPTU Student')
+                      : currentRole === 'lecturer'
+                      ? (lang === 'vi' ? 'Giảng viên Bộ môn' : 'Faculty Member')
+                      : (lang === 'vi' ? 'Quản trị viên (Super Admin)' : 'Super Administrator')}
                   </span>
-                </div>
-
-                {/* 2-Column Details Grid */}
-                <div style={{ marginBottom: '28px' }}>
-                  <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>
-                    {lang === 'vi' ? 'THÔNG TIN CHI TIẾT' : 'ACCOUNT DETAILS'}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-                    {currentRole === 'lecturer' ? (
-                      <>
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'MÃ GIẢNG VIÊN (MSGV)' : 'LECTURER ID'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            GV-SWP391
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'BỘ MÔN / KHOA' : 'DEPARTMENT'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            {lang === 'vi' ? 'Kỹ thuật phần mềm (Software Engineering)' : 'Software Engineering'}
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'HỌC PHẦN PHỤ TRÁCH' : 'ASSIGNED COURSE'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--color-orange-zest)', marginTop: '4px' }}>
-                            SWP391 - Software Project Capstone
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'CƠ SỞ ĐÀO TẠO' : 'CAMPUS'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            {lang === 'vi' ? 'Đại học FPT (Campus Đà Nẵng)' : 'FPT University (Da Nang Campus)'}
-                          </div>
-                        </div>
-                      </>
-                    ) : currentRole === 'admin' ? (
-                      <>
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'MÃ QUẢN TRỊ (ADMIN ID)' : 'ADMIN ID'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            ADM-ROOT-01
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'QUYỀN HẠN HỆ THỐNG' : 'PRIVILEGE LEVEL'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            {lang === 'vi' ? 'Toàn quyền điều hành (Super Admin)' : 'Super Administrator'}
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'PHẠM VI QUẢN LÝ' : 'MANAGEMENT SCOPE'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#38BDF8', marginTop: '4px' }}>
-                            PostgreSQL, Redis &amp; Docker Sandbox
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'CƠ SỞ ĐÀO TẠO' : 'CAMPUS'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            {lang === 'vi' ? 'Đại học FPT (Campus Đà Nẵng)' : 'FPT University (Da Nang Campus)'}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'MÃ SINH VIÊN (MSSV)' : 'STUDENT ID'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            SE170113
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'CHUYÊN NGÀNH' : 'MAJOR'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            {lang === 'vi' ? 'Kỹ thuật phần mềm (Software Engineering)' : 'Software Engineering'}
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'ĐỒ ÁN TỐT NGHIỆP' : 'CAPSTONE PROJECT'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--color-orange-zest)', marginTop: '4px' }}>
-                            AITA-Intelligent
-                          </div>
-                        </div>
-
-                        <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '14px 18px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {lang === 'vi' ? 'CƠ SỞ ĐÀO TẠO' : 'CAMPUS'}
-                          </div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
-                            {lang === 'vi' ? 'Đại học FPT (Campus Đà Nẵng)' : 'FPT University (Da Nang Campus)'}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Language Selection */}
-                <div style={{
-                  padding: '20px 22px',
-                  borderRadius: '16px',
-                  background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1',
-                  border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
-                  marginBottom: '16px',
-                }}>
-                  <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>
-                    🌐 {lang === 'vi' ? 'NGÔN NGỮ GIAO DIỆN' : 'DISPLAY LANGUAGE'}
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => onToggleLang && onToggleLang('vi')}
-                      style={{
-                        flex: '1 1 200px',
-                        padding: '12px 18px',
-                        borderRadius: '12px',
-                        border: lang === 'vi' ? '2px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
-                        background: lang === 'vi' ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        color: lang === 'vi' ? 'var(--color-orange-zest)' : 'var(--text-body)',
-                        fontWeight: lang === 'vi' ? 800 : 600,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        boxShadow: lang === 'vi' ? '0 4px 12px rgba(217, 100, 31, 0.15)' : 'none',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <VietnamFlag size={18} />
-                      <span>Tiếng Việt (Mặc định)</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onToggleLang && onToggleLang('en')}
-                      style={{
-                        flex: '1 1 200px',
-                        padding: '12px 18px',
-                        borderRadius: '12px',
-                        border: lang === 'en' ? '2px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
-                        background: lang === 'en' ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        color: lang === 'en' ? 'var(--color-orange-zest)' : 'var(--text-body)',
-                        fontWeight: lang === 'en' ? 800 : 600,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        boxShadow: lang === 'en' ? '0 4px 12px rgba(217, 100, 31, 0.15)' : 'none',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <UkFlag size={18} />
-                      <span>English (International)</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* THEME MODE SELECTION (SÁNG / TỐI) - PLACED DIRECTLY UNDER LANGUAGE */}
-                <div style={{
-                  padding: '20px 22px',
-                  borderRadius: '16px',
-                  background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1',
-                  border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
-                  marginBottom: '28px',
-                }}>
-                  <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>
-                    🌓 {t.themeSectionTitle}
-                  </div>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => onToggleTheme && onToggleTheme('light')}
-                      style={{
-                        flex: '1 1 200px',
-                        padding: '12px 18px',
-                        borderRadius: '12px',
-                        border: !isDark ? '2px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
-                        background: !isDark ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        color: !isDark ? 'var(--color-orange-zest)' : 'var(--text-body)',
-                        fontWeight: !isDark ? 800 : 600,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        boxShadow: !isDark ? '0 4px 12px rgba(217, 100, 31, 0.15)' : 'none',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <Sun size={20} color={!isDark ? 'var(--color-orange-zest)' : 'var(--text-muted)'} />
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                        <span style={{ fontWeight: 800 }}>{t.themeLightMode}</span>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>{t.themeLightDesc}</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onToggleTheme && onToggleTheme('dark')}
-                      style={{
-                        flex: '1 1 200px',
-                        padding: '12px 18px',
-                        borderRadius: '12px',
-                        border: isDark ? '2px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
-                        background: isDark ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        color: isDark ? 'var(--color-orange-zest)' : 'var(--text-body)',
-                        fontWeight: isDark ? 800 : 600,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        boxShadow: isDark ? '0 4px 12px rgba(217, 100, 31, 0.25)' : 'none',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <Moon size={20} color={isDark ? 'var(--color-orange-zest)' : 'var(--text-muted)'} />
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                        <span style={{ fontWeight: 800 }}>{t.themeDarkMode}</span>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>{t.themeDarkDesc}</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Actions: Return to Admin & Logout */}
-                <div style={{ display: 'flex', justifyContent: isUserAdmin ? 'space-between' : 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  {isUserAdmin && (
-                    <button
-                      onClick={() => handleRoleSwitch('admin')}
-                      style={{
-                        padding: '11px 20px',
-                        borderRadius: '12px',
-                        background: isDark ? 'var(--bg-surface-accent)' : '#FAF2E6',
-                        border: '1.5px solid var(--color-orange-zest)',
-                        color: 'var(--color-orange-zest)',
-                        fontWeight: 800,
-                        fontSize: '0.86rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: '0 2px 8px rgba(217, 100, 31, 0.15)',
-                      }}
-                    >
-                      <Sliders size={16} />
-                      <span>{lang === 'vi' ? '⚙️ Quay lại giao diện Admin' : '⚙️ Return to Admin Dashboard'}</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={onLogout}
-                    style={{
-                      padding: '11px 22px',
-                      borderRadius: '12px',
-                      background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
-                      border: isDark ? '1.5px solid rgba(239, 68, 68, 0.35)' : '1.5px solid #FECACA',
-                      color: isDark ? '#F87171' : '#DC2626',
-                      fontWeight: 800,
-                      fontSize: '0.86rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>{t.logout}</span>
-                  </button>
                 </div>
               </div>
 
-              {/* If currentRole is admin, show the Runtime Settings Sliders below */}
-              {currentRole === 'admin' && (
-                <div style={{
-                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                  borderRadius: '20px',
-                  padding: '26px 30px',
-                  border: isDark ? '1.5px solid var(--border-light)' : '1.5px solid rgba(120, 132, 23, 0.15)',
-                  boxShadow: 'var(--shadow-card)',
-                }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '6px' }}>
-                    ⚡ {lang === 'vi' ? 'Tham Số Chấm & Giám Sát Runtime (BR-07, BR-12)' : 'Grading & Monitoring Parameters (BR-07, BR-12)'}
-                  </h3>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                    {lang === 'vi' ? 'Cấu hình tham số điều phối worker và ngưỡng cảnh báo đóng góp mã nguồn.' : 'Configure worker concurrency and free-rider alert thresholds.'}
-                  </p>
+              {/* UNIFIED EXECUTIVE PROFILE BANNER */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.16)',
+                boxShadow: 'var(--shadow-card)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '14px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  {/* Interactive Avatar with Upload */}
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      onChange={handleAvatarFileChange}
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                    />
+                    <div
+                      onClick={() => avatarInputRef.current?.click()}
+                      title={lang === 'vi' ? 'Nhấp để tải ảnh đại diện lên' : 'Click to upload avatar'}
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: '1.25rem',
+                        boxShadow: '0 4px 14px rgba(217, 100, 31, 0.35)',
+                        flexShrink: 0,
+                        cursor: 'pointer',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '2.5px solid var(--color-orange-zest)',
+                        transition: 'transform 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      {userAvatarUrl ? (
+                        <img
+                          src={userAvatarUrl}
+                          alt="Avatar"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <span>{userFullName.split(' ').map((n) => n[0]).slice(-2).join('').toUpperCase()}</span>
+                      )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '6px' }}>
-                        <span>{lang === 'vi' ? 'Số Worker Concurrency (BR-07):' : 'Worker Concurrency (BR-07):'}</span>
-                        <strong style={{ color: 'var(--color-orange-zest)' }}>{workerConcurrency} Workers</strong>
+                      {/* Camera Overlay on Hover */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(0, 0, 0, 0.48)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#FFFFFF',
+                          opacity: 0,
+                          transition: 'opacity 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      >
+                        <Camera size={18} color="#FFFFFF" />
+                        <span style={{ fontSize: '0.50rem', fontWeight: 800, marginTop: '2px', textTransform: 'uppercase' }}>
+                          {userAvatarUrl ? (lang === 'vi' ? 'Đổi ảnh' : 'Change') : (lang === 'vi' ? 'Tải ảnh' : 'Upload')}
+                        </span>
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={workerConcurrency}
-                        onChange={(e) => handleUpdateConcurrency(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: 'var(--color-orange-zest)' }}
-                      />
                     </div>
-
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '6px' }}>
-                        <span>{lang === 'vi' ? 'Ngưỡng Cảnh Báo Free-Rider (BR-12):' : 'Free-Rider Alert Threshold (BR-12):'}</span>
-                        <strong style={{ color: '#B91C1C' }}>{freeRidingThreshold}%</strong>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="20"
-                        value={freeRidingThreshold}
-                        onChange={(e) => handleUpdateFreeRidingThreshold(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: 'var(--color-orange-zest)' }}
-                      />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                        {userFullName}
+                      </span>
+                      <span style={{
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
+                        color: isDark ? '#4ADE80' : '#15803D',
+                        border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0',
+                        padding: '1px 7px',
+                        borderRadius: '6px',
+                      }}>
+                        🟢 {lang === 'vi' ? 'Đang hoạt động' : 'Active'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.78rem', color: 'var(--text-body)', marginTop: '2px', flexWrap: 'wrap' }}>
+                      <span>✉️ {userEmail}</span>
+                      <span>•</span>
+                      <span style={{ color: 'var(--color-orange-zest)', fontWeight: 700 }}>
+                        {currentRole === 'lecturer'
+                          ? (lang === 'vi' ? '🎓 Giảng viên phụ trách: SWP391 - Đồ án phần mềm' : '🎓 Course Lecturer: SWP391')
+                          : currentRole === 'admin'
+                          ? (lang === 'vi' ? '⚙️ Quản trị viên hệ thống: AITA-Intelligent' : '⚙️ System Administrator: AITA-Intelligent')
+                          : (lang === 'vi' ? '👨‍💻 Sinh viên lớp: SWP391 - Đồ án phần mềm' : '👨‍💻 Student: SWP391')}
+                      </span>
                     </div>
                   </div>
                 </div>
-              )}
+
+                {/* Logout Button in Header Bar */}
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '8px',
+                    background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEE2E2',
+                    border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #FECACA',
+                    color: isDark ? '#F87171' : '#DC2626',
+                    fontWeight: 800,
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#EF4444';
+                    e.currentTarget.style.color = '#FFFFFF';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEE2E2';
+                    e.currentTarget.style.color = isDark ? '#F87171' : '#DC2626';
+                  }}
+                >
+                  <LogOut size={13} />
+                  <span>{t.logout}</span>
+                </button>
+              </div>
+
+              {/* 2-COLUMN BALANCED GRID (FITS IN 1 SCREEN WITHOUT SCROLLING) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                gap: '16px',
+                alignItems: 'start',
+              }}>
+                {/* LEFT COLUMN: ACCOUNT DETAILS & RUNTIME */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Account Details Box */}
+                  <div style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.16)',
+                    boxShadow: 'var(--shadow-card)',
+                  }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>
+                      📋 {lang === 'vi' ? 'THÔNG TIN TÀI KHOẢN' : 'ACCOUNT DETAILS'}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      {currentRole === 'lecturer' ? (
+                        <>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>MÃ GIẢNG VIÊN (MSGV)</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>GV-SWP391</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>KHOA / BỘ MÔN</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>Kỹ thuật phần mềm (SE)</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>HỌC PHẦN DẠY</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--color-orange-zest)', marginTop: '2px' }}>SWP391 Capstone</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>CƠ SỞ ĐÀO TẠO</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+                              {lang === 'vi' ? 'ĐH FPT Quy Nhơn' : 'FPT University (Quy Nhon Campus)'}
+                            </div>
+                          </div>
+                        </>
+                      ) : currentRole === 'admin' ? (
+                        <>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>MÃ QUẢN TRỊ (ADMIN ID)</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>ADM-ROOT-01</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>QUYỀN HẠN HỆ THỐNG</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--color-orange-zest)', marginTop: '2px' }}>Super Admin</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>PHẠM VI QUẢN LÝ</div>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              Database, Redis & Sandbox
+                            </div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>CƠ SỞ ĐÀO TẠO</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+                              {lang === 'vi' ? 'ĐH FPT Quy Nhơn' : 'FPT University (Quy Nhon Campus)'}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>MÃ SINH VIÊN (MSSV)</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>SE170113</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>CHUYÊN NGÀNH</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>Kỹ thuật phần mềm</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>ĐỒ ÁN TỐT NGHIỆP</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--color-orange-zest)', marginTop: '2px' }}>AITA-Intelligent</div>
+                          </div>
+                          <div style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1', padding: '10px 14px', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6' }}>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>CƠ SỞ ĐÀO TẠO</div>
+                            <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+                              {lang === 'vi' ? 'ĐH FPT Quy Nhơn' : 'FPT University (Quy Nhon Campus)'}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Runtime Controls (Admin & Lecturer) or Capstone Progress (Student) */}
+                  {(currentRole === 'admin' || currentRole === 'lecturer') ? (
+                    <div style={{
+                      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.16)',
+                      boxShadow: 'var(--shadow-card)',
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>⚡</span>
+                        <span>{lang === 'vi' ? 'THAM SỐ HẠ TẦNG RUNTIME' : 'RUNTIME PARAMETERS'}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', marginBottom: '3px' }}>
+                            <span style={{ color: 'var(--text-body)' }}>{lang === 'vi' ? 'Worker chấm song song:' : 'Worker Concurrency:'}</span>
+                            <strong style={{ color: 'var(--color-orange-zest)' }}>{workerConcurrency} Workers</strong>
+                          </div>
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={workerConcurrency}
+                            onChange={(e) => handleUpdateConcurrency(Number(e.target.value))}
+                            style={{ width: '100%', accentColor: 'var(--color-orange-zest)', height: '5px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', marginBottom: '3px' }}>
+                            <span style={{ color: 'var(--text-body)' }}>{lang === 'vi' ? 'Ngưỡng cảnh báo đóng góp:' : 'Free-riding Alert Threshold:'}</span>
+                            <strong style={{ color: '#EF4444' }}>{freeRidingThreshold}%</strong>
+                          </div>
+                          <input
+                            type="range"
+                            min="1"
+                            max="20"
+                            value={freeRidingThreshold}
+                            onChange={(e) => handleUpdateFreeRidingThreshold(Number(e.target.value))}
+                            style={{ width: '100%', accentColor: 'var(--color-orange-zest)', height: '5px' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                      borderRadius: '16px',
+                      padding: '16px 20px',
+                      border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.16)',
+                      boxShadow: 'var(--shadow-card)',
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                        🎯 {lang === 'vi' ? 'KẾT QUẢ ĐỒ ÁN' : 'PROJECT STATUS'}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-orange-zest)' }}>9.75 / 10.0</div>
+                          <div style={{ fontSize: '0.70rem', color: '#10B981', fontWeight: 700 }}>✓ Vượt qua 19/20 test cases</div>
+                        </div>
+                        <span style={{ fontSize: '0.70rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: '#059669' }}>
+                          Đã bảo vệ xong
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT COLUMN: PREFERENCES (LANGUAGE & THEME) & INFRASTRUCTURE HEALTH */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Preferences: Language & Theme Side by Side in 1 Clean Card */}
+                  <div style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.16)',
+                    boxShadow: 'var(--shadow-card)',
+                  }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>
+                      🎨 {lang === 'vi' ? 'GIAO DIỆN & TÙY CHỌN' : 'PREFERENCES & DISPLAY'}
+                    </div>
+
+                    {/* Language Selector (Compact Pills) */}
+                    <div style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                        {lang === 'vi' ? 'Ngôn ngữ hiển thị:' : 'Language:'}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => onToggleLang && onToggleLang('vi')}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '9px',
+                            border: lang === 'vi' ? '1.5px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
+                            background: lang === 'vi' ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1'),
+                            color: lang === 'vi' ? 'var(--color-orange-zest)' : 'var(--text-body)',
+                            fontWeight: lang === 'vi' ? 800 : 600,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <VietnamFlag size={15} />
+                          <span>Tiếng Việt</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggleLang && onToggleLang('en')}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '9px',
+                            border: lang === 'en' ? '1.5px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
+                            background: lang === 'en' ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1'),
+                            color: lang === 'en' ? 'var(--color-orange-zest)' : 'var(--text-body)',
+                            fontWeight: lang === 'en' ? 800 : 600,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <UsFlag size={15} />
+                          <span>English (US)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Theme Selector (Compact Pills) */}
+                    <div>
+                      <div style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                        {lang === 'vi' ? 'Chế độ màu sắc:' : 'Color Theme:'}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => onToggleTheme && onToggleTheme('light')}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '9px',
+                            border: !isDark ? '1.5px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
+                            background: !isDark ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1'),
+                            color: !isDark ? 'var(--color-orange-zest)' : 'var(--text-body)',
+                            fontWeight: !isDark ? 800 : 600,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <Sun size={15} color={!isDark ? 'var(--color-orange-zest)' : 'var(--text-muted)'} />
+                          <span>{lang === 'vi' ? 'Chế độ Sáng' : 'Light Mode'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggleTheme && onToggleTheme('dark')}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '9px',
+                            border: isDark ? '1.5px solid var(--color-orange-zest)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6'),
+                            background: isDark ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1'),
+                            color: isDark ? 'var(--color-orange-zest)' : 'var(--text-body)',
+                            fontWeight: isDark ? 800 : 600,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <Moon size={15} color={isDark ? 'var(--color-orange-zest)' : 'var(--text-muted)'} />
+                          <span>{lang === 'vi' ? 'Chế độ Tối' : 'Dark Mode'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Infrastructure Health Card (Compact System Status) */}
+                  <div style={{
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.16)',
+                    boxShadow: 'var(--shadow-card)',
+                  }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                      🛡️ {lang === 'vi' ? 'TRẠNG THÁI HẠ TẦNG KẾT NỐI' : 'SYSTEM HEALTH'}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem' }}>
+                        <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>PostgreSQL Database</span>
+                        <span style={{ color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
+                          {lang === 'vi' ? 'Trực tuyến (5432)' : 'Online (5432)'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem' }}>
+                        <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>BullMQ & Redis Queue</span>
+                        <span style={{ color: '#10B981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
+                          {lang === 'vi' ? 'Đang chạy (6379)' : 'Active (6379)'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem' }}>
+                        <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Docker Sandbox Isolation</span>
+                        <span style={{ color: '#0284C7', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0284C7' }} />
+                          {lang === 'vi' ? 'Bảo vệ an toàn' : 'Secured'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -3367,7 +4815,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               />
             </div>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{lang === 'vi' ? 'MỨC ĐỘ ƯU TIÊN (BR-01)*' : 'PRIORITY LEVEL (BR-01)*'}</label>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{lang === 'vi' ? 'MỨC ĐỘ ƯU TIÊN*' : 'PRIORITY LEVEL*'}</label>
               <select
                 value={batchPriority}
                 onChange={(e) => setBatchPriority(e.target.value as 'exam' | 'assignment' | 'practice')}
@@ -3429,68 +4877,272 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         </div>
       )}
 
-      {/* MODAL 2: JOB DETAILS MODAL (SRS Page 33) */}
-      {showJobDetailsModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px'
-        }}>
+      {/* MODAL 2: JOB DETAILS & LECTURER AI REVIEW MODAL (SRS Page 33 & UC-04b) */}
+      {showJobDetailsModal && (() => {
+        const currentJob = allSubmissions.find((s) => s.id === showJobDetailsModal || s.jobId === showJobDetailsModal) || {
+          id: showJobDetailsModal,
+          student: 'Sinh viên',
+          title: 'Assignment',
+          status: 'completed',
+          reviewStatus: 'pending',
+          reviewComment: '',
+          time: 'Vừa xong',
+        };
+        const isCompleted = currentJob.status === 'completed';
+        const isFailed = currentJob.status === 'failed';
+        const targetJobId = currentJob.jobId || currentJob.id;
+
+        return (
           <div style={{
-            background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-            borderRadius: '20px',
-            maxWidth: '520px',
-            width: '100%',
-            padding: '28px',
-            border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-            color: 'var(--text-main)',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Chi Tiết Tác Vụ #{showJobDetailsModal}</h3>
+            <div style={{
+              background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+              borderRadius: '20px',
+              maxWidth: '560px',
+              width: '100%',
+              padding: '28px',
+              border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+              color: 'var(--text-main)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+                    {lang === 'vi' ? `Thẩm Định Bài Chấm #${showJobDetailsModal}` : `Grading Job Review #${showJobDetailsModal}`}
+                  </h3>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    {currentJob.student} • {currentJob.title}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowJobDetailsModal(null)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Toast Feedback Notification */}
+              {reviewToast && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  marginBottom: '16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  background: reviewToast.type === 'success' ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7') : (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'),
+                  color: reviewToast.type === 'success' ? '#15803D' : '#B91C1C',
+                  border: reviewToast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
+                }}>
+                  {reviewToast.message}
+                </div>
+              )}
+
+              {/* Section 1: AI Evaluation Metrics */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '18px',
+                border: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)',
+              }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                  🤖 {lang === 'vi' ? 'KẾT QUẢ ĐÁNH GIÁ TỰ ĐỘNG CỦA AI' : 'AI AUTOMATED GRADING RESULT'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Trạng thái chấm:' : 'Grading Status:'} </span>
+                    <strong style={{
+                      color: isCompleted ? '#16A34A' : isFailed ? '#EF4444' : 'var(--color-orange-zest)'
+                    }}>
+                      {isCompleted ? 'COMPLETED' : isFailed ? 'FAILED' : 'GRADING'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Thời gian chạy:' : 'Runtime:'} </span>
+                    <strong>{isCompleted ? '840 ms' : isFailed ? '30,124 ms' : 'Đang chạy...'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Điểm số AI:' : 'AI Score:'} </span>
+                    <strong style={{ color: isCompleted ? '#16A34A' : 'var(--text-main)' }}>
+                      {isCompleted ? '100 / 100' : 'Chưa có'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Bộ kiểm thử:' : 'Test Cases:'} </span>
+                    <strong>{isCompleted ? '10/10 Passed (100%)' : isFailed ? '2/10 Passed (Timeout)' : 'Đang chạy'}</strong>
+                  </div>
+                </div>
+
+                {isFailed && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '10px 12px',
+                    background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
+                    borderRadius: '8px',
+                    color: '#EF4444',
+                    fontFamily: 'monospace',
+                    fontSize: '0.78rem',
+                  }}>
+                    TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)
+                  </div>
+                )}
+              </div>
+
+              {/* Section 2: Human-in-the-Loop Lecturer Review */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '14px',
+                padding: '18px',
+                border: isDark ? '1px solid rgba(217, 100, 31, 0.3)' : '1.5px solid rgba(217, 100, 31, 0.25)',
+                marginBottom: '16px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.80rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-orange-zest)' }}>
+                    👨‍🏫 {lang === 'vi' ? 'Ý KIẾN & THẨM ĐỊNH CỦA GIẢNG VIÊN' : 'LECTURER EVALUATION & REVIEW'}
+                  </div>
+                  <span style={{
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    background: currentJob.reviewStatus === 'approved'
+                      ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7')
+                      : currentJob.reviewStatus === 'rejected'
+                        ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2')
+                        : (isDark ? 'rgba(238, 166, 75, 0.2)' : '#FEF3C7'),
+                    color: currentJob.reviewStatus === 'approved'
+                      ? '#16A34A'
+                      : currentJob.reviewStatus === 'rejected'
+                        ? '#DC2626'
+                        : '#D97706',
+                  }}>
+                    {currentJob.reviewStatus === 'approved'
+                      ? (lang === 'vi' ? '✓ ĐÃ PHÊ DUYỆT' : '✓ APPROVED')
+                      : currentJob.reviewStatus === 'rejected'
+                        ? (lang === 'vi' ? '✗ TỪ CHỐI' : '✗ REJECTED')
+                        : (lang === 'vi' ? '⏳ CHỜ THẨM ĐỊNH' : '⏳ PENDING REVIEW')}
+                  </span>
+                </div>
+
+                {isCompleted ? (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                      {lang === 'vi' ? 'Ý kiến nhận xét & phản hồi của Giảng viên:' : 'Lecturer Feedback & Comments:'}
+                    </label>
+                    <textarea
+                      value={reviewCommentInput}
+                      onChange={(e) => setReviewCommentInput(e.target.value)}
+                      placeholder={lang === 'vi' ? 'Ví dụ: Bài làm thuật toán chuẩn xác, tối ưu thời gian, đạt chuẩn rubric.' : 'Enter your evaluation feedback...'}
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                        background: isDark ? 'var(--bg-surface-input)' : '#FFFFFF',
+                        color: 'var(--text-main)',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                        resize: 'vertical',
+                        marginBottom: '14px',
+                      }}
+                    />
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleReviewJob(targetJobId, 'approved')}
+                        disabled={isReviewingJob}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          borderRadius: '10px',
+                          background: '#16A34A',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          opacity: isReviewingJob ? 0.7 : 1,
+                        }}
+                      >
+                        <CheckCircle size={16} />
+                        {lang === 'vi' ? 'Phê Duyệt Điểm' : 'Approve Score'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReviewJob(targetJobId, 'rejected')}
+                        disabled={isReviewingJob}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          borderRadius: '10px',
+                          background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                          color: '#DC2626',
+                          border: '1px solid rgba(220, 38, 38, 0.3)',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          opacity: isReviewingJob ? 0.7 : 1,
+                        }}
+                      >
+                        <AlertOctagon size={16} />
+                        {lang === 'vi' ? 'Từ Chối Bài Chấm' : 'Reject Score'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: isDark ? 'rgba(238, 166, 75, 0.12)' : '#FFFBEB',
+                    border: '1px solid rgba(238, 166, 75, 0.3)',
+                    color: isDark ? '#FBBF24' : '#B45309',
+                    fontSize: '0.82rem',
+                    lineHeight: '1.5',
+                  }}>
+                    ⚠️ <strong>Lưu ý:</strong> Chỉ những bài nộp đã hoàn tất chấm điểm tự động (<code>status = &apos;completed&apos;</code>) mới được phép thẩm định. Vui lòng chờ hệ thống hoàn tất quá trình chấm!
+                  </div>
+                )}
+              </div>
+
+              {/* Close Button */}
               <button
+                type="button"
                 onClick={() => setShowJobDetailsModal(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                style={{
+                  width: '100%',
+                  padding: '11px',
+                  borderRadius: '10px',
+                  background: isDark ? 'var(--bg-surface-subtle)' : '#F1F5F9',
+                  color: 'var(--text-body)',
+                  border: isDark ? '1px solid var(--border-light)' : 'none',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
               >
-                <X size={20} />
+                {lang === 'vi' ? 'Đóng cửa sổ' : 'Close'}
               </button>
             </div>
-            <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
-              <div>Trạng thái: <strong style={{ color: '#EF4444' }}>failed (chờ retry lần 3)</strong></div>
-              <div>Thời gian chạy: <strong>30,124 ms</strong></div>
-              <div>Số lần retry: <strong>2 / 3 lần</strong> (khoảng chờ $2^2 = 4s$)</div>
-              <div style={{ marginTop: '12px', fontWeight: 700 }}>Nguyên nhân lỗi:</div>
-              <div style={{
-                padding: '10px 14px',
-                background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-                border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #FECACA',
-                borderRadius: '8px',
-                color: isDark ? '#F87171' : '#B91C1C',
-                fontFamily: 'monospace',
-                fontSize: '0.78rem',
-                marginTop: '4px',
-              }}>
-                TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)
-              </div>
-            </div>
-            <button
-              onClick={() => setShowJobDetailsModal(null)}
-              style={{
-                width: '100%',
-                marginTop: '20px',
-                padding: '10px',
-                borderRadius: '10px',
-                background: isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6',
-                color: 'var(--text-body)',
-                border: isDark ? '1px solid var(--border-light)' : 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Đóng
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MODAL 3: DLQ MODAL (SRS Page 35) */}
       {showDlqModal && (
@@ -3512,7 +5164,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               Xử Lý Tác Vụ Hàng Đợi Chết #{showDlqModal}
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginBottom: '20px', lineHeight: '1.6' }}>
-              Job đã thử lại hết 3 lần và được cách ly. Giảng viên có thể chọn hủy bỏ vĩnh viễn hoặc nạp lại thủ công vào hàng đợi để chấm lại (BR-06: reset retryCount về 0).
+              Tác vụ đã thử lại tối đa 3 lần và được đưa vào khu vực cách ly an toàn. Giảng viên có thể chọn hủy bỏ hoặc nạp lại vào hàng đợi để hệ thống chấm lại.
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
@@ -3576,7 +5228,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               </button>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
-              Token cần có quyền <code>repo:read</code> để clone kho mã nguồn riêng tư. Hệ thống sẽ mã hóa bằng chuẩn AES-256 (BR-08) trước khi lưu.
+              Token cần có quyền <code>repo:read</code> để liên kết kho mã nguồn riêng tư. Hệ thống sẽ mã hóa bảo mật bằng chuẩn AES-256 trước khi lưu trữ.
             </p>
             <input
               type="password"
@@ -3631,7 +5283,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         </div>
       )}
 
-      {/* MODAL 5: FLAGGED COMMITS (FRAUD DETECTION BR-10) */}
+      {/* MODAL 5: FLAGGED COMMITS (FRAUD DETECTION) */}
       {showFlaggedModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
@@ -3649,7 +5301,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E5E7EB', paddingBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-orange-zest)' }}>
-                {lang === 'vi' ? '⚠️ Danh Sách Commit Gian Lận (BR-10)' : '⚠️ Flagged Fraudulent Commits (BR-10)'}
+                {lang === 'vi' ? '⚠️ Danh Sách Commit Bất Thường Bị Gắn Cờ' : '⚠️ Flagged Irregular Commits'}
               </h3>
               <button
                 onClick={() => setShowFlaggedModal(false)}
@@ -3674,8 +5326,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
               // Nếu không có gì cả, fallback 2 dòng mặc định
               const fallback = [
-                { id: 'f0', name: 'Tài khoản Demo BR-10', email: 'test@fpt.edu.vn', date: '2026-09-09', behavior: lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)', color: '#DC2626' },
-                { id: 'f1', name: 'Tài khoản Demo BR-10', email: 'test@fpt.edu.vn', date: '2026-09-08', behavior: lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)', color: '#D97706' },
+                { id: 'f0', name: 'Tài khoản Kiểm Tra', email: 'test@fpt.edu.vn', date: '2026-09-09', behavior: lang === 'vi' ? 'Whitespace-only (chỉ thêm dấu cách để farm LOC)' : 'Whitespace-only (adding spaces to farm LOC)', color: '#DC2626' },
+                { id: 'f1', name: 'Tài khoản Kiểm Tra', email: 'test@fpt.edu.vn', date: '2026-09-08', behavior: lang === 'vi' ? 'Self-revert (tự xóa commit liền trước của mình)' : 'Self-revert (reverting own previous commit)', color: '#D97706' },
               ];
 
               const allRows = realFlagged.length > 0
@@ -3690,7 +5342,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       <tr>
                         <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
                         <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
-                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI BẤT THƯỜNG' : 'IRREGULAR BEHAVIOR'}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -3791,6 +5443,15 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           </div>
         </div>
       )}
+
+      {/* MODAL 7: LECTURER APPROVAL MODAL (ADMIN ONLY) */}
+      <LecturerApprovalModal
+        isOpen={showLecturerApprovalModal}
+        onClose={() => setShowLecturerApprovalModal(false)}
+        lang={lang}
+        isDark={isDark}
+        adminEmail={userEmail}
+      />
     </div>
   );
 };

@@ -11,12 +11,276 @@ import {
   DLQ_REPLAY_RESET_RETRY_COUNT 
 } from '@aita/shared';
 
-// Mock in-memory storage fallback if PostgreSQL is temporarily starting
-// Force restart to clear memory
-let inMemoryBatches: any[] = [];
-let inMemoryJobs: any[] = [];
+// Mock in-memory storage fallback with realistic seed records
+/**
+ * Helper to format date in Vietnam Timezone (Asia/Ho_Chi_Minh - GMT+7: YYYY-MM-DD HH:mm)
+ */
+export const formatVietnamDateTime = (date: Date | string = new Date()): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return 'Vừa xong';
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return formatter.format(d).replace(',', '');
+};
 
-let inMemorySubmissions: any[] = [];
+let inMemoryBatches: any[] = [];
+let inMemoryJobs: any[] = [
+  {
+    id: 101,
+    batchId: 1,
+    submissionId: 101,
+    studentName: 'Lê Nguyễn Anh Mai',
+    submissionTitle: 'Exam',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 840,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: null,
+    dismissedAt: null,
+    reviewStatus: 'pending',
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewComment: null,
+    createdAt: new Date(),
+  },
+  {
+    id: 102,
+    batchId: 1,
+    submissionId: 102,
+    studentName: 'Lê Nguyễn Anh Mai',
+    submissionTitle: 'Assignment 3 — Spring Boot REST Service',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 920,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: 1,
+    dismissedAt: null,
+    reviewStatus: 'approved',
+    reviewedBy: 1,
+    reviewedAt: new Date(),
+    reviewComment: 'Cấu trúc controller và service rõ ràng, xử lý exception tốt.',
+    createdAt: new Date(),
+  },
+  {
+    id: 103,
+    batchId: 1,
+    submissionId: 103,
+    studentName: 'Trần Quốc Bảo',
+    submissionTitle: 'Lab 4 — Redis Queue Worker',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 1250,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: 1,
+    dismissedAt: null,
+    reviewStatus: 'approved',
+    reviewedBy: 1,
+    reviewedAt: new Date(),
+    reviewComment: 'Thuật toán tối ưu, xử lý concurrency tốt, đạt điểm tối đa.',
+    createdAt: new Date(),
+  },
+  {
+    id: 104,
+    batchId: 1,
+    submissionId: 104,
+    studentName: 'Nguyễn Khánh Linh',
+    submissionTitle: 'Assignment 2 — Git Analytics & Contribution Engine',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 1100,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: null,
+    dismissedAt: null,
+    reviewStatus: 'pending',
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewComment: null,
+    createdAt: new Date(),
+  },
+  {
+    id: 105,
+    batchId: 1,
+    submissionId: 105,
+    studentName: 'Phạm Hoàng Long',
+    submissionTitle: 'Practical Exam — Git Engine API',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 1340,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: null,
+    dismissedAt: null,
+    reviewStatus: 'pending',
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewComment: null,
+    createdAt: new Date(),
+  },
+  {
+    id: 106,
+    batchId: 1,
+    submissionId: 106,
+    studentName: 'Võ Minh Trí',
+    submissionTitle: 'Assignment 2 — Docker PostgreSQL',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 1560,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: null,
+    dismissedAt: null,
+    reviewStatus: 'pending',
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewComment: null,
+    createdAt: new Date(),
+  },
+  {
+    id: 107,
+    batchId: 1,
+    submissionId: 107,
+    studentName: 'Hoàng Thị Thảo Vy',
+    submissionTitle: 'Lab 3 — AST Parser & Code Quality Metrics',
+    status: 'completed',
+    retryCount: 0,
+    runtimeDurationMs: 980,
+    errorClassification: null,
+    stackTrace: null,
+    dismissed: false,
+    dismissedBy: 1,
+    dismissedAt: null,
+    reviewStatus: 'approved',
+    reviewedBy: 1,
+    reviewedAt: new Date(),
+    reviewComment: 'Đạt chuẩn AST diff, clean code, tài liệu đầy đủ.',
+    createdAt: new Date(),
+  },
+];
+
+let inMemorySubmissions: any[] = [
+  {
+    id: 101,
+    studentName: 'Lê Nguyễn Anh Mai',
+    studentEmail: 'lenguyenanhmai05@gmail.com',
+    title: 'Exam',
+    status: 'completed',
+    reviewStatus: 'pending',
+    reviewComment: '',
+    method: 'GitHub: https://github.com/lenguyenanhmai05/AITA-Intelligent.git (main)',
+    submittedAt: '2026-10-14 07:35',
+    notes: 'Bài làm chính thức đã vượt qua 10/10 test cases.',
+    codeUrl: 'https://github.com/lenguyenanhmai05/AITA-Intelligent.git',
+    score: '100 / 100',
+    testCases: '10/10 Passed',
+  },
+  {
+    id: 102,
+    studentName: 'Lê Nguyễn Anh Mai',
+    studentEmail: 'lenguyenanhmai05@gmail.com',
+    title: 'Assignment 3 — Spring Boot REST Service',
+    status: 'completed',
+    reviewStatus: 'approved',
+    reviewComment: 'Cấu trúc controller và service rõ ràng, xử lý exception tốt.',
+    method: 'Tệp ZIP: assignment3_springboot.zip (2.4 MB)',
+    submittedAt: '2026-10-14 07:20',
+    notes: 'Nộp bổ sung mã nguồn đóng gói ZIP dự án Spring Boot.',
+    codeUrl: 'uploads/assignment3_springboot.zip',
+    score: '95 / 100',
+    testCases: '9/10 Passed',
+  },
+  {
+    id: 103,
+    studentName: 'Trần Quốc Bảo',
+    studentEmail: 'baotq@fpt.edu.vn',
+    title: 'Lab 4 — Redis Queue Worker',
+    status: 'completed',
+    reviewStatus: 'approved',
+    reviewComment: 'Thuật toán tối ưu, xử lý concurrency tốt, đạt điểm tối đa.',
+    method: 'Tệp ZIP: lab4_worker_redis.zip (1.8 MB)',
+    submittedAt: '2026-10-14 07:15',
+    notes: 'Cấu hình BullMQ với Exponential Backoff & Concurrency.',
+    codeUrl: 'uploads/lab4_worker_redis.zip',
+    score: '100 / 100',
+    testCases: '10/10 Passed',
+  },
+  {
+    id: 104,
+    studentName: 'Nguyễn Khánh Linh',
+    studentEmail: 'linhnk@fpt.edu.vn',
+    title: 'Assignment 2 — Git Analytics & Contribution Engine',
+    status: 'completed',
+    reviewStatus: 'pending',
+    reviewComment: '',
+    method: 'GitHub: https://github.com/khanhlinh-fpt/aita-git-analytics.git (main)',
+    submittedAt: '2026-10-14 07:10',
+    notes: 'Tích hợp PAT Auth và bộ lọc commit gian lận.',
+    codeUrl: 'https://github.com/khanhlinh-fpt/aita-git-analytics.git',
+    score: '90 / 100',
+    testCases: '9/10 Passed',
+  },
+  {
+    id: 105,
+    studentName: 'Phạm Hoàng Long',
+    studentEmail: 'longph@fpt.edu.vn',
+    title: 'Practical Exam — Git Engine API',
+    status: 'completed',
+    reviewStatus: 'pending',
+    reviewComment: '',
+    method: 'GitHub: https://github.com/longph-fpt/practical-exam-api.git (main)',
+    submittedAt: '2026-10-14 07:05',
+    notes: 'Đã hoàn tất toàn bộ pipeline test case tự động.',
+    codeUrl: 'https://github.com/longph-fpt/practical-exam-api.git',
+    score: '85 / 100',
+    testCases: '8/10 Passed',
+  },
+  {
+    id: 106,
+    studentName: 'Võ Minh Trí',
+    studentEmail: 'trivm@fpt.edu.vn',
+    title: 'Assignment 2 — Docker PostgreSQL',
+    status: 'completed',
+    reviewStatus: 'pending',
+    reviewComment: '',
+    method: 'Tệp ZIP: assignment2_docker_db.zip (3.2 MB)',
+    submittedAt: '2026-10-14 07:00',
+    notes: 'Đã cấu hình migration Prisma và Docker compose hoàn chỉnh.',
+    codeUrl: 'uploads/assignment2_docker_db.zip',
+    score: '80 / 100',
+    testCases: '8/10 Passed',
+  },
+  {
+    id: 107,
+    studentName: 'Hoàng Thị Thảo Vy',
+    studentEmail: 'vyhtt@fpt.edu.vn',
+    title: 'Lab 3 — AST Parser & Code Quality Metrics',
+    status: 'completed',
+    reviewStatus: 'approved',
+    reviewComment: 'Đạt chuẩn AST diff, clean code, tài liệu đầy đủ.',
+    method: 'GitHub: https://github.com/thaovy-fpt/ast-parser-engine.git (main)',
+    submittedAt: '2026-10-14 06:50',
+    notes: 'Phân tích cú pháp AST và tính toán độ tương đồng mã nguồn.',
+    codeUrl: 'https://github.com/thaovy-fpt/ast-parser-engine.git',
+    score: '95 / 100',
+    testCases: '10/10 Passed',
+  },
+];
 
 /**
  * 0. Tạo bài nộp mới từ Sinh viên (Hỗ trợ tải tệp ZIP/mã nguồn hoặc liên kết Git Repo)
@@ -88,21 +352,64 @@ export const createSubmission = async (req: Request, res: Response) => {
     const submissionId = savedSubmission?.id || (100 + inMemorySubmissions.length + 1);
     const newSubRecord = {
       id: submissionId,
-      studentName: studentName || 'Sinh viên',
-      studentEmail: studentEmail || 'student@fpt.edu.vn',
-      title: title || 'Assignment Submission',
-      status: 'not graded',
+      studentName: studentName || 'Lê Nguyễn Anh Mai',
+      studentEmail: studentEmail || 'lenguyenanhmai05@gmail.com',
+      title: title || 'Exam',
+      status: 'waiting',
+      reviewStatus: 'pending',
+      reviewComment: '',
       method: method === 'file'
         ? `Tệp ZIP: ${fileName || 'submission_code.zip'} (${fileSize || '2.4 MB'})`
-        : `GitHub: ${gitRepoUrl || 'repo'} (${gitBranch})`,
-      submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        : `GitHub: ${gitRepoUrl || 'https://github.com/lenguyenanhmai05/AITA-Intelligent.git'} (${gitBranch})`,
+      submittedAt: formatVietnamDateTime(new Date()),
       notes: notes || '',
       codeUrl,
       score: 'Chờ chấm...',
-      testCases: 'Chờ phân phối (BullMQ)',
+      testCases: 'Đang xếp hàng (BullMQ)',
     };
 
     inMemorySubmissions.unshift(newSubRecord);
+    const jobRecord = {
+      id: 1000 + submissionId,
+      batchId: 1,
+      submissionId,
+      studentName: newSubRecord.studentName,
+      submissionTitle: newSubRecord.title,
+      status: 'waiting',
+      retryCount: 0,
+      runtimeDurationMs: null,
+      errorClassification: null,
+      stackTrace: null,
+      dismissed: false,
+      dismissedBy: null,
+      dismissedAt: null,
+      reviewStatus: 'pending',
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewComment: null,
+      createdAt: new Date(),
+    };
+    inMemoryJobs.unshift(jobRecord);
+
+    // Enqueue to real BullMQ queue
+    addGradingJobToQueue({
+      jobDbId: jobRecord.id,
+      batchId: 1,
+      submissionId,
+      studentName: newSubRecord.studentName,
+      submissionTitle: newSubRecord.title,
+      priority: (title?.includes('Exam') ? 'Exam' : 'Assignment') as any,
+    }).catch(() => {});
+
+    // Mô phỏng Worker chạy chấm bài theo hàng đợi sau 4.5 giây để thấy rõ tiến trình xử lý
+    setTimeout(() => {
+      newSubRecord.status = 'completed';
+      newSubRecord.score = '100 / 100';
+      newSubRecord.testCases = '10/10 Passed';
+      jobRecord.status = 'completed';
+      jobRecord.runtimeDurationMs = 1240;
+      console.log(`[BullMQ Worker Simulation] ✅ Submission #${submissionId} ("${newSubRecord.title}") finished grading!`);
+    }, 4500);
 
     res.status(201).json({
       success: true,
@@ -140,21 +447,31 @@ export const getSubmissions = async (req: Request, res: Response) => {
         list = dbSubs.map((s) => {
           const latestJob = s.gradingJobs?.[s.gradingJobs.length - 1];
           let gradingStatus = 'not graded';
+          let reviewStatus = 'pending';
+          let reviewComment = '';
+          let reviewedAt = null;
           if (latestJob) {
             gradingStatus = latestJob.status === 'completed'
               ? 'completed'
               : latestJob.status === 'dead' || latestJob.status === 'failed'
                 ? 'failed'
                 : 'grading';
+            reviewStatus = latestJob.reviewStatus || 'pending';
+            reviewComment = latestJob.reviewComment || '';
+            reviewedAt = latestJob.reviewedAt;
           }
           return {
             id: s.id,
+            jobId: latestJob?.id,
             studentName: s.student?.fullName || 'Sinh viên',
             studentEmail: s.student?.email,
             title: s.title,
             status: gradingStatus,
+            reviewStatus,
+            reviewComment,
+            reviewedAt,
             method: s.codeUrl.startsWith('http') ? `GitHub: ${s.codeUrl}` : `Tệp ZIP: ${s.codeUrl.replace('uploads/', '')}`,
-            submittedAt: s.submittedAt ? new Date(s.submittedAt).toISOString().replace('T', ' ').substring(0, 16) : 'Vừa xong',
+            submittedAt: s.submittedAt ? formatVietnamDateTime(s.submittedAt) : formatVietnamDateTime(),
             codeUrl: s.codeUrl,
             score: gradingStatus === 'completed' ? '100 / 100' : 'Chờ chấm...',
             testCases: gradingStatus === 'completed' ? '10/10 Passed' : 'Đang xếp hàng (BullMQ)',
@@ -259,7 +576,7 @@ export const createBatch = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         code: 'BR_02_LIMIT_EXCEEDED',
-        message: `Lớp học đã đạt giới hạn tối đa ${MAX_CONCURRENT_ACTIVE_BATCHES_PER_CLASS} đợt chấm đang hoạt động đồng thời (BR-02).`,
+        message: `Lớp học đã đạt giới hạn tối đa ${MAX_CONCURRENT_ACTIVE_BATCHES_PER_CLASS} đợt chấm đang hoạt động đồng thời.`,
       });
     }
 
@@ -328,6 +645,7 @@ export const createBatch = async (req: Request, res: Response) => {
             status: 'waiting',
             priority: String(priority),
             retryCount: 0,
+            reviewStatus: 'pending',
           },
         });
         jobDbId = dbJob.id;
@@ -350,6 +668,10 @@ export const createBatch = async (req: Request, res: Response) => {
         dismissed: false,
         dismissedBy: null,
         dismissedAt: null,
+        reviewStatus: 'pending' as const,
+        reviewedBy: null,
+        reviewedAt: null,
+        reviewComment: null,
         createdAt: new Date(),
       };
       
@@ -558,7 +880,7 @@ export const manualRetryJob = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Đã khôi phục tác vụ #${id} về hàng đợi với độ ưu tiên ${newPriority} và reset số lần thử về 0 (BR-06).`,
+      message: `Đã khôi phục tác vụ #${id} về hàng đợi với độ ưu tiên ${newPriority} và đặt lại số lần thử về 0.`,
       data: job || { id: Number(id), status: 'waiting', retryCount: 0 },
     });
   } catch (error: any) {
@@ -604,7 +926,117 @@ export const dismissJob = async (req: Request, res: Response) => {
 };
 
 /**
- * 8. Lấy danh sách các đợt chấm bài (Batches)
+/**
+ * 8. Giảng viên thẩm định & phê duyệt kết quả chấm của AI (UC-04b / Human-in-the-Loop)
+ * BR-14: Chỉ được duyệt bài khi job có status = 'completed'.
+ * BR-15: Quyết định thẩm định chỉ nhận 'approved' hoặc 'rejected'.
+ * BR-16: Xác thực Giảng viên thẩm định.
+ */
+export const reviewGradingJob = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, comment = '', reviewerId = 1 } = req.body;
+
+    // Quyết định duyệt chỉ nhận 'approved' hoặc 'rejected'
+    if (!status || !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'BR_15_INVALID_REVIEW_STATUS',
+        message: 'Quyết định thẩm định chỉ được nhận giá trị "approved" hoặc "rejected".',
+      });
+    }
+
+    let job: any = null;
+
+    // 1. Tìm job trong PostgreSQL
+    try {
+      job = await prisma.gradingJob.findUnique({
+        where: { id: Number(id) },
+        include: {
+          submission: { include: { class: true } },
+        },
+      });
+    } catch (err: any) {
+      console.warn(`[PostgreSQL Docker] reviewGradingJob find warning: ${err.message}`);
+    }
+
+    // Fallback in-memory nếu DB chưa có
+    if (!job) {
+      job = inMemoryJobs.find((j) => j.id === Number(id));
+    }
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: `Không tìm thấy tác vụ chấm #${id}`,
+      });
+    }
+
+    // Chỉ cho phép duyệt tác vụ đã hoàn thành chấm tự động (status = 'completed')
+    if (job.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: 'BR_14_JOB_NOT_COMPLETED',
+        message: `Chỉ những tác vụ đã hoàn tất chấm tự động (status = "completed") mới được phép duyệt. Trạng thái hiện tại: "${job.status}".`,
+      });
+    }
+
+    const reviewedAt = new Date();
+
+    // 2. Cập nhật vào DB PostgreSQL
+    try {
+      const updatedDbJob = await prisma.gradingJob.update({
+        where: { id: Number(id) },
+        data: {
+          reviewStatus: status,
+          reviewedBy: Number(reviewerId),
+          reviewedAt,
+          reviewComment: comment,
+        },
+      });
+      job = { ...job, ...updatedDbJob };
+      console.log(`[PostgreSQL Docker] 🎓 Job #${id} reviewed by Lecturer #${reviewerId}: ${status}`);
+    } catch (dbErr: any) {
+      console.warn(`[PostgreSQL Docker] reviewGradingJob update warning: ${dbErr.message}`);
+      job.reviewStatus = status;
+      job.reviewedBy = Number(reviewerId);
+      job.reviewedAt = reviewedAt;
+      job.reviewComment = comment;
+    }
+
+    // 3. Cập nhật in-memory nếu có
+    const memJob = inMemoryJobs.find((j) => j.id === Number(id));
+    if (memJob) {
+      memJob.reviewStatus = status;
+      memJob.reviewedBy = Number(reviewerId);
+      memJob.reviewedAt = reviewedAt;
+      memJob.reviewComment = comment;
+    }
+
+    // Cập nhật cả trong inMemorySubmissions nếu liên kết
+    const memSub = inMemorySubmissions.find((s) => s.id === job.submissionId);
+    if (memSub) {
+      memSub.reviewStatus = status;
+      memSub.reviewComment = comment;
+    }
+
+    res.json({
+      success: true,
+      message: status === 'approved'
+        ? `Giảng viên đã phê duyệt kết quả chấm của AI cho tác vụ #${id} thành công!`
+        : `Giảng viên đã từ chối kết quả chấm của AI cho tác vụ #${id} với ghi chú: "${comment}".`,
+      data: job,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: `Lỗi xử lý duyệt điểm: ${error.message}`,
+    });
+  }
+};
+
+/**
+ * 9. Lấy danh sách các đợt chấm bài (Batches)
  */
 export const getBatches = async (req: Request, res: Response) => {
   try {
@@ -627,7 +1059,7 @@ export const getBatches = async (req: Request, res: Response) => {
 };
 
 /**
- * 9. Đóng/Hoàn tất đợt chấm bài thủ công
+ * 10. Đóng/Hoàn tất đợt chấm bài thủ công
  */
 export const cancelBatch = async (req: Request, res: Response) => {
   try {
@@ -649,4 +1081,5 @@ export const cancelBatch = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 

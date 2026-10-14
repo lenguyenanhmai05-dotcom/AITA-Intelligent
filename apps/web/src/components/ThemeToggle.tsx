@@ -10,7 +10,7 @@ interface ThemeToggleProps {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   theme,
   onToggle,
-  variant = 'card',
+  variant: _variant = 'card',
 }) => {
   const isDark = theme === 'dark';
   const handleToggle = () => {
@@ -18,35 +18,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   const tooltipText = isDark
-    ? 'Đang dùng Chế độ Tối (Bấm để chuyển sang Chế độ Sáng) / Dark Mode (Click for Light)'
-    : 'Đang dùng Chế độ Sáng (Bấm để chuyển sang Chế độ Tối) / Light Mode (Click for Dark)';
-
-  if (variant === 'icon-only') {
-    return (
-      <button
-        type="button"
-        onClick={handleToggle}
-        title={tooltipText}
-        aria-label={tooltipText}
-        style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '8px',
-          background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FAF9F1',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid #E5E8D6',
-          color: isDark ? '#F5A642' : 'var(--color-orange-zest)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
-        }}
-      >
-        {isDark ? <Moon size={16} color="#F5A642" /> : <Sun size={16} color="var(--color-orange-zest)" />}
-      </button>
-    );
-  }
+    ? 'Đang dùng Chế độ Tối (Bấm chuyển sang Chế độ Sáng ☀️)'
+    : 'Đang dùng Chế độ Sáng (Bấm chuyển sang Chế độ Tối 🌙)';
 
   return (
     <button
@@ -55,24 +28,32 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       title={tooltipText}
       aria-label={tooltipText}
       style={{
+        width: '36px',
+        height: '34px',
+        borderRadius: '8px',
+        background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-surface, #FFFFFF)',
+        border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid var(--border-light, #E2E6D0)',
+        color: isDark ? '#F5A642' : 'var(--color-orange-zest)',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '6px',
-        padding: variant === 'navbar' ? '5px 11px' : '6px 12px',
-        borderRadius: '9px',
-        background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FAF9F1',
-        border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid #E5E8D6',
-        color: isDark ? '#F5A642' : 'var(--color-orange-zest)',
-        fontSize: '0.74rem',
-        fontWeight: 800,
+        justifyContent: 'center',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
         flexShrink: 0,
       }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--color-orange-zest)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
+        e.currentTarget.style.boxShadow = '0 3px 8px rgba(217, 100, 31, 0.18)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.16)' : 'var(--border-light, #E2E6D0)';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+      }}
     >
-      {isDark ? <Moon size={14} color="#F5A642" /> : <Sun size={14} color="var(--color-orange-zest)" />}
-      <span>{isDark ? '🌙 Dark' : '☀️ Light'}</span>
+      {isDark ? <Moon size={16} color="#F5A642" /> : <Sun size={16} color="var(--color-orange-zest)" />}
     </button>
   );
 };

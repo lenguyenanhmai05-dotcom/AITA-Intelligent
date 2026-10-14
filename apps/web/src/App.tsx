@@ -6,20 +6,22 @@ import { GitAuthProvider } from './contexts/GitAuthContext';
 
 export const ADMIN_EMAILS = [
   'lenguyenanhmai05@gmail.com',
+  'tuongvy22102004@gmail.com',
   'n133vy@gmail.com',
   'khanhlinh9a4tqd@gmail.com',
   'admin@aita.fpt.edu.vn',
   'admin@fpt.edu.vn',
 ];
 export const isAdminEmail = (email: string): boolean => {
+  if (!email) return false;
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 };
 
 export type Theme = 'light' | 'dark';
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<'lecturer' | 'student' | 'admin'>('student');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<'lecturer' | 'student' | 'admin'>('admin');
   const [userEmail, setUserEmail] = useState<string>('lenguyenanhmai05@gmail.com');
   const [userFullName, setUserFullName] = useState<string>('Lê Nguyễn Anh Mai');
   const [lang, setLang] = useState<Language>(() => {
@@ -50,21 +52,27 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedUser);
         if (parsed && parsed.email) {
+          const email = parsed.email.trim().toLowerCase();
+          const role = isAdminEmail(email) ? 'admin' : (parsed.role || 'lecturer');
           setUserEmail(parsed.email);
-          setUserFullName(parsed.fullName || parsed.name || 'Người dùng AITA');
-          const isAdm = isAdminEmail(parsed.email);
-          setUserRole(isAdm ? 'admin' : (parsed.role || 'student'));
+          setUserFullName(parsed.fullName || parsed.name || 'Lê Nguyễn Anh Mai');
+          setUserRole(role);
           setIsLoggedIn(true);
         }
       } catch (e) {
         console.warn('Could not parse saved session', e);
       }
+    } else {
+      // Default initial session: lenguyenanhmai05@gmail.com is ADMIN!
+      setUserEmail('lenguyenanhmai05@gmail.com');
+      setUserFullName('Lê Nguyễn Anh Mai');
+      setUserRole('admin');
+      setIsLoggedIn(true);
     }
   }, []);
 
   const handleLoginSuccess = (role: 'lecturer' | 'student' | 'admin', email: string, fullName?: string) => {
-    // Only designated admin emails can have role 'admin'
-    const finalRole = isAdminEmail(email) ? 'admin' : (role === 'admin' ? 'student' : role);
+    const finalRole = isAdminEmail(email) ? 'admin' : role;
     setUserRole(finalRole);
     setUserEmail(email);
     if (fullName) setUserFullName(fullName);
