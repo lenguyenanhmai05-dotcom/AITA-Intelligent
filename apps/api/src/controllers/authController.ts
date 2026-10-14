@@ -238,15 +238,6 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // 3. RÀNG BUỘC KHÓA VAI TRÒ: Quản trị viên tối cao phải chọn vai trò Quản trị viên
-    if (isSystemAdmin && role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        roleMismatch: true,
-        registeredRole: 'admin',
-        message: `⛔ Tài khoản "${cleanEmail}" là Quản trị viên hệ thống (Admin). Vui lòng chọn vai trò Quản trị viên trên màn hình đăng nhập!`,
-      });
-    }
 
     // 4. QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
     if (requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
@@ -482,15 +473,6 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
       });
     }
 
-    // 3. RÀNG BUỘC KHÓA VAI TRÒ: Quản trị viên tối cao phải chọn vai trò Quản trị viên
-    if (isSystemAdmin && role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        roleMismatch: true,
-        registeredRole: 'admin',
-        message: `⛔ Tài khoản "${userEmail}" là Quản trị viên hệ thống (Admin). Vui lòng chọn vai trò Quản trị viên trên màn hình đăng nhập!`,
-      });
-    }
 
     // 4. QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
     if (requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
