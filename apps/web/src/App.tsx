@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { LoginScreen } from './components/LoginScreen';
 import { DashboardPortal } from './components/DashboardPortal';
 import { Language } from './translations';
+import { GitAuthProvider } from './contexts/GitAuthContext';
 
 export const ADMIN_EMAILS = [
   'lenguyenanhmai05@gmail.com',
@@ -77,28 +78,29 @@ export default function App() {
   };
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh' }}>
-      {isLoggedIn ? (
-        <DashboardPortal
-          role={userRole}
-          userEmail={userEmail}
-          userFullName={userFullName}
-          lang={lang}
-          onToggleLang={handleToggleLang}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onLogout={handleLogout}
-        />
-      ) : (
-        <LoginScreen
-          lang={lang}
-          onToggleLang={handleToggleLang}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      )}
-    </div>
+    <GitAuthProvider>
+      <div style={{ position: 'relative', minHeight: '100vh' }}>
+        {isLoggedIn ? (
+          <DashboardPortal
+            role={userRole}
+            userEmail={userEmail}
+            userFullName={userFullName}
+            lang={lang}
+            onToggleLang={handleToggleLang}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <LoginScreen
+            lang={lang}
+            onToggleLang={handleToggleLang}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        )}
+      </div>
+    </GitAuthProvider>
   );
 }
-

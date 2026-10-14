@@ -25,12 +25,12 @@ import {
   FolderGit2,
   Loader2,
   FileCheck,
-  RefreshCw,
-  Github,
-  GitCommit,
-  ChevronDown,
+  RefreshCw
 } from 'lucide-react';
 
+import { GitRepoSubmissionForm } from './git-analytics/GitRepoSubmissionForm';
+import { ProgressStepper } from './git-analytics/ProgressStepper';
+import { ReportSkeleton } from './git-analytics/ReportSkeleton';
 import { Language, translations } from '../translations';
 import { isAdminEmail, Theme } from '../App';
 import { LanguageFlagToggle, VietnamFlag, UkFlag } from './FlagIcons';
@@ -121,8 +121,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [submissionNotes, setSubmissionNotes] = useState('Em đã hoàn thiện trọn vẹn 10/10 test cases và cấu hình Docker container.');
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
 
-  const [analysisGitUrl, setAnalysisGitUrl] = useState('https://github.com/lenguyenanhmai05/AITA-Intelligent.git');
-  const [analysisGitBranch, setAnalysisGitBranch] = useState('main');
+  const analysisGitUrl = 'https://github.com/lenguyenanhmai05/AITA-Intelligent.git';
+  const analysisGitBranch = 'main';
 
   // File size formatting helper
   const formatFileSize = (bytes: number): string => {
@@ -176,9 +176,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [workerConcurrency, setWorkerConcurrency] = useState(5);
   const [freeRidingThreshold, setFreeRidingThreshold] = useState(5);
 
-  // Stepper state for Git Analysis
+  // Stepper state for Git Analysis (Week 6)
   const [gitStep, setGitStep] = useState(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isReportLoading, setIsReportLoading] = useState(false);
   const [gitAnalysisJobId, setGitAnalysisJobId] = useState<string | null>(null);
   const [gitReportData, setGitReportData] = useState<any | null>(null);
 
@@ -608,16 +609,23 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     }
   };
 
-  const handleStartAnalysis = async () => {
+  const handleStartAnalysis = async (urlInput?: string, branchInput?: string, patInput?: string) => {
     setIsAnalyzing(true);
     setGitStep(1);
     setGitReportData(null);
     let jobId: string | null = null;
+    const targetUrl = urlInput || analysisGitUrl;
+    const targetBranch = branchInput || analysisGitBranch;
     try {
       const res = await fetch('/api/git/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: analysisGitUrl, branch: analysisGitBranch, groupId: (analysisGitUrl.toLowerCase().includes('sdn') || analysisGitUrl.includes('min098')) ? 5 : 2 })
+        body: JSON.stringify({ 
+          url: targetUrl, 
+          branch: targetBranch, 
+          pat: patInput,
+          groupId: (targetUrl.toLowerCase().includes('sdn') || targetUrl.includes('min098')) ? 5 : 2 
+        })
       });
       const data = await res.json();
       jobId = data?.data?.jobId || null;
@@ -634,7 +642,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     // After 5s: switch to report tab immediately, poll in background
     setTimeout(async () => {
       setIsAnalyzing(false);
+      setIsReportLoading(true);
       setActiveTab('report');
+      setTimeout(() => setIsReportLoading(false), 900);
 
       // Continue polling in background to get real data
       const pollJobId = jobId;
@@ -2496,119 +2506,12 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </h1>
               </div>
 
-              <div style={{ 
-                background: isDark ? 'var(--bg-surface)' : '#FFFFFF', 
-                borderRadius: '24px', 
-                padding: '40px', 
-                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.12)', 
-                boxShadow: 'var(--shadow-card)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, var(--color-orange-zest), var(--color-kumquat), var(--color-exocarp))' }} />
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                      <Users size={14} /> {lang === 'vi' ? 'Nhóm Đồ Án (Project Group)' : 'Project Group'} <span style={{ color: '#EF4444' }}>*</span>
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <select 
-                        value="2"
-                        onChange={() => {
-                          setAnalysisGitUrl('https://github.com/lenguyenanhmai05/AITA-Intelligent.git');
-                          setAnalysisGitBranch('main');
-                        }}
-                        style={{
-                          width: '100%', padding: '14px 16px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', background: isDark ? 'var(--bg-surface-input)' : '#F8FAFC', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 600, transition: 'all 0.2s', outline: 'none', appearance: 'none'
-                        }}
-                        onFocus={(e) => { e.target.style.borderColor = 'var(--color-orange-zest)'; e.target.style.boxShadow = '0 0 0 3px rgba(217, 100, 31, 0.15)'; }}
-                        onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
-                      >
-                        <option value="2">Group 2 - AITA Intelligent (SWP391)</option>
-                      </select>
-                      <ChevronDown size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                      <Github size={14} /> Git Repository URL <span style={{ color: '#EF4444' }}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={analysisGitUrl}
-                      onChange={(e) => setAnalysisGitUrl(e.target.value)}
-                      placeholder="https://github.com/username/repo.git"
-                      style={{
-                        width: '100%', padding: '14px 16px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', background: isDark ? 'var(--bg-surface-input)' : '#F8FAFC', color: 'var(--text-main)', fontSize: '0.95rem', fontFamily: 'monospace', transition: 'all 0.2s', outline: 'none'
-                      }}
-                      onFocus={(e) => { e.target.style.borderColor = 'var(--color-orange-zest)'; e.target.style.boxShadow = '0 0 0 3px rgba(217, 100, 31, 0.15)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                      <GitCommit size={14} /> {lang === 'vi' ? 'Nhánh phân tích (Branch)' : 'Analysis Branch'} <span style={{ color: '#EF4444' }}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={analysisGitBranch}
-                      onChange={(e) => setAnalysisGitBranch(e.target.value)}
-                      placeholder="main"
-                      style={{
-                        width: '100%', padding: '14px 16px', borderRadius: '12px', border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0', background: isDark ? 'var(--bg-surface-input)' : '#F8FAFC', color: 'var(--text-main)', fontSize: '0.95rem', fontFamily: 'monospace', transition: 'all 0.2s', outline: 'none'
-                      }}
-                      onFocus={(e) => { e.target.style.borderColor = 'var(--color-orange-zest)'; e.target.style.boxShadow = '0 0 0 3px rgba(217, 100, 31, 0.15)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
-                    />
-                  </div>
-                </div>
-
-
-
-                <div style={{ marginTop: '32px' }}>
-                  {isAnalyzing ? (
-                    <div style={{ 
-                      padding: '24px', background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', borderRadius: '12px', textAlign: 'center', border: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0'
-                    }}>
-                      <div className="spinner" style={{ width: '28px', height: '28px', borderRadius: '50%', border: '3px solid rgba(217, 100, 31, 0.2)', borderTopColor: 'var(--color-orange-zest)', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-                      <div style={{ fontWeight: 800, color: 'var(--color-orange-zest)', marginBottom: '8px', fontSize: '1rem' }}>
-                        {lang === 'vi' ? `Đang xử lý phân tích ngầm... (Bước ${gitStep}/4)` : `Processing background analysis... (Step ${gitStep}/4)`}
-                      </div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                        {lang === 'vi' ? (
-                          <>
-                            {gitStep === 1 && '1. Đang bare clone repository...'}
-                            {gitStep === 2 && '2. Đang bóc tách commit history và git log...'}
-                            {gitStep === 3 && '3. Đang lọc sạch noise files, lockfiles...'}
-                            {gitStep === 4 && '4. Đang tính Net LOC & xét chuẩn Free-Rider...'}
-                          </>
-                        ) : (
-                          <>
-                            {gitStep === 1 && '1. Bare cloning repository...'}
-                            {gitStep === 2 && '2. Extracting commit history and git log...'}
-                            {gitStep === 3 && '3. Filtering out noise files, lockfiles...'}
-                            {gitStep === 4 && '4. Calculating Net LOC & detecting Free-Riders...'}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleStartAnalysis}
-                      onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 25px rgba(217, 100, 31, 0.3)'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(217, 100, 31, 0.2)'; }}
-                      style={{
-                        width: '100%', padding: '16px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--color-orange-zest) 0%, var(--color-kumquat) 100%)', color: '#FFFFFF', fontWeight: 800, fontSize: '1.05rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(217, 100, 31, 0.2)', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
-                      }}
-                    >
-                      <Play size={18} fill="currentColor" />
-                      {lang === 'vi' ? 'Khởi Động Engine Phân Tích' : 'Start Analysis Engine'}
-                    </button>
-                  )}
-                </div>
+              <div style={{ marginBottom: '24px' }}>
+                {isAnalyzing ? (
+                  <ProgressStepper currentStep={gitStep} isAnalyzing={isAnalyzing} />
+                ) : (
+                  <GitRepoSubmissionForm onSubmit={handleStartAnalysis} lang={lang} isDark={isDark} />
+                )}
               </div>
             </div>
           )}
@@ -2617,6 +2520,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           {/* TAB 5: TEAM CONTRIBUTION & FREE-RIDER REPORT                    */}
           {/* =============================================================== */}
           {activeTab === 'report' && (
+            isReportLoading ? (
+              <ReportSkeleton />
+            ) : (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
@@ -2734,6 +2640,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </table>
               </div>
             </div>
+            )
           )}
 
           {/* =============================================================== */}
