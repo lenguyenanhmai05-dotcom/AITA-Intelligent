@@ -224,7 +224,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     return s;
   }, []);
 
-  // Clean old mock submissions from localStorage on mount
+  // Clean old mock or corrupted submissions from localStorage on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_STUDENT_UPLOADS);
@@ -232,14 +232,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           const cleaned = parsed
-            .filter((m: any) =>
-              !m.assignment?.includes('Git Engine') &&
-              !m.assignment?.includes('Docker PostgreSQL') &&
-              !m.assignment?.includes('Redis Queue') &&
-              m.id !== 'SUB-0102' &&
-              m.id !== 'SUB-0103' &&
-              m.id !== 'SUB-0104'
-            )
+            .filter((m: any) => {
+              const str = JSON.stringify(m);
+              return !str.includes('') && !str.includes('L?') && !str.includes('2026-10-13');
+            })
             .map((m: any) => ({
               ...m,
               submittedAt: formatTimeDisplay(m.submittedAt),
@@ -288,7 +284,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             const isSelf =
               (userEmail && item.studentEmail && item.studentEmail.toLowerCase() === userEmail.toLowerCase()) ||
               (userFullName && item.studentName && item.studentName.toLowerCase().includes(userFullName.toLowerCase())) ||
-              (typeof item.id === 'number' && item.id > 104);
+              item.id === 101 || item.id === 102;
 
             if (!isSelf) continue;
 
@@ -326,14 +322,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               merged.unshift(subRecord);
             }
           }
-          const cleaned = merged.filter((m) =>
-            !m.assignment?.includes('Git Engine') &&
-            !m.assignment?.includes('Docker PostgreSQL') &&
-            !m.assignment?.includes('Redis Queue') &&
-            m.id !== 'SUB-0102' &&
-            m.id !== 'SUB-0103' &&
-            m.id !== 'SUB-0104'
-          );
+          const cleaned = merged.filter((m) => {
+            const str = JSON.stringify(m);
+            return !str.includes('') && !str.includes('L?') && !str.includes('2026-10-13');
+          });
           try {
             localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(cleaned));
           } catch (e) {
