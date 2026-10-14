@@ -335,12 +335,15 @@ export const getGitReport = async (req: Request, res: Response) => {
         .filter(c => c.isSuspicious)
         .map((c, idx) => ({ id: idx + 1, name: c.authorName, email: c.authorEmail, date: c.date.slice(0, 10), behavior: c.suspiciousReason }));
 
-      // Gom LOC + Commits theo từng tác giả (dùng name thay vì email để tránh bị tách đôi do 2 email)
+      // Gom LOC + Commits theo EMAIL (key = email) để tránh cùng 1 người dùng 2 git name bị tách đôi
       const authorMap: Record<string, { name: string; email: string; loc: number; commits: number; prs: number }> = {};
       for (const c of commits) {
-        const authorKey = c.authorName.toLowerCase().trim();
+        const authorKey = c.authorEmail.toLowerCase().trim();
         if (!authorMap[authorKey]) {
           authorMap[authorKey] = { name: c.authorName, email: c.authorEmail, loc: 0, commits: 0, prs: 0 };
+        } else if (c.authorName.length > authorMap[authorKey].name.length) {
+          // Ưu tiên tên dài hơn (thường là tên đầy đủ hơn)
+          authorMap[authorKey].name = c.authorName;
         }
         authorMap[authorKey].loc += c.linesAdded;
         authorMap[authorKey].commits += 1;
@@ -384,11 +387,15 @@ export const getGitReport = async (req: Request, res: Response) => {
         .filter((c: any) => c.isSuspicious)
         .map((c: any, idx: number) => ({ id: idx + 1, name: c.authorName, email: c.authorEmail, date: c.date.slice(0, 10), behavior: c.suspiciousReason }));
 
+      // Gom LOC + Commits theo EMAIL để tránh 2 git identity của cùng 1 người (vd: AMai + lenguyenanhmai05-dotcom)
       const authorMap: Record<string, { name: string; email: string; loc: number; commits: number; prs: number }> = {};
       for (const c of commits) {
-        const authorKey = c.authorName.toLowerCase().trim();
+        const authorKey = c.authorEmail.toLowerCase().trim();
         if (!authorMap[authorKey]) {
           authorMap[authorKey] = { name: c.authorName, email: c.authorEmail, loc: 0, commits: 0, prs: 0 };
+        } else if (c.authorName.length > authorMap[authorKey].name.length) {
+          // Ưu tiên tên dài hơn (thường là tên đầy đủ hơn)
+          authorMap[authorKey].name = c.authorName;
         }
         authorMap[authorKey].loc += c.linesAdded;
         authorMap[authorKey].commits += 1;
