@@ -210,6 +210,29 @@ export const createBatch = async (req: Request, res: Response) => {
     // Kiểm tra BR-02: Tối đa 3 đợt chấm active cùng lúc cho một lớp
     let activeBatchCount = 0;
     try {
+      // 1. Tự động đối soát và cập nhật completed cho các batch cũ nếu tất cả jobs đã hoàn tất
+      const openBatches = await prisma.gradingBatch.findMany({
+        where: {
+          classId: Number(classId),
+          status: { in: ['waiting', 'active'] },
+        },
+        include: {
+          jobs: true,
+        },
+      });
+
+      for (const b of openBatches) {
+        const hasPendingJobs = b.jobs.some(
+          (j) => j.status === 'waiting' || j.status === 'active'
+        );
+        if (!hasPendingJobs) {
+          await prisma.gradingBatch.update({
+            where: { id: b.id },
+            data: { status: 'completed', completedAt: new Date() },
+          });
+        }
+      }
+
       activeBatchCount = await prisma.gradingBatch.count({
         where: {
           classId: Number(classId),
@@ -217,6 +240,16 @@ export const createBatch = async (req: Request, res: Response) => {
         },
       });
     } catch {
+      // In-memory fallback reconciliation
+      for (const b of inMemoryBatches) {
+        if (b.classId === Number(classId) && (b.status === 'waiting' || b.status === 'active')) {
+          const batchJobs = inMemoryJobs.filter((j) => j.batchId === b.id);
+          const hasPending = batchJobs.some((j) => j.status === 'waiting' || j.status === 'active');
+          if (!hasPending) {
+            b.status = 'completed';
+          }
+        }
+      }
       activeBatchCount = inMemoryBatches.filter(
         (b) => b.classId === Number(classId) && (b.status === 'waiting' || b.status === 'active')
       ).length;
@@ -231,13 +264,12 @@ export const createBatch = async (req: Request, res: Response) => {
     }
 
     // Lưu đợt chấm bài mới vào Docker PostgreSQL
-    const newBatchId = Math.floor(Math.random() * 90000) + 1000;
     let savedBatch: any = null;
+    let newBatchId: number;
 
     try {
       savedBatch = await prisma.gradingBatch.create({
         data: {
-          id: newBatchId,
           classId: Number(classId),
           createdBy: Number(createdBy),
           batchName,
@@ -245,9 +277,11 @@ export const createBatch = async (req: Request, res: Response) => {
           status: 'waiting',
         },
       });
+      newBatchId = savedBatch.id;
       console.log(`[PostgreSQL Docker] 📦 Batch #${newBatchId} saved to PostgreSQL`);
     } catch (err: any) {
       console.warn(`[PostgreSQL Docker] Batch save notice: ${err.message}`);
+      newBatchId = Math.floor(Math.random() * 90000) + 1000;
       savedBatch = {
         id: newBatchId,
         classId: Number(classId),
@@ -282,7 +316,26 @@ export const createBatch = async (req: Request, res: Response) => {
           }
         } catch {}
       }
-      const jobDbId = 1000 + inMemoryJobs.length + 1;
+
+      let jobDbId: number;
+      try {
+        const dbJob = await prisma.gradingJob.create({
+          data: {
+            batchId: newBatchId,
+            submissionId: Number(subId),
+            studentName: subStudentName,
+            submissionTitle: subSubmissionTitle,
+            status: 'waiting',
+            priority: String(priority),
+            retryCount: 0,
+          },
+        });
+        jobDbId = dbJob.id;
+      } catch (jobErr: any) {
+        console.warn(`[PostgreSQL Docker] Job save fallback: ${jobErr.message}`);
+        jobDbId = Date.now() + Math.floor(Math.random() * 1000);
+      }
+
       const newJob = {
         id: jobDbId,
         batchId: newBatchId,
@@ -300,22 +353,16 @@ export const createBatch = async (req: Request, res: Response) => {
         createdAt: new Date(),
       };
       
-      try {
-        await prisma.gradingJob.create({
-          data: {
-            id: jobDbId,
-            batchId: newBatchId,
-            submissionId: Number(subId),
-            studentName: newJob.studentName,
-            submissionTitle: newJob.submissionTitle,
-            status: 'waiting',
-            retryCount: 0,
-          },
-        });
-      } catch {}
-      
       inMemoryJobs.push(newJob);
       createdJobs.push(newJob);
+
+      const isSimulatedFailure =
+        batchName.toLowerCase().includes('fail') ||
+        batchName.toLowerCase().includes('lỗi') ||
+        batchName.toLowerCase().includes('error') ||
+        subSubmissionTitle.toLowerCase().includes('fail') ||
+        subSubmissionTitle.toLowerCase().includes('lỗi') ||
+        subSubmissionTitle.toLowerCase().includes('error');
 
       // Đẩy vào BullMQ Priority Queue
       try {
@@ -326,6 +373,7 @@ export const createBatch = async (req: Request, res: Response) => {
           studentName: newJob.studentName,
           submissionTitle: newJob.submissionTitle,
           priority: priority as JobPriority,
+          isSimulatedFailure,
         });
       } catch (queueErr) {
         console.warn(`[BullMQ] Could not enqueue to live Redis, queued locally:`, queueErr);
@@ -554,3 +602,51 @@ export const dismissJob = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * 8. Lấy danh sách các đợt chấm bài (Batches)
+ */
+export const getBatches = async (req: Request, res: Response) => {
+  try {
+    const { classId } = req.query;
+    try {
+      const dbBatches = await prisma.gradingBatch.findMany({
+        where: classId ? { classId: Number(classId) } : undefined,
+        include: {
+          jobs: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json({ success: true, data: dbBatches });
+    } catch {
+      return res.json({ success: true, data: inMemoryBatches });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * 9. Đóng/Hoàn tất đợt chấm bài thủ công
+ */
+export const cancelBatch = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    try {
+      await prisma.gradingBatch.update({
+        where: { id: Number(id) },
+        data: { status: 'completed', completedAt: new Date() },
+      });
+    } catch {}
+
+    const memBatch = inMemoryBatches.find((b) => b.id === Number(id));
+    if (memBatch) {
+      memBatch.status = 'completed';
+    }
+
+    res.json({ success: true, message: `Đợt chấm bài #${id} đã được cập nhật thành công!` });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+

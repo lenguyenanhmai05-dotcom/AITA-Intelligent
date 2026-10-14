@@ -9,6 +9,7 @@ export interface GradingJobPayload {
   studentName?: string;
   submissionTitle?: string;
   priority: JobPriority;
+  isSimulatedFailure?: boolean;
 }
 
 const BULLMQ_PRIORITY_MAP: Record<JobPriority, number> = {

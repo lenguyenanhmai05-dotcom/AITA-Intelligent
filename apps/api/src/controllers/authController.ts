@@ -22,14 +22,6 @@ const mockUsers = [
     role: 'admin',
     password: 'adminpassword',
   },
-  {
-    id: 3,
-    fullName: 'Trần Minh Sinh',
-    email: 'sinhtmhe160001@fpt.edu.vn',
-    githubUsername: 'minhsinh-dev',
-    role: 'student',
-    password: 'studentpassword',
-  },
 ];
 
 /**
