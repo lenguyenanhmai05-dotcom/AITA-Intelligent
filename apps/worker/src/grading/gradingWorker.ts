@@ -29,14 +29,21 @@ export class GradingWorkerService {
       async (job: Job) => {
         console.log(`[Worker] Processing Job #${job.id} (Attempt ${job.attemptsMade + 1}/${MAX_RETRY_ATTEMPTS}) - Priority: ${job.data.priority}`);
         
-        // Cập nhật trạng thái job → 'active' trong DB
+        // Cập nhật trạng thái job → 'active' và batch → 'active' trong DB
         try {
           const jobDbId = job.data?.jobDbId;
+          const batchId = job.data?.batchId;
           if (jobDbId) {
             await prisma.gradingJob.update({
               where: { id: Number(jobDbId) },
               data: { status: 'active', startedAt: new Date() },
             });
+          }
+          if (batchId) {
+            await prisma.gradingBatch.update({
+              where: { id: Number(batchId) },
+              data: { status: 'active' },
+            }).catch(() => {});
           }
         } catch {}
 
@@ -63,6 +70,7 @@ export class GradingWorkerService {
       console.log(`[Worker] ✅ Job #${job.id} COMPLETED in ${result.runtimeDurationMs}ms - Score: ${result.score}/100`);
       try {
         const jobDbId = job.data?.jobDbId;
+        const batchId = job.data?.batchId;
         if (jobDbId) {
           await prisma.gradingJob.update({
             where: { id: Number(jobDbId) },
@@ -73,6 +81,23 @@ export class GradingWorkerService {
             },
           });
           console.log(`[Worker] 📝 Updated GradingJob #${jobDbId} → completed in PostgreSQL`);
+        }
+
+        // Tự động kiểm tra và hoàn tất Batch nếu tất cả các Jobs trong batch đã chấm xong
+        if (batchId) {
+          const pendingCount = await prisma.gradingJob.count({
+            where: {
+              batchId: Number(batchId),
+              status: { in: ['waiting', 'active'] },
+            },
+          });
+          if (pendingCount === 0) {
+            await prisma.gradingBatch.update({
+              where: { id: Number(batchId) },
+              data: { status: 'completed', completedAt: new Date() },
+            });
+            console.log(`[Worker] 🎉 GradingBatch #${batchId} fully COMPLETED! All jobs finished.`);
+          }
         }
       } catch (dbErr: any) {
         console.warn(`[Worker] Could not update completed status in DB: ${dbErr.message}`);
@@ -102,6 +127,7 @@ export class GradingWorkerService {
         console.error(`[Worker] Root Cause: ${err.message}`);
         try {
           const jobDbId = job.data?.jobDbId;
+          const batchId = job.data?.batchId;
           if (jobDbId) {
             await prisma.gradingJob.update({
               where: { id: Number(jobDbId) },
@@ -114,6 +140,23 @@ export class GradingWorkerService {
               },
             });
             console.log(`[Worker] 📝 Updated GradingJob #${jobDbId} → dead in PostgreSQL`);
+          }
+
+          // Kiểm tra nếu tất cả jobs trong batch đã xong (kể cả dead/failed)
+          if (batchId) {
+            const pendingCount = await prisma.gradingJob.count({
+              where: {
+                batchId: Number(batchId),
+                status: { in: ['waiting', 'active'] },
+              },
+            });
+            if (pendingCount === 0) {
+              await prisma.gradingBatch.update({
+                where: { id: Number(batchId) },
+                data: { status: 'completed', completedAt: new Date() },
+              });
+              console.log(`[Worker] 🏁 GradingBatch #${batchId} closed (all jobs processed, some in DLQ).`);
+            }
           }
         } catch (dbErr: any) {
           console.warn(`[Worker] Could not update dead status in DB: ${dbErr.message}`);

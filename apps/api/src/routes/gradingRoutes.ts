@@ -3,6 +3,8 @@ import {
   getSubmissions,
   createSubmission,
   createBatch,
+  getBatches,
+  cancelBatch,
   getTelemetry,
   getJobDetail,
   getDeadLetterQueue,
@@ -17,8 +19,10 @@ const router = Router();
 router.get('/submissions', getSubmissions);
 router.post('/submissions', createSubmission);
 
-// Batch Grading Orchestration (UC-01)
+// Batch Grading Orchestration (UC-01 & BR-02)
+router.get('/batches', getBatches);
 router.post('/batches', createBatch);
+router.post('/batches/:id/cancel', cancelBatch);
 
 // Queue Telemetry (UC-02 & BR-03)
 router.get('/telemetry', getTelemetry);

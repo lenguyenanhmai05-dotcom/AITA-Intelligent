@@ -17,16 +17,21 @@ export interface ExecutionResult {
 
 export class MockDispatcher {
   public static async run(submissionTitle?: string, isSimulatedFailure?: boolean): Promise<ExecutionResult> {
+    const isFail = isSimulatedFailure || 
+      submissionTitle?.toLowerCase().includes('fail') || 
+      submissionTitle?.toLowerCase().includes('error') || 
+      submissionTitle?.toLowerCase().includes('lỗi');
+
     const startTime = Date.now();
 
-    // Giả lập thời gian chạy test cases (500ms - 2500ms)
-    const simulatedDuration = 15000; // 15 seconds so user can see ACTIVE state
+    // Giả lập thời gian chạy: nếu là bài lỗi thì chạy 1.5s để retry 3 lần nhanh chóng vào DLQ
+    const simulatedDuration = isFail ? 1500 : 8000;
     await new Promise((resolve) => setTimeout(resolve, simulatedDuration));
 
     const totalDuration = Date.now() - startTime;
 
     // Giả lập lỗi timeout hoặc runtime error nếu bài nộp có cờ lỗi
-    if (isSimulatedFailure || submissionTitle?.toLowerCase().includes('fail')) {
+    if (isFail) {
       return {
         success: false,
         runtimeDurationMs: 30124,
@@ -34,7 +39,7 @@ export class MockDispatcher {
         testCasesPassed: 0,
         totalTestCases: 10,
         errorClassification: 'timeout: sandbox execution exceeded 30s',
-        stackTrace: 'TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)',
+        stackTrace: 'TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)\n    at SandboxContainer.executeTests (sandbox.ts:88)',
       };
     }
 

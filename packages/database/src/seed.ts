@@ -29,18 +29,6 @@ export async function seedPostgres() {
       },
     });
 
-    const studentUser = await prisma.user.upsert({
-      where: { email: 'sinhtmhe160001@fpt.edu.vn' },
-      update: {},
-      create: {
-        fullName: 'Trần Minh Sinh',
-        email: 'sinhtmhe160001@fpt.edu.vn',
-        githubUsername: 'minhsinh-dev',
-        role: 'student',
-        password: 'password123',
-      },
-    });
-
     // 2. Seed UserGitEmails
     await prisma.userGitEmail.upsert({
       where: { gitEmail: 'lenguyenanhmai05@gmail.com' },
@@ -48,15 +36,6 @@ export async function seedPostgres() {
       create: {
         userId: adminUser.id,
         gitEmail: 'lenguyenanhmai05@gmail.com',
-      },
-    });
-
-    await prisma.userGitEmail.upsert({
-      where: { gitEmail: 'minhsinh.dev@gmail.com' },
-      update: {},
-      create: {
-        userId: studentUser.id,
-        gitEmail: 'minhsinh.dev@gmail.com',
       },
     });
 
@@ -72,7 +51,7 @@ export async function seedPostgres() {
     });
 
     // 4. Seed Teams
-    const defaultTeam = await prisma.team.upsert({
+    await prisma.team.upsert({
       where: { id: 1 },
       update: {},
       create: {
@@ -82,68 +61,7 @@ export async function seedPostgres() {
       },
     });
 
-    // 5. Seed TeamMembers
-    await prisma.teamMember.upsert({
-      where: {
-        teamId_userId: {
-          teamId: defaultTeam.id,
-          userId: studentUser.id,
-        },
-      },
-      update: {},
-      create: {
-        teamId: defaultTeam.id,
-        userId: studentUser.id,
-      },
-    });
-
-    // 6. Seed Submissions
-    const submission1 = await prisma.submission.upsert({
-      where: { id: 1 },
-      update: {},
-      create: {
-        id: 1,
-        classId: defaultClass.id,
-        studentId: studentUser.id,
-        title: 'Assignment 1 - Sorting Algorithms & Complexity',
-        codeUrl: 'https://github.com/aita-demo/assignment-1-submission',
-        submissionStatus: 'submitted',
-      },
-    });
-
-    // 7. Seed GradingBatches
-    const defaultBatch = await prisma.gradingBatch.upsert({
-      where: { id: 1 },
-      update: {},
-      create: {
-        id: 1,
-        batchName: 'Assignment 1 - Batch Grading Class SE1801',
-        classId: defaultClass.id,
-        createdBy: lecturerUser.id,
-        priority: 'Assignment',
-        status: 'completed',
-      },
-    });
-
-    // 8. Seed GradingJobs
-    await prisma.gradingJob.upsert({
-      where: { id: 1 },
-      update: {},
-      create: {
-        id: 1,
-        batchId: defaultBatch.id,
-        submissionId: submission1.id,
-        queueJobId: 'bullmq-job-101',
-        priority: 'Assignment',
-        studentName: studentUser.fullName,
-        submissionTitle: submission1.title,
-        status: 'completed',
-        retryCount: 0,
-        runtimeDurationMs: 1420,
-      },
-    });
-
-    // 9. Seed SystemSettings
+    // 5. Seed SystemSettings
     await prisma.systemSetting.upsert({
       where: { settingKey: 'worker_concurrency' },
       update: { settingValue: '5' },
