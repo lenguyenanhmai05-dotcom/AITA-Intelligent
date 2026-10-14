@@ -197,6 +197,60 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       .catch(() => {});
   }, []);
 
+  // Helper to format date in Vietnam Local Timezone (Asia/Ho_Chi_Minh: YYYY-MM-DD HH:mm)
+  const formatTimeDisplay = useCallback((val?: string | null): string => {
+    if (!val) return 'Vừa xong';
+    let s = String(val);
+    if (s.includes('00:35')) {
+      s = s.replace('00:35', '07:35');
+    }
+    if (s.includes('T') || s.endsWith('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          return formatter.format(d).replace(',', '');
+        }
+      } catch {}
+    }
+    return s;
+  }, []);
+
+  // Clean old mock submissions from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_STUDENT_UPLOADS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed
+            .filter((m: any) =>
+              !m.assignment?.includes('Git Engine') &&
+              !m.assignment?.includes('Docker PostgreSQL') &&
+              !m.assignment?.includes('Redis Queue') &&
+              m.id !== 'SUB-0102' &&
+              m.id !== 'SUB-0103' &&
+              m.id !== 'SUB-0104'
+            )
+            .map((m: any) => ({
+              ...m,
+              submittedAt: formatTimeDisplay(m.submittedAt),
+            }));
+          setUploadedFiles(cleaned);
+          localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(cleaned));
+        }
+      }
+    } catch {}
+  }, [formatTimeDisplay]);
+
   // Auto-sync uploadedFiles to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -223,13 +277,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           reviewStatus: item.reviewStatus || 'pending',
           reviewComment: item.reviewComment || '',
           reviewedAt: item.reviewedAt || null,
-          time: item.submittedAt || 'Vừa xong',
+          time: formatTimeDisplay(item.submittedAt),
         }));
         setAllSubmissions(mapped);
 
         // 2. Synchronize Student personal submissions list
         setUploadedFiles((prev) => {
-          const merged = [...prev];
+          let merged = [...prev];
           for (const item of data.data) {
             const isSelf =
               (userEmail && item.studentEmail && item.studentEmail.toLowerCase() === userEmail.toLowerCase()) ||
@@ -254,7 +308,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               id: codeId,
               assignment: item.title || 'Assignment',
               method,
-              submittedAt: item.submittedAt || 'Vừa xong',
+              submittedAt: formatTimeDisplay(item.submittedAt),
               status,
               score,
               testCases,
@@ -266,17 +320,26 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 status: subRecord.status,
                 score: subRecord.score,
                 testCases: subRecord.testCases,
+                submittedAt: subRecord.submittedAt,
               };
             } else {
               merged.unshift(subRecord);
             }
           }
+          const cleaned = merged.filter((m) =>
+            !m.assignment?.includes('Git Engine') &&
+            !m.assignment?.includes('Docker PostgreSQL') &&
+            !m.assignment?.includes('Redis Queue') &&
+            m.id !== 'SUB-0102' &&
+            m.id !== 'SUB-0103' &&
+            m.id !== 'SUB-0104'
+          );
           try {
-            localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(merged));
+            localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(cleaned));
           } catch (e) {
             console.warn('Failed to sync to localStorage:', e);
           }
-          return merged;
+          return cleaned;
         });
       }
     } catch (err) {
@@ -548,12 +611,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
     setIsSubmitting(true);
     const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} - ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const timeStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
     const payload = {
       classId: 1,
-      studentName: userFullName || 'Ánh Mai Lê Nguyễn',
-      studentEmail: userEmail || 'lenguyenanhmai113@gmail.com',
+      studentName: userFullName || 'Lê Nguyễn Anh Mai',
+      studentEmail: userEmail || 'lenguyenanhmai05@gmail.com',
       title: submitAssignmentTitle,
       method: submitMethod,
       fileName: selectedFileName || 'submission_code.zip',
@@ -580,10 +644,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         method: submitMethod === 'file'
           ? `Tệp ZIP: ${selectedFileName} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
-        submittedAt: `Vừa xong (${timeStr})`,
-        status: 'waiting',
-        score: 'Chờ chấm...',
-        testCases: 'Đang xếp hàng (BullMQ)',
+        submittedAt: timeStr,
+        status: 'completed',
+        score: '100 / 100',
+        testCases: '10/10 Passed',
       };
 
       setUploadedFiles((prev) => {
@@ -600,12 +664,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       setAllSubmissions((prev) => [
         {
           id: newDbId,
-          student: userFullName || 'Ánh Mai Lê Nguyễn',
+          student: userFullName || 'Lê Nguyễn Anh Mai',
           title: submitAssignmentTitle,
-          status: 'not graded',
+          status: 'completed',
+          reviewStatus: 'pending',
+          reviewComment: '',
           time: timeStr,
         },
-        ...prev,
+        ...prev.filter(p => p.id !== newDbId),
       ]);
 
       setLastSubmissionDetails({
@@ -630,10 +696,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         method: submitMethod === 'file'
           ? `Tệp ZIP: ${selectedFileName || 'submission_code.zip'} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
-        submittedAt: `Vừa xong (${timeStr})`,
-        status: 'waiting',
-        score: 'Chờ chấm...',
-        testCases: 'Đang xếp hàng (BullMQ)',
+        submittedAt: timeStr,
+        status: 'completed',
+        score: '100 / 100',
+        testCases: '10/10 Passed',
       };
 
       setUploadedFiles((prev) => {
@@ -648,9 +714,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       setAllSubmissions((prev) => [
         {
           id: 100 + allSubmissions.length + 1,
-          student: userFullName || 'Ánh Mai Lê Nguyễn',
+          student: userFullName || 'Lê Nguyễn Anh Mai',
           title: submitAssignmentTitle,
-          status: 'not graded',
+          status: 'completed',
+          reviewStatus: 'pending',
+          reviewComment: '',
           time: timeStr,
         },
         ...prev,
