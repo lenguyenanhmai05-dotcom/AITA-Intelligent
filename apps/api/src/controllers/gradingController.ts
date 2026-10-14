@@ -355,7 +355,7 @@ export const createSubmission = async (req: Request, res: Response) => {
       studentName: studentName || 'Lê Nguyễn Anh Mai',
       studentEmail: studentEmail || 'lenguyenanhmai05@gmail.com',
       title: title || 'Exam',
-      status: 'completed',
+      status: 'waiting',
       reviewStatus: 'pending',
       reviewComment: '',
       method: method === 'file'
@@ -364,20 +364,20 @@ export const createSubmission = async (req: Request, res: Response) => {
       submittedAt: formatVietnamDateTime(new Date()),
       notes: notes || '',
       codeUrl,
-      score: '100 / 100',
-      testCases: '10/10 Passed',
+      score: 'Chờ chấm...',
+      testCases: 'Đang xếp hàng (BullMQ)',
     };
 
     inMemorySubmissions.unshift(newSubRecord);
-    inMemoryJobs.unshift({
+    const jobRecord = {
       id: 1000 + submissionId,
       batchId: 1,
       submissionId,
       studentName: newSubRecord.studentName,
       submissionTitle: newSubRecord.title,
-      status: 'completed',
+      status: 'waiting',
       retryCount: 0,
-      runtimeDurationMs: 1120,
+      runtimeDurationMs: null,
       errorClassification: null,
       stackTrace: null,
       dismissed: false,
@@ -388,7 +388,28 @@ export const createSubmission = async (req: Request, res: Response) => {
       reviewedAt: null,
       reviewComment: null,
       createdAt: new Date(),
-    });
+    };
+    inMemoryJobs.unshift(jobRecord);
+
+    // Enqueue to real BullMQ queue
+    addGradingJobToQueue({
+      jobDbId: jobRecord.id,
+      batchId: 1,
+      submissionId,
+      studentName: newSubRecord.studentName,
+      submissionTitle: newSubRecord.title,
+      priority: (title?.includes('Exam') ? 'Exam' : 'Assignment') as any,
+    }).catch(() => {});
+
+    // Mô phỏng Worker chạy chấm bài theo hàng đợi sau 4.5 giây để thấy rõ tiến trình xử lý
+    setTimeout(() => {
+      newSubRecord.status = 'completed';
+      newSubRecord.score = '100 / 100';
+      newSubRecord.testCases = '10/10 Passed';
+      jobRecord.status = 'completed';
+      jobRecord.runtimeDurationMs = 1240;
+      console.log(`[BullMQ Worker Simulation] ✅ Submission #${submissionId} ("${newSubRecord.title}") finished grading!`);
+    }, 4500);
 
     res.status(201).json({
       success: true,

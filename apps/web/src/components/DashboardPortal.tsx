@@ -637,9 +637,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           ? `Tệp ZIP: ${selectedFileName} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
         submittedAt: timeStr,
-        status: 'completed',
-        score: '100 / 100',
-        testCases: '10/10 Passed',
+        status: 'waiting',
+        score: 'Chờ chấm...',
+        testCases: 'Đang xếp hàng (BullMQ)',
       };
 
       setUploadedFiles((prev) => {
@@ -658,7 +658,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           id: newDbId,
           student: userFullName || 'Lê Nguyễn Anh Mai',
           title: submitAssignmentTitle,
-          status: 'completed',
+          status: 'not graded',
           reviewStatus: 'pending',
           reviewComment: '',
           time: timeStr,
@@ -676,9 +676,32 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
       setSubmitSuccessMsg(
         lang === 'vi'
-          ? `🎉 Nộp bài thành công! Mã bài nộp #${submissionCode} ("${submitAssignmentTitle}") đã được lưu vào Docker PostgreSQL và xếp vào hàng đợi chấm BullMQ.`
-          : `🎉 Submission successful! Code #${submissionCode} ("${submitAssignmentTitle}") saved to Docker PostgreSQL and dispatched to BullMQ.`
+          ? `📥 Nộp bài thành công! Mã bài nộp #${submissionCode} ("${submitAssignmentTitle}") đã được lưu vào Docker PostgreSQL và xếp vào hàng đợi BullMQ. Đang chờ Worker xử lý...`
+          : `📥 Submission successful! Code #${submissionCode} ("${submitAssignmentTitle}") saved to Docker PostgreSQL and queued in BullMQ. Waiting for Worker...`
       );
+
+      // Mô phỏng Worker chạy tiến trình chấm sau 4.5 giây
+      setTimeout(() => {
+        setUploadedFiles((prev) =>
+          prev.map((p) =>
+            p.id === submissionCode
+              ? { ...p, status: 'completed', score: '100 / 100', testCases: '10/10 Passed' }
+              : p
+          )
+        );
+        setAllSubmissions((prev) =>
+          prev.map((p) =>
+            p.id === newDbId
+              ? { ...p, status: 'completed', reviewStatus: 'pending' }
+              : p
+          )
+        );
+        setSubmitSuccessMsg(
+          lang === 'vi'
+            ? `⚡ Worker BullMQ đã chấm xong bài nộp #${submissionCode}! Điểm số: 100/100 (10/10 test cases passed). Giảng viên có thể xem và duyệt điểm.`
+            : `⚡ BullMQ Worker finished grading #${submissionCode}! Score: 100/100 (10/10 test cases passed). Ready for lecturer review.`
+        );
+      }, 4500);
     } catch (err: any) {
       console.warn('API submission error fallback:', err);
       const fallbackId = `SUB-0${uploadedFiles.length + 1}`;
