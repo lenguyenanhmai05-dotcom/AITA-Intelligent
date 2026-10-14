@@ -70,3 +70,13 @@ export const EXCLUDED_PATH_PATTERNS = [
   '**/*.zip',
   '**/*.tar.gz',
 ];
+
+// BR-14, BR-15, BR-16: Human-in-the-Loop AI Grading Review
+export const REVIEW_STATUSES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const;
+
+export const REVIEW_ELIGIBLE_JOB_STATUS = 'completed'; // BR-14: Job must be completed to be reviewed
+

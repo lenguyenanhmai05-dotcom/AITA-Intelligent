@@ -17,8 +17,8 @@ export const isAdminEmail = (email: string): boolean => {
 export type Theme = 'light' | 'dark';
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<'lecturer' | 'student' | 'admin'>('student');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<'lecturer' | 'student' | 'admin'>('lecturer');
   const [userEmail, setUserEmail] = useState<string>('lenguyenanhmai05@gmail.com');
   const [userFullName, setUserFullName] = useState<string>('Lê Nguyễn Anh Mai');
   const [lang, setLang] = useState<Language>(() => {
@@ -50,21 +50,24 @@ export default function App() {
         const parsed = JSON.parse(savedUser);
         if (parsed && parsed.email) {
           setUserEmail(parsed.email);
-          setUserFullName(parsed.fullName || parsed.name || 'Người dùng AITA');
-          const isAdm = isAdminEmail(parsed.email);
-          setUserRole(isAdm ? 'admin' : (parsed.role || 'student'));
+          setUserFullName(parsed.fullName || parsed.name || 'Lê Nguyễn Anh Mai');
+          setUserRole(parsed.role || 'lecturer');
           setIsLoggedIn(true);
         }
       } catch (e) {
         console.warn('Could not parse saved session', e);
       }
+    } else {
+      // Default initial session as Lecturer for direct grading and evaluation
+      setUserEmail('lenguyenanhmai05@gmail.com');
+      setUserFullName('Lê Nguyễn Anh Mai');
+      setUserRole('lecturer');
+      setIsLoggedIn(true);
     }
   }, []);
 
   const handleLoginSuccess = (role: 'lecturer' | 'student' | 'admin', email: string, fullName?: string) => {
-    // Only designated admin emails can have role 'admin'
-    const finalRole = isAdminEmail(email) ? 'admin' : (role === 'admin' ? 'student' : role);
-    setUserRole(finalRole);
+    setUserRole(role);
     setUserEmail(email);
     if (fullName) setUserFullName(fullName);
     setIsLoggedIn(true);

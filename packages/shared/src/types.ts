@@ -6,6 +6,14 @@ export type JobPriority = 'Exam' | 'Assignment' | 'Practice';
 
 export type JobStatus = 'waiting' | 'active' | 'completed' | 'failed' | 'dead';
 
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ReviewGradingJobDto {
+  status: 'approved' | 'rejected';
+  comment?: string;
+  reviewerId?: number;
+}
+
 export type BatchStatus = 'waiting' | 'active' | 'completed' | 'failed';
 
 export type CloneStatus = 'pending' | 'cloning' | 'success' | 'failed';

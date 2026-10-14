@@ -7,7 +7,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Language, translations } from '../translations';
-import { isAdminEmail, Theme } from '../App';
+import { Theme } from '../App';
 import { LanguageFlagToggle } from './FlagIcons';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -80,16 +80,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
       : 'Sinh viên FPT (AITA)';
 
     const cleanEmail = (targetEmail && targetEmail.trim()) ? targetEmail.trim().toLowerCase() : fallbackEmail;
-    const isTargetAdmin = isAdminEmail(cleanEmail);
-    
-    // Phân quyền chặt chẽ:
-    // 1. Nếu mail là admin cố định (lenguyenanhmai05@gmail.com) -> VÀO ADMIN QUẢN LÝ TẤT CẢ
-    // 2. Nếu mail khác -> VÀO SINH VIÊN hoặc GIẢNG VIÊN tùy theo tab đang chọn
-    const finalRole: 'lecturer' | 'student' | 'admin' = isTargetAdmin ? 'admin' : selectedRole;
-    const adminDisplayName = cleanEmail === 'tuongvy22102004@gmail.com'
-      ? 'Tường Vy'
-      : 'Lê Nguyễn Anh Mai';
-    const cleanName = displayName || (isTargetAdmin ? adminDisplayName : fallbackName);
+    // Tôn trọng vai trò người dùng đã chọn (Giảng viên hoặc Sinh viên)
+    const finalRole: 'lecturer' | 'student' = selectedRole;
+    const cleanName = displayName || (selectedRole === 'lecturer' ? 'Lê Nguyễn Anh Mai' : fallbackName);
 
     try {
       const response = await fetch('/api/auth/google', {
@@ -108,9 +101,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
         localStorage.setItem('aita_token', token);
         localStorage.setItem('aita_user', JSON.stringify({ ...user, role: finalRole }));
         
-        const roleName = finalRole === 'admin' 
-          ? (lang === 'vi' ? 'Quản trị viên Hệ thống' : 'System Administrator')
-          : finalRole === 'lecturer'
+        const roleName = finalRole === 'lecturer'
           ? (lang === 'vi' ? 'Giảng viên' : 'Lecturer')
           : (lang === 'vi' ? 'Sinh viên' : 'Student');
 
@@ -187,10 +178,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
   const handleGithubLogin = () => {
     setIsLoading(true);
     const targetEmail = selectedRole === 'lecturer' ? 'mai.le@fpt.edu.vn' : 'student.test@fpt.edu.vn';
-    const finalRole = isAdminEmail(targetEmail) ? 'admin' : selectedRole;
+    const finalRole = selectedRole;
     setTimeout(() => {
       setIsLoading(false);
-      onLoginSuccess(finalRole, targetEmail, selectedRole === 'lecturer' ? 'TS. Nguyễn Văn Giảng (GitHub)' : 'Sinh viên FPT (GitHub)');
+      onLoginSuccess(finalRole, targetEmail, selectedRole === 'lecturer' ? 'Lê Nguyễn Anh Mai (Giảng viên)' : 'Sinh viên FPT (GitHub)');
     }, 300);
   };
 

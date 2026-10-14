@@ -68,7 +68,7 @@ export const translations = {
     navGitAnalyzer: 'Phân Tích Git Repo',
     navReports: 'Báo Cáo Free-Rider',
     queueMonitorTitle: 'Giám Sát Hàng Đợi (BullMQ Live Telemetry)',
-    queueMonitorDesc: 'Tự động cập nhật mỗi 2 giây (\'BR-03\'). Worker nhặt bài và tính thời gian \'runtimeDurationMs\'.',
+    queueMonitorDesc: 'Tự động cập nhật trực tiếp mỗi 2 giây. Hệ thống Worker phân phối chấm bài và đo lường thời gian thực thi chính xác.',
     queueLivePolling: 'Live Polling (2s chu kỳ)',
     dlqTitle: 'Hàng Đợi Chết (Dead-Letter Queue - DLQ)',
     dlqDesc: 'Khu vực cách ly các tác vụ chấm bị crash hoặc timeout sau 3 lần retry liên tiếp (\'status = \\\'dead\\\'\').',
@@ -82,11 +82,11 @@ export const translations = {
     // Extra table headers and statuses
     colJobId: 'JOB ID',
     colStatusGeneral: 'TRẠNG THÁI',
-    colRetryCount: 'RETRY COUNT (BR-04)',
+    colRetryCount: 'SỐ LẦN THỬ LẠI (RETRY)',
     colRunTime: 'THỜI GIAN CHẠY',
     colAction: 'HÀNH ĐỘNG',
     colErrorClass: 'PHÂN LOẠI NGUYÊN NHÂN LỖI',
-    colActionBr06: 'HÀNH ĐỘNG (BR-06)',
+    colActionBr06: 'THAO TÁC KHÔI PHỤC',
     statusFailedRetry: 'Thất bại (Cần retry)',
     statusGradingWorker: 'Đang chấm (Worker)',
     statusNotGraded: 'Đang chờ',
@@ -126,7 +126,7 @@ export const translations = {
 
     // Lecturer Console Content
     lecturerBatchTitle: 'Danh Sách Bài Nộp Của Cả Lớp (Batch Grading)',
-    lecturerBatchDesc: 'Giảng viên chọn bài nộp của sinh viên để tạo đợt chấm hàng loạt tuân thủ quy tắc BR-01 & BR-02.',
+    lecturerBatchDesc: 'Giảng viên chọn bài nộp của sinh viên để tạo đợt chấm hàng loạt với phân cấp độ ưu tiên tự động.',
     startBatchBtn: 'Bắt Đầu Chấm Bài',
     colStudent: 'SINH VIÊN',
     colSubmission: 'BÀI NỘP',
@@ -215,7 +215,7 @@ export const translations = {
     navGitAnalyzer: 'Git Repo Analyzer',
     navReports: 'Reports & Free-Riders',
     queueMonitorTitle: 'Queue Monitor (BullMQ Live Telemetry)',
-    queueMonitorDesc: 'Automatically updates every 2 seconds (\'BR-03\'). Worker fetches jobs and calculates \'runtimeDurationMs\'.',
+    queueMonitorDesc: 'Automatically updates every 2 seconds. Worker dispatches jobs and measures runtime execution duration.',
     queueLivePolling: 'Live Polling (2s cycle)',
     dlqTitle: 'Dead-Letter Queue (DLQ)',
     dlqDesc: 'Quarantine area for grading tasks that crashed or timed out after 3 consecutive retries (\'status = \\\'dead\\\'\').',
@@ -229,11 +229,11 @@ export const translations = {
     // Extra table headers and statuses
     colJobId: 'JOB ID',
     colStatusGeneral: 'STATUS',
-    colRetryCount: 'RETRY COUNT (BR-04)',
+    colRetryCount: 'RETRY ATTEMPTS',
     colRunTime: 'RUN TIME',
     colAction: 'ACTION',
     colErrorClass: 'ERROR CLASSIFICATION',
-    colActionBr06: 'ACTION (BR-06)',
+    colActionBr06: 'ACTIONS',
     statusFailedRetry: 'Failed (Needs retry)',
     statusGradingWorker: 'Grading (Worker)',
     statusNotGraded: 'Waiting',
@@ -273,7 +273,7 @@ export const translations = {
 
     // Lecturer Console Content
     lecturerBatchTitle: 'Class Submissions (Batch Grading)',
-    lecturerBatchDesc: 'Lecturer selects student submissions to dispatch batch grading adhering to BR-01 & BR-02 policies.',
+    lecturerBatchDesc: 'Lecturer selects student submissions to dispatch batch grading with automated priority queues.',
     startBatchBtn: 'Start Batch Grading',
     colStudent: 'STUDENT',
     colSubmission: 'SUBMISSION',

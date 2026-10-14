@@ -28,6 +28,7 @@ model User {
   submissions         Submission[]          @relation("StudentSubmissions")
   createdBatches      GradingBatch[]        @relation("BatchCreator")
   dismissedJobs       GradingJob[]          @relation("JobDismisser")
+  reviewedJobs        GradingJob[]          @relation("JobReviewer")
   submittedRepos      GitRepo[]             @relation("RepoSubmitter")
   commits             GitCommit[]           @relation("UserCommits")
   contributions       MemberContribution[]
@@ -150,6 +151,11 @@ model GradingJob {
   dismissed           Boolean      @default(false)
   dismissedBy         Int?
   dismissedAt         DateTime?
+  // Human-in-the-Loop AI Grading Review (UC-04b, BR-14, BR-15, BR-16)
+  reviewStatus        String       @default("pending") // pending | approved | rejected
+  reviewedBy          Int?
+  reviewedAt          DateTime?
+  reviewComment       String?
   startedAt           DateTime?
   finishedAt          DateTime?
   createdAt           DateTime     @default(now())
@@ -159,6 +165,7 @@ model GradingJob {
   batch               GradingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   submission          Submission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   dismisser           User?        @relation("JobDismisser", fields: [dismissedBy], references: [id])
+  reviewer            User?        @relation("JobReviewer", fields: [reviewedBy], references: [id])
 
   @@map("grading_jobs")
 }

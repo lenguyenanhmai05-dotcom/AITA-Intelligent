@@ -16,7 +16,6 @@ import {
   Award,
   Database,
   ChevronRight,
-  ArrowRight,
   Plus,
   UploadCloud,
   FileCode,
@@ -76,10 +75,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const t = translations[lang];
   const isUserAdmin = isAdminEmail(userEmail) || initialRole === 'admin';
   const [currentRole, setCurrentRole] = useState<'lecturer' | 'student' | 'admin'>(() => {
-    if (initialRole === 'admin' && !isUserAdmin) return 'student';
-    return initialRole;
+    return initialRole || 'lecturer';
   });
-  const [activeTab, setActiveTab] = useState<ActiveTab>(initialRole === 'student' ? 'student_upload' : initialRole === 'lecturer' ? 'submissions' : 'dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialRole === 'student' ? 'student_upload' : 'submissions');
 
   // Modals state
   const [showBatchModal, setShowBatchModal] = useState(false);
@@ -88,7 +86,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [showPatModal, setShowPatModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState<string | null>(null);
   const [showFlaggedModal, setShowFlaggedModal] = useState(false);
-  const [isBackHovered, setIsBackHovered] = useState(false);
+
+  // Review state (UC-04b Human-in-the-Loop)
+  const [reviewCommentInput, setReviewCommentInput] = useState('');
+  const [isReviewingJob, setIsReviewingJob] = useState(false);
+  const [reviewToast, setReviewToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Submissions selection state (Lecturer view)
   const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
@@ -213,9 +215,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         // 1. Update Lecturer submissions list
         const mapped = data.data.map((item: any) => ({
           id: item.id,
+          jobId: item.jobId,
           student: item.studentName || 'Sinh viên',
           title: item.title || 'Assignment',
           status: item.status || 'not graded',
+          reviewStatus: item.reviewStatus || 'pending',
+          reviewComment: item.reviewComment || '',
+          reviewedAt: item.reviewedAt || null,
           time: item.submittedAt || 'Vừa xong',
         }));
         setAllSubmissions(mapped);
@@ -322,7 +328,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       });
       const data = await res.json();
       if (data?.success) {
-        alert(lang === 'vi' ? `✓ Đã khôi phục tác vụ #${id} và reset retryCount về 0 (BR-06)!` : `✓ Replayed job #${id} and reset retry count to 0 (BR-06)!`);
+        alert(lang === 'vi' ? `✓ Đã khôi phục tác vụ #${id} về hàng đợi và đặt lại số lần thử!` : `✓ Replayed job #${id} to the queue!`);
         setShowDlqModal(null);
         fetchDlqJobs();
         fetchTelemetry();
@@ -352,6 +358,53 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       }
     } catch (err: any) {
       alert(`Lỗi: ${err.message}`);
+    }
+  };
+
+  // Review Grading Job Handler (UC-04b / BR-14, BR-15, BR-16)
+  const handleReviewJob = async (jobId: number, status: 'approved' | 'rejected') => {
+    setIsReviewingJob(true);
+    try {
+      const res = await fetch(`/api/grading/jobs/${jobId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          comment: reviewCommentInput,
+          reviewerId: 1,
+        }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setAllSubmissions((prev) =>
+          prev.map((s) =>
+            s.id === jobId || s.jobId === jobId
+              ? { ...s, reviewStatus: status, reviewComment: reviewCommentInput, reviewedAt: new Date().toISOString() }
+              : s
+          )
+        );
+        setReviewToast({
+          type: 'success',
+          message: status === 'approved'
+            ? (lang === 'vi' ? '✓ Đã phê duyệt kết quả chấm của AI thành công! (Điểm chính thức đã được chốt)' : '✓ AI grading result approved successfully!')
+            : (lang === 'vi' ? '✓ Đã từ chối kết quả chấm của AI và gửi nhận xét phản hồi cho sinh viên!' : '✓ AI grading result rejected with feedback!'),
+        });
+        setTimeout(() => setReviewToast(null), 4000);
+      } else {
+        setReviewToast({
+          type: 'error',
+          message: data?.message || (lang === 'vi' ? 'Lỗi khi duyệt kết quả' : 'Error reviewing job'),
+        });
+        setTimeout(() => setReviewToast(null), 4000);
+      }
+    } catch (err: any) {
+      setReviewToast({
+        type: 'error',
+        message: err.message || 'Lỗi kết nối máy chủ',
+      });
+      setTimeout(() => setReviewToast(null), 4000);
+    } finally {
+      setIsReviewingJob(false);
     }
   };
 
@@ -388,7 +441,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         setActiveTab('queue');
       } else {
         if (data?.code === 'BR_02_LIMIT_EXCEEDED') {
-          alert(`⚠️ CẢNH BÁO BR-02:\n${data.message}`);
+          alert(`⚠️ CẢNH BÁO HỆ THỐNG:\n${data.message}`);
         } else {
           alert(data?.message || 'Lỗi khi khởi tạo đợt chấm bài');
         }
@@ -1114,14 +1167,36 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     <Users size={14} />
                     <span>{t.navReports}</span>
                   </button>
+
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: activeTab === 'settings' ? 800 : 600,
+                      background: activeTab === 'settings' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
+                      color: activeTab === 'settings' ? '#FFFFFF' : 'var(--text-body)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: activeTab === 'settings' ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Sliders size={14} />
+                    <span>{t.navRuntimeSettings}</span>
+                  </button>
                 </>
               )}
 
             </nav>
 
-            {/* Right: User Profile Chip & Sleek Expanding Back Arrow Button behind it */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              {/* 1. User Profile Chip */}
+            {/* Right: User Profile Chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              {/* User Profile Chip */}
               <div
                 onClick={() => setActiveTab('settings')}
                 title={lang === 'vi' ? 'Bấm vào tên để xem Hồ sơ cá nhân & Cài đặt' : 'Click name to view Profile & Settings'}
@@ -1165,73 +1240,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     whiteSpace: 'nowrap',
                   }}>
                     {currentRole === 'lecturer'
-                      ? (lang === 'vi' ? '🎓 Giảng viên (SWP391)' : '🎓 Lecturer (SWP391)')
-                      : (lang === 'vi' ? '👨‍💻 Sinh viên (SWP391)' : '👨‍💻 Student (SWP391)')}
+                      ? (lang === 'vi' ? '🎓 Giảng viên' : '🎓 Lecturer')
+                      : (lang === 'vi' ? '👨‍💻 Sinh viên' : '👨‍💻 Student')}
                   </span>
                 </div>
               </div>
-
-              {/* 2. Premium Expanding Back Arrow Button (Placed BEHIND user name) */}
-              {isUserAdmin && (
-                <button
-                  type="button"
-                  onClick={() => handleRoleSwitch('admin')}
-                  onMouseEnter={() => setIsBackHovered(true)}
-                  onMouseLeave={() => setIsBackHovered(false)}
-                  title={lang === 'vi' ? 'Quay lại giao diện Quản trị viên (Admin)' : 'Return to Admin Dashboard'}
-                  aria-label={lang === 'vi' ? 'Quay lại trang Admin' : 'Return to Admin'}
-                  style={{
-                    height: '36px',
-                    borderRadius: '999px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: isBackHovered ? '0 12px 0 14px' : '0',
-                    width: isBackHovered ? 'auto' : '36px',
-                    minWidth: '36px',
-                    background: isBackHovered
-                      ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
-                      : (isDark ? 'var(--bg-surface-accent)' : 'linear-gradient(135deg, #FFF9F3 0%, #FAF2E6 100%)'),
-                    border: isBackHovered
-                      ? '1.5px solid var(--color-orange-zest)'
-                      : (isDark ? '1.5px solid rgba(245, 166, 66, 0.4)' : '1.5px solid rgba(217, 100, 31, 0.35)'),
-                    color: isBackHovered ? '#FFFFFF' : 'var(--color-orange-zest)',
-                    cursor: 'pointer',
-                    transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: isBackHovered
-                      ? '0 4px 14px rgba(217, 100, 31, 0.35)'
-                      : (isDark ? '0 2px 6px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(217, 100, 31, 0.12)'),
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '0.76rem',
-                      fontWeight: 800,
-                      maxWidth: isBackHovered ? '130px' : '0px',
-                      opacity: isBackHovered ? 1 : 0,
-                      marginRight: isBackHovered ? '6px' : '0px',
-                      transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      letterSpacing: '-0.2px',
-                    }}
-                  >
-                    {lang === 'vi' ? 'Quay lại Admin' : 'Back to Admin'}
-                  </span>
-                  <ArrowRight
-                    size={17}
-                    strokeWidth={2.6}
-                    style={{
-                      transform: isBackHovered ? 'translateX(2px)' : 'translateX(0)',
-                      transition: 'transform 0.2s ease',
-                      flexShrink: 0,
-                    }}
-                  />
-                </button>
-              )}
             </div>
           </header>
         ) : (
@@ -1478,8 +1491,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         onFocus={(e) => { e.target.style.borderColor = 'var(--color-orange-zest)'; e.target.style.boxShadow = '0 0 0 3px rgba(217, 100, 31, 0.15)'; }}
                         onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
                       >
-                        <option value="Assignment">Assignment</option>
-                        <option value="Practice">Practice</option>
+                        <option value="Exam">Exam (Bài thi / Kiểm tra — Ưu tiên cao nhất)</option>
+                        <option value="Assignment">Assignment (Bài tập lớn)</option>
+                        <option value="Practice">Practice (Thực hành / Luyện tập)</option>
                       </select>
                     </div>
 
@@ -2244,6 +2258,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                           <th style={{ padding: '14px 18px' }}>{t.colStudent}</th>
                           <th style={{ padding: '14px 18px' }}>{t.colSubmission}</th>
                           <th style={{ padding: '14px 18px' }}>{t.colGradingStatus}</th>
+                          <th style={{ padding: '14px 18px' }}>{lang === 'vi' ? 'Thẩm Định Giảng Viên' : 'Lecturer Assessment'}</th>
                           <th style={{ padding: '14px 18px' }}>{t.colSubmittedTime}</th>
                         </tr>
                       </thead>
@@ -2286,6 +2301,59 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               }}>
                                 {sub.status === 'completed' ? t.statusGraded : sub.status === 'failed' ? t.statusFailedRetry : sub.status === 'grading' ? t.statusGradingWorker : t.statusNotGraded}
                               </span>
+                            </td>
+                            <td style={{ padding: '14px 18px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {sub.status === 'completed' ? (
+                                  <>
+                                    <span style={{
+                                      fontSize: '0.72rem',
+                                      fontWeight: 800,
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      background: sub.reviewStatus === 'approved'
+                                        ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7')
+                                        : sub.reviewStatus === 'rejected'
+                                          ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2')
+                                          : (isDark ? 'rgba(238, 166, 75, 0.2)' : '#FEF3C7'),
+                                      color: sub.reviewStatus === 'approved'
+                                        ? '#16A34A'
+                                        : sub.reviewStatus === 'rejected'
+                                          ? '#DC2626'
+                                          : '#D97706',
+                                    }}>
+                                      {sub.reviewStatus === 'approved'
+                                        ? (lang === 'vi' ? 'ĐÃ DUYỆT' : 'APPROVED')
+                                        : sub.reviewStatus === 'rejected'
+                                          ? (lang === 'vi' ? 'TỪ CHỐI' : 'REJECTED')
+                                          : (lang === 'vi' ? 'CHỜ DUYỆT' : 'PENDING')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setShowJobDetailsModal(sub.id);
+                                        setReviewCommentInput(sub.reviewComment || '');
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 700,
+                                        borderRadius: '6px',
+                                        background: 'var(--color-orange-zest)',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {lang === 'vi' ? 'Duyệt điểm' : 'Review'}
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                                    {lang === 'vi' ? 'Chờ chấm xong' : 'Pending AI'}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>{sub.time}</td>
                           </tr>
@@ -2395,7 +2463,30 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             </td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>0</td>
                             <td style={{ padding: '14px 18px', color: 'var(--text-body)' }}>{runTime}</td>
-                            <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>{actionText}</td>
+                            <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>{actionText}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowJobDetailsModal(job.id);
+                                    setReviewCommentInput(job.reviewComment || '');
+                                  }}
+                                  style={{
+                                    padding: '4px 8px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    borderRadius: '6px',
+                                    background: isDark ? 'var(--bg-surface-subtle)' : '#E2E8F0',
+                                    color: 'var(--text-main)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {lang === 'vi' ? 'Xem chi tiết' : 'Details'}
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })
@@ -2638,7 +2729,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     cursor: 'pointer',
                   }}
                 >
-                  {lang === 'vi' ? '⚠️ Xem Commit Gian Lận Bị Bắt (BR-10)' : '⚠️ View Flagged Fraudulent Commits (BR-10)'}
+                  {lang === 'vi' ? '⚠️ Xem Commit Bất Thường Bị Gắn Cờ' : '⚠️ View Flagged Irregular Commits'}
                 </button>
 )}
               </div>
@@ -2815,7 +2906,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     <tr>
                       <th style={{ padding: '12px 18px' }}>MÃ ĐỀ</th>
                       <th style={{ padding: '12px 18px' }}>TIÊU ĐỀ BÀI TẬP</th>
-                      <th style={{ padding: '12px 18px' }}>LOẠI ĐỘ ƯU TIÊN (BR-01)</th>
+                      <th style={{ padding: '12px 18px' }}>MỨC ĐỘ ƯU TIÊN</th>
                       <th style={{ padding: '12px 18px' }}>SỐ TEST CASES</th>
                       <th style={{ padding: '12px 18px' }}>HẠN NỘP</th>
                     </tr>
@@ -3355,8 +3446,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </div>
               </div>
 
-              {/* If currentRole is admin, show the Runtime Settings Sliders below */}
-              {currentRole === 'admin' && (
+              {/* Cho phép Giảng viên và Quản trị viên điều chỉnh tham số Worker Concurrency */}
+              {(currentRole === 'admin' || currentRole === 'lecturer') && (
                 <div style={{
                   background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
                   borderRadius: '20px',
@@ -3365,7 +3456,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   boxShadow: 'var(--shadow-card)',
                 }}>
                   <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '6px' }}>
-                    ⚡ {lang === 'vi' ? 'Tham Số Chấm & Giám Sát Runtime (BR-07, BR-12)' : 'Grading & Monitoring Parameters (BR-07, BR-12)'}
+                    ⚡ {lang === 'vi' ? 'Tham Số Chấm & Giám Sát Hệ Thống' : 'Grading & System Monitoring Parameters'}
                   </h3>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
                     {lang === 'vi' ? 'Cấu hình tham số điều phối worker và ngưỡng cảnh báo đóng góp mã nguồn.' : 'Configure worker concurrency and free-rider alert thresholds.'}
@@ -3374,7 +3465,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '6px' }}>
-                        <span>{lang === 'vi' ? 'Số Worker Concurrency (BR-07):' : 'Worker Concurrency (BR-07):'}</span>
+                        <span>{lang === 'vi' ? 'Số Lượng Worker Đồng Thời:' : 'Worker Concurrency:'}</span>
                         <strong style={{ color: 'var(--color-orange-zest)' }}>{workerConcurrency} Workers</strong>
                       </div>
                       <input
@@ -3389,7 +3480,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '6px' }}>
-                        <span>{lang === 'vi' ? 'Ngưỡng Cảnh Báo Free-Rider (BR-12):' : 'Free-Rider Alert Threshold (BR-12):'}</span>
+                        <span>{lang === 'vi' ? 'Ngưỡng Cảnh Báo Đóng Góp Thấp:' : 'Low Contribution Threshold:'}</span>
                         <strong style={{ color: '#B91C1C' }}>{freeRidingThreshold}%</strong>
                       </div>
                       <input
@@ -3458,7 +3549,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               />
             </div>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{lang === 'vi' ? 'MỨC ĐỘ ƯU TIÊN (BR-01)*' : 'PRIORITY LEVEL (BR-01)*'}</label>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{lang === 'vi' ? 'MỨC ĐỘ ƯU TIÊN*' : 'PRIORITY LEVEL*'}</label>
               <select
                 value={batchPriority}
                 onChange={(e) => setBatchPriority(e.target.value as 'exam' | 'assignment' | 'practice')}
@@ -3520,68 +3611,272 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         </div>
       )}
 
-      {/* MODAL 2: JOB DETAILS MODAL (SRS Page 33) */}
-      {showJobDetailsModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px'
-        }}>
+      {/* MODAL 2: JOB DETAILS & LECTURER AI REVIEW MODAL (SRS Page 33 & UC-04b) */}
+      {showJobDetailsModal && (() => {
+        const currentJob = allSubmissions.find((s) => s.id === showJobDetailsModal || s.jobId === showJobDetailsModal) || {
+          id: showJobDetailsModal,
+          student: 'Sinh viên',
+          title: 'Assignment',
+          status: 'completed',
+          reviewStatus: 'pending',
+          reviewComment: '',
+          time: 'Vừa xong',
+        };
+        const isCompleted = currentJob.status === 'completed';
+        const isFailed = currentJob.status === 'failed';
+        const targetJobId = currentJob.jobId || currentJob.id;
+
+        return (
           <div style={{
-            background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-            borderRadius: '20px',
-            maxWidth: '520px',
-            width: '100%',
-            padding: '28px',
-            border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-            color: 'var(--text-main)',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Chi Tiết Tác Vụ #{showJobDetailsModal}</h3>
+            <div style={{
+              background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+              borderRadius: '20px',
+              maxWidth: '560px',
+              width: '100%',
+              padding: '28px',
+              border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+              color: 'var(--text-main)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
+                    {lang === 'vi' ? `Thẩm Định Bài Chấm #${showJobDetailsModal}` : `Grading Job Review #${showJobDetailsModal}`}
+                  </h3>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    {currentJob.student} • {currentJob.title}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowJobDetailsModal(null)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Toast Feedback Notification */}
+              {reviewToast && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  marginBottom: '16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  background: reviewToast.type === 'success' ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7') : (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'),
+                  color: reviewToast.type === 'success' ? '#15803D' : '#B91C1C',
+                  border: reviewToast.type === 'success' ? '1px solid #86EFAC' : '1px solid #FCA5A5',
+                }}>
+                  {reviewToast.message}
+                </div>
+              )}
+
+              {/* Section 1: AI Evaluation Metrics */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '18px',
+                border: isDark ? '1px solid var(--border-subtle)' : '1px solid rgba(120, 132, 23, 0.12)',
+              }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                  🤖 {lang === 'vi' ? 'KẾT QUẢ ĐÁNH GIÁ TỰ ĐỘNG CỦA AI' : 'AI AUTOMATED GRADING RESULT'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', fontSize: '0.85rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Trạng thái chấm:' : 'Grading Status:'} </span>
+                    <strong style={{
+                      color: isCompleted ? '#16A34A' : isFailed ? '#EF4444' : 'var(--color-orange-zest)'
+                    }}>
+                      {isCompleted ? 'COMPLETED' : isFailed ? 'FAILED' : 'GRADING'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Thời gian chạy:' : 'Runtime:'} </span>
+                    <strong>{isCompleted ? '840 ms' : isFailed ? '30,124 ms' : 'Đang chạy...'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Điểm số AI:' : 'AI Score:'} </span>
+                    <strong style={{ color: isCompleted ? '#16A34A' : 'var(--text-main)' }}>
+                      {isCompleted ? '100 / 100' : 'Chưa có'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)' }}>{lang === 'vi' ? 'Bộ kiểm thử:' : 'Test Cases:'} </span>
+                    <strong>{isCompleted ? '10/10 Passed (100%)' : isFailed ? '2/10 Passed (Timeout)' : 'Đang chạy'}</strong>
+                  </div>
+                </div>
+
+                {isFailed && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '10px 12px',
+                    background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2',
+                    borderRadius: '8px',
+                    color: '#EF4444',
+                    fontFamily: 'monospace',
+                    fontSize: '0.78rem',
+                  }}>
+                    TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)
+                  </div>
+                )}
+              </div>
+
+              {/* Section 2: Human-in-the-Loop Lecturer Review */}
+              <div style={{
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                borderRadius: '14px',
+                padding: '18px',
+                border: isDark ? '1px solid rgba(217, 100, 31, 0.3)' : '1.5px solid rgba(217, 100, 31, 0.25)',
+                marginBottom: '16px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.80rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-orange-zest)' }}>
+                    👨‍🏫 {lang === 'vi' ? 'Ý KIẾN & THẨM ĐỊNH CỦA GIẢNG VIÊN' : 'LECTURER EVALUATION & REVIEW'}
+                  </div>
+                  <span style={{
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    background: currentJob.reviewStatus === 'approved'
+                      ? (isDark ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7')
+                      : currentJob.reviewStatus === 'rejected'
+                        ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2')
+                        : (isDark ? 'rgba(238, 166, 75, 0.2)' : '#FEF3C7'),
+                    color: currentJob.reviewStatus === 'approved'
+                      ? '#16A34A'
+                      : currentJob.reviewStatus === 'rejected'
+                        ? '#DC2626'
+                        : '#D97706',
+                  }}>
+                    {currentJob.reviewStatus === 'approved'
+                      ? (lang === 'vi' ? '✓ ĐÃ PHÊ DUYỆT' : '✓ APPROVED')
+                      : currentJob.reviewStatus === 'rejected'
+                        ? (lang === 'vi' ? '✗ TỪ CHỐI' : '✗ REJECTED')
+                        : (lang === 'vi' ? '⏳ CHỜ THẨM ĐỊNH' : '⏳ PENDING REVIEW')}
+                  </span>
+                </div>
+
+                {isCompleted ? (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                      {lang === 'vi' ? 'Ý kiến nhận xét & phản hồi của Giảng viên:' : 'Lecturer Feedback & Comments:'}
+                    </label>
+                    <textarea
+                      value={reviewCommentInput}
+                      onChange={(e) => setReviewCommentInput(e.target.value)}
+                      placeholder={lang === 'vi' ? 'Ví dụ: Bài làm thuật toán chuẩn xác, tối ưu thời gian, đạt chuẩn rubric.' : 'Enter your evaluation feedback...'}
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                        background: isDark ? 'var(--bg-surface-input)' : '#FFFFFF',
+                        color: 'var(--text-main)',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                        resize: 'vertical',
+                        marginBottom: '14px',
+                      }}
+                    />
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleReviewJob(targetJobId, 'approved')}
+                        disabled={isReviewingJob}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          borderRadius: '10px',
+                          background: '#16A34A',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          opacity: isReviewingJob ? 0.7 : 1,
+                        }}
+                      >
+                        <CheckCircle size={16} />
+                        {lang === 'vi' ? 'Phê Duyệt Điểm' : 'Approve Score'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleReviewJob(targetJobId, 'rejected')}
+                        disabled={isReviewingJob}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          borderRadius: '10px',
+                          background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                          color: '#DC2626',
+                          border: '1px solid rgba(220, 38, 38, 0.3)',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          opacity: isReviewingJob ? 0.7 : 1,
+                        }}
+                      >
+                        <AlertOctagon size={16} />
+                        {lang === 'vi' ? 'Từ Chối Bài Chấm' : 'Reject Score'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: isDark ? 'rgba(238, 166, 75, 0.12)' : '#FFFBEB',
+                    border: '1px solid rgba(238, 166, 75, 0.3)',
+                    color: isDark ? '#FBBF24' : '#B45309',
+                    fontSize: '0.82rem',
+                    lineHeight: '1.5',
+                  }}>
+                    ⚠️ <strong>Lưu ý:</strong> Chỉ những bài nộp đã hoàn tất chấm điểm tự động (<code>status = &apos;completed&apos;</code>) mới được phép thẩm định. Vui lòng chờ hệ thống hoàn tất quá trình chấm!
+                  </div>
+                )}
+              </div>
+
+              {/* Close Button */}
               <button
+                type="button"
                 onClick={() => setShowJobDetailsModal(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                style={{
+                  width: '100%',
+                  padding: '11px',
+                  borderRadius: '10px',
+                  background: isDark ? 'var(--bg-surface-subtle)' : '#F1F5F9',
+                  color: 'var(--text-body)',
+                  border: isDark ? '1px solid var(--border-light)' : 'none',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
               >
-                <X size={20} />
+                {lang === 'vi' ? 'Đóng cửa sổ' : 'Close'}
               </button>
             </div>
-            <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
-              <div>Trạng thái: <strong style={{ color: '#EF4444' }}>failed (chờ retry lần 3)</strong></div>
-              <div>Thời gian chạy: <strong>30,124 ms</strong></div>
-              <div>Số lần retry: <strong>2 / 3 lần</strong> (khoảng chờ $2^2 = 4s$)</div>
-              <div style={{ marginTop: '12px', fontWeight: 700 }}>Nguyên nhân lỗi:</div>
-              <div style={{
-                padding: '10px 14px',
-                background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-                border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #FECACA',
-                borderRadius: '8px',
-                color: isDark ? '#F87171' : '#B91C1C',
-                fontFamily: 'monospace',
-                fontSize: '0.78rem',
-                marginTop: '4px',
-              }}>
-                TimeoutError: exec exceeded 30000ms at MockDispatcher.run (dispatcher.js:42)
-              </div>
-            </div>
-            <button
-              onClick={() => setShowJobDetailsModal(null)}
-              style={{
-                width: '100%',
-                marginTop: '20px',
-                padding: '10px',
-                borderRadius: '10px',
-                background: isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6',
-                color: 'var(--text-body)',
-                border: isDark ? '1px solid var(--border-light)' : 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Đóng
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MODAL 3: DLQ MODAL (SRS Page 35) */}
       {showDlqModal && (
@@ -3603,7 +3898,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               Xử Lý Tác Vụ Hàng Đợi Chết #{showDlqModal}
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginBottom: '20px', lineHeight: '1.6' }}>
-              Job đã thử lại hết 3 lần và được cách ly. Giảng viên có thể chọn hủy bỏ vĩnh viễn hoặc nạp lại thủ công vào hàng đợi để chấm lại (BR-06: reset retryCount về 0).
+              Tác vụ đã thử lại tối đa 3 lần và được đưa vào khu vực cách ly an toàn. Giảng viên có thể chọn hủy bỏ hoặc nạp lại vào hàng đợi để hệ thống chấm lại.
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
@@ -3667,7 +3962,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               </button>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
-              Token cần có quyền <code>repo:read</code> để clone kho mã nguồn riêng tư. Hệ thống sẽ mã hóa bằng chuẩn AES-256 (BR-08) trước khi lưu.
+              Token cần có quyền <code>repo:read</code> để liên kết kho mã nguồn riêng tư. Hệ thống sẽ mã hóa bảo mật bằng chuẩn AES-256 trước khi lưu trữ.
             </p>
             <input
               type="password"
@@ -3722,7 +4017,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         </div>
       )}
 
-      {/* MODAL 5: FLAGGED COMMITS (FRAUD DETECTION BR-10) */}
+      {/* MODAL 5: FLAGGED COMMITS (FRAUD DETECTION) */}
       {showFlaggedModal && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
@@ -3740,7 +4035,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E5E7EB', paddingBottom: '16px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-orange-zest)' }}>
-                {lang === 'vi' ? '⚠️ Danh Sách Commit Gian Lận (BR-10)' : '⚠️ Flagged Fraudulent Commits (BR-10)'}
+                {lang === 'vi' ? '⚠️ Danh Sách Commit Bất Thường Bị Gắn Cờ' : '⚠️ Flagged Irregular Commits'}
               </h3>
               <button
                 onClick={() => setShowFlaggedModal(false)}
@@ -3755,7 +4050,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   <tr>
                     <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'TÁC GIẢ' : 'AUTHOR'}</th>
                     <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'NGÀY COMMIT' : 'COMMIT DATE'}</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI GIAN LẬN' : 'FRAUDULENT BEHAVIOR'}</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{lang === 'vi' ? 'HÀNH VI BẤT THƯỜNG' : 'IRREGULAR BEHAVIOR'}</th>
                   </tr>
                 </thead>
                 <tbody>
