@@ -29,6 +29,7 @@ export async function seedPostgres() {
       },
     });
 
+<<<<<<< HEAD
     // 2. Seed a roster with both university and personal Git author emails.
     const studentSeeds = [
       { fullName: 'Ngô Sử Việt Anh', email: 'vietanh.student@fpt.edu.vn', githubUsername: 'ngosuvietanhqn05-cpu', gitEmails: ['vietanh.student@fpt.edu.vn', 'vietanh.dev@gmail.com'] },
@@ -64,6 +65,17 @@ export async function seedPostgres() {
         create: gitEmail,
       });
     }
+=======
+    // 2. Seed UserGitEmails
+    await prisma.userGitEmail.upsert({
+      where: { gitEmail: 'lenguyenanhmai05@gmail.com' },
+      update: {},
+      create: {
+        userId: adminUser.id,
+        gitEmail: 'lenguyenanhmai05@gmail.com',
+      },
+    });
+>>>>>>> origin/main
 
     // 3. Seed Classes
     const defaultClass = await prisma.class.upsert({
@@ -77,7 +89,11 @@ export async function seedPostgres() {
     });
 
     // 4. Seed Teams
+<<<<<<< HEAD
     const defaultTeam = await prisma.team.upsert({
+=======
+    await prisma.team.upsert({
+>>>>>>> origin/main
       where: { id: 1 },
       update: {},
       create: {
@@ -87,6 +103,7 @@ export async function seedPostgres() {
       },
     });
 
+<<<<<<< HEAD
     // 4. Seed team membership and sample submissions.
     for (const student of students) {
       await prisma.teamMember.upsert({
@@ -113,6 +130,8 @@ export async function seedPostgres() {
       }
     }
 
+=======
+>>>>>>> origin/main
     // 5. Seed SystemSettings
     await prisma.systemSetting.upsert({
       where: { settingKey: 'worker_concurrency' },
@@ -137,7 +156,10 @@ export async function seedPostgres() {
     console.log('[PostgreSQL Seed] ✅ Seeding completed successfully!');
   } catch (error: any) {
     console.warn('[PostgreSQL Seed] ⚠️ Seeding note:', error.message);
+<<<<<<< HEAD
     throw error;
+=======
+>>>>>>> origin/main
   } finally {
     await prisma.$disconnect();
   }

@@ -14,7 +14,11 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:worker": "npm run dev --workspace=apps/worker",
     "dev:web": "npm run dev --workspace=apps/web",
+<<<<<<< HEAD
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/database && npm run build --workspace=apps/api && npm run build --workspace=apps/worker && npm run build --workspace=apps/web",
+=======
+    "build": "npm run build --workspaces --if-present",
+>>>>>>> origin/main
     "db:generate": "npm run generate --workspace=packages/database",
     "db:push": "prisma db push --schema=packages/database/prisma/schema.prisma",
     "db:migrate": "npm run migrate --workspace=packages/database",
