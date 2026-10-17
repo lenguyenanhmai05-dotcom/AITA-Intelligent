@@ -7,7 +7,7 @@ import {
   DEFAULT_WORKER_CONCURRENCY,
   FREE_RIDING_THRESHOLD_DEFAULT
 } from '@aita/shared';
-import { prisma } from '@aita/database';
+import { Prisma, prisma } from '@aita/database';
 
 let currentSettings = {
   worker_concurrency: DEFAULT_WORKER_CONCURRENCY,
@@ -127,6 +127,14 @@ export const updateFreeRidingThreshold = async (req: Request, res: Response) => 
           updatedBy: Number(updatedBy),
         },
       });
+      await prisma.memberContribution.updateMany({
+        where: { contributionPercentage: { lt: threshold } },
+        data: { isFreeRiding: true, thresholdApplied: threshold },
+      });
+      await prisma.memberContribution.updateMany({
+        where: { contributionPercentage: { gte: threshold } },
+        data: { isFreeRiding: false, thresholdApplied: threshold },
+      });
       console.log(`[PostgreSQL Docker] ⚙️ Free-riding threshold saved to PostgreSQL: ${threshold}%`);
     } catch (err: any) {
       console.warn(`[PostgreSQL Docker] Settings update notice: ${err.message}`);
@@ -139,5 +147,69 @@ export const updateFreeRidingThreshold = async (req: Request, res: Response) => 
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const patchSettings = async (req: Request, res: Response) => {
+  try {
+    const updates: { settingKey: string; value: number }[] = [];
+    const { worker_concurrency, free_riding_threshold } = req.body;
+
+    if (worker_concurrency !== undefined) {
+      const value = Number(worker_concurrency);
+      if (!Number.isInteger(value) || value < WORKER_CONCURRENCY_MIN || value > WORKER_CONCURRENCY_MAX) {
+        return res.status(400).json({ success: false, code: 'BR_07_OUT_OF_BOUNDS', message: 'worker_concurrency phải nằm trong khoảng 1 đến 10.' });
+      }
+      updates.push({ settingKey: 'worker_concurrency', value });
+    }
+
+    if (free_riding_threshold !== undefined) {
+      const value = Number(free_riding_threshold);
+      if (!Number.isInteger(value) || value < FREE_RIDING_THRESHOLD_MIN || value > FREE_RIDING_THRESHOLD_MAX) {
+        return res.status(400).json({ success: false, code: 'BR_12_OUT_OF_BOUNDS', message: 'free_riding_threshold phải nằm trong khoảng 1% đến 20%.' });
+      }
+      updates.push({ settingKey: 'free_riding_threshold', value });
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cần cung cấp ít nhất một cài đặt để cập nhật.' });
+    }
+
+    const updatedBy = req.body.updatedBy === undefined ? null : Number(req.body.updatedBy);
+    if (updatedBy !== null && (!Number.isInteger(updatedBy) || updatedBy < 1)) {
+      return res.status(400).json({ success: false, message: 'updatedBy không hợp lệ.' });
+    }
+
+    await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+      for (const { settingKey, value } of updates) {
+        await transaction.systemSetting.upsert({
+          where: { settingKey },
+          update: { settingValue: String(value), updatedBy },
+          create: { settingKey, settingValue: String(value), updatedBy },
+        });
+      }
+
+      const thresholdUpdate = updates.find((update) => update.settingKey === 'free_riding_threshold');
+      if (thresholdUpdate) {
+        await transaction.memberContribution.updateMany({
+          where: { contributionPercentage: { lt: thresholdUpdate.value } },
+          data: { isFreeRiding: true, thresholdApplied: thresholdUpdate.value },
+        });
+        await transaction.memberContribution.updateMany({
+          where: { contributionPercentage: { gte: thresholdUpdate.value } },
+          data: { isFreeRiding: false, thresholdApplied: thresholdUpdate.value },
+        });
+      }
+    });
+
+    for (const update of updates) {
+      currentSettings[update.settingKey as keyof typeof currentSettings] = update.value as never;
+    }
+    currentSettings.updatedBy = updatedBy ?? currentSettings.updatedBy;
+    currentSettings.updatedAt = new Date();
+
+    return res.json({ success: true, data: currentSettings });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

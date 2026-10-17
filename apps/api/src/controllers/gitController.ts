@@ -1,10 +1,13 @@
 // @ts-nocheck
 import { Request, Response } from 'express';
+import { prisma } from '@aita/database';
 import { exec } from 'child_process';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import util from 'util';
+import { getCached, setCached } from '../queues/cache';
+import { persistGitAnalysis } from '../services/gitAnalytics.service';
 
 const execAsync = util.promisify(exec);
 
@@ -159,7 +162,15 @@ function calcContribution(members: { name: string; email: string; loc: number; c
 // =====================================================================
 // IN-MEMORY STORE (thay thế DB khi Prisma chưa ready)
 // =====================================================================
-const analysisStore: Record<string, { status: string; commits?: CommitInfo[]; error?: string; groupId?: string }> = {};
+const analysisStore: Record<string, {
+  status: string;
+  commits?: CommitInfo[];
+  error?: string;
+  groupId?: string;
+  repoId?: number;
+  repoUrl?: string;
+  prList?: PRInfo[];
+}> = {};
 
 // =====================================================================
 // GITHUB PR API (Milestone 3 - UC-09)
@@ -225,14 +236,22 @@ async function fetchGitHubPRs(repoUrl: string, patToken?: string): Promise<PRInf
  */
 export const analyzeGitRepo = async (req: Request, res: Response) => {
   try {
-    const { url, branch = 'main', groupId, patToken } = req.body;
+    const { url, branch = 'main', teamId = 1 } = req.body;
+    const patToken = req.body.patToken ?? req.body.pat;
 
     if (!url) return res.status(400).json({ success: false, message: 'Thiếu Git URL' });
 
+    const parsedTeamId = Number(teamId);
+    if (!Number.isInteger(parsedTeamId) || parsedTeamId < 1) {
+      return res.status(400).json({ success: false, message: 'teamId phải là số nguyên dương' });
+    }
+    const team = await prisma.team.findUnique({ where: { id: parsedTeamId } });
+    if (!team) return res.status(404).json({ success: false, message: 'Không tìm thấy nhóm dự án' });
+
     // BR-09: Mỗi nhóm chỉ được có tối đa 1 phân tích đang chạy cùng lúc
-    if (groupId) {
+    if (parsedTeamId) {
       const activeJob = Object.values(analysisStore).find(
-        j => j.groupId === String(groupId) && (j.status === 'cloning' || j.status === 'parsing')
+        j => j.groupId === String(parsedTeamId) && (j.status === 'cloning' || j.status === 'parsing')
       );
       if (activeJob) {
         return res.status(409).json({
@@ -250,13 +269,30 @@ export const analyzeGitRepo = async (req: Request, res: Response) => {
       cloneUrl = url.replace('https://', `https://${patToken}@`);
     }
 
+    const gitRepo = await prisma.gitRepo.create({
+      data: {
+        teamId: parsedTeamId,
+        repoUrl: url,
+        branch,
+        isPrivate: Boolean(patToken),
+        patEncrypted: encryptedPat,
+        cloneStatus: 'cloning',
+        analysisStep: 'cloning',
+      },
+    });
+
     // Tạo thư mục sandbox (UC-07)
-    const jobId = `repo_${Date.now()}`;
+    const jobId = `repo_${gitRepo.id}_${Date.now()}`;
     const sandboxDir = path.join(process.cwd(), 'scratch', 'clones', jobId);
     fs.mkdirSync(sandboxDir, { recursive: true });
 
     // Lưu trạng thái + groupId để kiểm tra BR-09
-    analysisStore[jobId] = { status: 'cloning', groupId: String(groupId || '') };
+    analysisStore[jobId] = {
+      status: 'cloning',
+      groupId: String(parsedTeamId),
+      repoId: gitRepo.id,
+      repoUrl: url,
+    };
 
     // Phản hồi ngay để không block UI
     res.json({
@@ -287,13 +323,10 @@ export const analyzeGitRepo = async (req: Request, res: Response) => {
         // Bước 3: Gọi GitHub PR API
         console.log('[Git Engine] Fetching GitHub PRs...');
         const prList = await fetchGitHubPRs(url, patToken);
-        
-        (analysisStore[jobId] as any).prList = prList;
-        analysisStore[jobId] = { ...analysisStore[jobId], status: 'done', commits };
-        
-        analysisStore['latest'] = analysisStore[jobId] as any;
-        (analysisStore['latest'] as any).prList = prList;
-        (analysisStore['latest'] as any).repoUrl = url;
+
+        await persistGitAnalysis(gitRepo.id, commits, prList);
+        analysisStore[jobId] = { ...analysisStore[jobId], status: 'done', commits, prList };
+        analysisStore.latest = analysisStore[jobId];
 
         console.log(`[Git Engine] Done! ${commits.length} commits parsed.`);
 
@@ -304,6 +337,10 @@ export const analyzeGitRepo = async (req: Request, res: Response) => {
         console.log('[Git Engine] Sandbox cleaned.');
       } catch (err: any) {
         analysisStore[jobId] = { status: 'error', error: err.message };
+        await prisma.gitRepo.update({
+          where: { id: gitRepo.id },
+          data: { cloneStatus: 'failed', analysisStep: 'failed', errorMessage: err.message },
+        }).catch(() => undefined);
         console.error('[Git Engine] Background job failed:', err.message);
       }
     })();
@@ -320,6 +357,76 @@ export const analyzeGitRepo = async (req: Request, res: Response) => {
 export const getGitReport = async (req: Request, res: Response) => {
   try {
     const { jobId } = req.query;
+    const reportJob = analysisStore[String(jobId || 'latest')] || analysisStore.latest;
+
+    if (reportJob && reportJob.status !== 'done') {
+      return res.json({ success: true, data: { status: reportJob.status, error: reportJob.error || null } });
+    }
+
+    if (reportJob?.status === 'done' && reportJob.repoId) {
+      const thresholdSetting = await prisma.systemSetting.findUnique({
+        where: { settingKey: 'free_riding_threshold' },
+      });
+      const cacheKey = `git-report:${reportJob.repoId}:${thresholdSetting?.settingValue || '5'}`;
+      const cached = await getCached<object>(cacheKey);
+      if (cached) return res.json(cached);
+
+      const [contributions, suspiciousCommits] = await Promise.all([
+        prisma.memberContribution.findMany({
+          where: { repoId: reportJob.repoId },
+          include: { user: true },
+          orderBy: { contributionPercentage: 'desc' },
+        }),
+        prisma.gitCommit.findMany({
+          where: { repoId: reportJob.repoId, isSuspicious: true },
+          orderBy: { commitDate: 'desc' },
+        }),
+      ]);
+
+      const contributionTotals = contributions.reduce(
+        (totals, contribution) => ({
+          loc: totals.loc + contribution.locCount,
+          commits: totals.commits + contribution.commitCount,
+          prs: totals.prs + contribution.prCount,
+        }),
+        { loc: 0, commits: 0, prs: 0 },
+      );
+      const colors = ['#2563EB', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
+      const response = {
+        success: true,
+        data: {
+          status: 'done',
+          teamContributions: contributions.map((contribution, index) => ({
+            name: contribution.user.fullName,
+            email: contribution.user.email,
+            userId: contribution.userId,
+            loc: contribution.locCount,
+            commits: contribution.commitCount,
+            prs: contribution.prCount,
+            pct: contribution.contributionPercentage,
+            locShare: contributionTotals.loc ? 40 * contribution.locCount / contributionTotals.loc : 0,
+            commitShare: contributionTotals.commits ? 40 * contribution.commitCount / contributionTotals.commits : 0,
+            prShare: contributionTotals.prs ? 20 * contribution.prCount / contributionTotals.prs : 0,
+            totalContribution: contribution.contributionPercentage,
+            isFreeRiding: contribution.isFreeRiding,
+            thresholdApplied: contribution.thresholdApplied,
+            color: colors[index % colors.length],
+            codeLines: `+${contribution.locCount}`,
+          })),
+          flaggedCommits: suspiciousCommits.map((commit, index) => ({
+            id: index + 1,
+            name: commit.authorName,
+            email: commit.authorEmail,
+            date: commit.commitDate.toISOString().slice(0, 10),
+            behavior: commit.suspiciousReason,
+          })),
+          repoUrl: reportJob.repoUrl,
+        },
+      };
+
+      await setCached(cacheKey, response, 30);
+      return res.json(response);
+    }
 
     // Nếu có jobId thực tế → trả dữ liệu thật từ store
     if (jobId && analysisStore[jobId as string]) {

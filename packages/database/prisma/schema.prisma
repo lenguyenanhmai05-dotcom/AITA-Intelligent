@@ -167,6 +167,10 @@ model GradingJob {
   dismisser           User?        @relation("JobDismisser", fields: [dismissedBy], references: [id])
   reviewer            User?        @relation("JobReviewer", fields: [reviewedBy], references: [id])
 
+<<<<<<< HEAD
+  @@index([batchId, status])
+=======
+>>>>>>> origin/main
   @@map("grading_jobs")
 }
 
