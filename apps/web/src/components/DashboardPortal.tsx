@@ -796,10 +796,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     }
   };
 
-  // Fetch system settings from API (/api/settings)
+  // Fetch system settings from the canonical system settings API.
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch('/api/system/settings');
       const data = await res.json();
       if (data?.success && data.data) {
         if (typeof data.data.worker_concurrency === 'number') {
@@ -817,10 +817,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const handleUpdateConcurrency = async (val: number) => {
     setWorkerConcurrency(val);
     try {
-      await fetch('/api/settings/concurrency', {
-        method: 'POST',
+      await fetch('/api/system/settings', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: val }),
+        body: JSON.stringify({ worker_concurrency: val }),
       });
     } catch (err) {
       console.warn('Could not update concurrency to API:', err);
@@ -830,10 +830,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const handleUpdateFreeRidingThreshold = async (val: number) => {
     setFreeRidingThreshold(val);
     try {
-      await fetch('/api/settings/free-riding-threshold', {
-        method: 'POST',
+      await fetch('/api/system/settings', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: val }),
+        body: JSON.stringify({ free_riding_threshold: val }),
       });
     } catch (err) {
       console.warn('Could not update free riding threshold to API:', err);
@@ -1028,6 +1028,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           url: targetUrl, 
           branch: targetBranch, 
           pat: patInput,
+          teamId: 1,
           groupId: (targetUrl.toLowerCase().includes('sdn') || targetUrl.includes('min098')) ? 5 : 2 
         })
       });
@@ -3673,8 +3674,12 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       loc: m.codeLines || `+${m.loc || 0}`,
                       pct: m.pct || 0,
                       color: m.color || '#94A3B8',
-                      status: m.pct >= 30 ? (lang === 'vi' ? 'Tốt' : 'Good') : (m.pct < 10 ? (lang === 'vi' ? '⚠️ Cảnh báo' : '⚠️ Alert') : (lang === 'vi' ? 'Đạt' : 'Average')),
-                      statusColor: m.pct >= 30 ? 'green' : (m.pct < 10 ? 'red' : 'gray')
+                      status: m.isFreeRiding
+                        ? (lang === 'vi' ? '⚠️ Free-Rider' : '⚠️ Free-Rider')
+                        : m.pct >= 30
+                          ? (lang === 'vi' ? 'Tốt' : 'Good')
+                          : (lang === 'vi' ? 'Đạt' : 'Average'),
+                      statusColor: m.isFreeRiding ? 'red' : (m.pct >= 30 ? 'green' : 'gray')
                     })) : (gitAnalysisJobId ? [{name: (lang==='vi'?'Đang tải dữ liệu từ GitHub... (vui lòng chờ khoảng 30s)':'Loading data from GitHub... (please wait ~30s)'), initials: '...', commits: 0, prs: 0, loc: '...', pct: 0, status: '...', statusColor: 'gray', color: '#94A3B8'}] : [])).map((row: any, idx: number, arr: any[]) => (
                       <tr key={row.name} style={{ borderBottom: idx === arr.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
                         <td

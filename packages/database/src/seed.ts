@@ -29,15 +29,41 @@ export async function seedPostgres() {
       },
     });
 
-    // 2. Seed UserGitEmails
-    await prisma.userGitEmail.upsert({
-      where: { gitEmail: 'lenguyenanhmai05@gmail.com' },
-      update: {},
-      create: {
-        userId: adminUser.id,
-        gitEmail: 'lenguyenanhmai05@gmail.com',
-      },
-    });
+    // 2. Seed a roster with both university and personal Git author emails (Task 3.1 & 3.2)
+    const studentSeeds = [
+      { fullName: 'Ngô Sử Việt Anh', email: 'vietanh.student@fpt.edu.vn', githubUsername: 'ngosuvietanhqn05-cpu', gitEmails: ['vietanh.student@fpt.edu.vn', 'vietanh.dev@gmail.com'] },
+      { fullName: 'Đào Minh Nghĩa', email: 'nghia.student@fpt.edu.vn', githubUsername: 'Nghiad04052k5', gitEmails: ['nghia.student@fpt.edu.vn', 'nghia.dev@gmail.com'] },
+      { fullName: 'Nguyễn Châu Khánh Linh', email: 'linh.student@fpt.edu.vn', githubUsername: 'khanhlinhz2k4-max', gitEmails: ['linh.student@fpt.edu.vn', 'linh.dev@gmail.com'] },
+      { fullName: 'Lê Nguyễn Anh Mai', email: 'mai.student@fpt.edu.vn', githubUsername: 'lenguyenanhmai05-dotcom', gitEmails: ['mai.student@fpt.edu.vn', 'mai.dev@gmail.com'] },
+      { fullName: 'Nguyễn Tường Vy', email: 'vy.student@fpt.edu.vn', githubUsername: 'gi098', gitEmails: ['vy.student@fpt.edu.vn', 'vy.dev@gmail.com'] },
+    ];
+
+    const students = await Promise.all(studentSeeds.map((student) =>
+      prisma.user.upsert({
+        where: { email: student.email },
+        update: { fullName: student.fullName, githubUsername: student.githubUsername, role: 'student' },
+        create: {
+          fullName: student.fullName,
+          email: student.email,
+          githubUsername: student.githubUsername,
+          role: 'student',
+          password: 'password123',
+        },
+      }),
+    ));
+
+    const gitEmailSeeds = [
+      { userId: adminUser.id, gitEmail: 'lenguyenanhmai05@gmail.com' },
+      ...students.flatMap((student, index) => studentSeeds[index].gitEmails.map((gitEmail) => ({ userId: student.id, gitEmail }))),
+    ];
+
+    for (const gitEmail of gitEmailSeeds) {
+      await prisma.userGitEmail.upsert({
+        where: { gitEmail: gitEmail.gitEmail },
+        update: { userId: gitEmail.userId },
+        create: gitEmail,
+      });
+    }
 
     // 3. Seed Classes
     const defaultClass = await prisma.class.upsert({
@@ -51,7 +77,7 @@ export async function seedPostgres() {
     });
 
     // 4. Seed Teams
-    await prisma.team.upsert({
+    const defaultTeam = await prisma.team.upsert({
       where: { id: 1 },
       update: {},
       create: {
@@ -61,7 +87,33 @@ export async function seedPostgres() {
       },
     });
 
-    // 5. Seed SystemSettings
+    // 5. Seed team membership and sample submissions
+    for (const student of students) {
+      await prisma.teamMember.upsert({
+        where: { teamId_userId: { teamId: defaultTeam.id, userId: student.id } },
+        update: {},
+        create: { teamId: defaultTeam.id, userId: student.id },
+      });
+
+      const submissionTitle = `SWP391 sample submission - ${student.fullName}`;
+      const existingSubmission = await prisma.submission.findFirst({
+        where: { classId: defaultClass.id, studentId: student.id, title: submissionTitle },
+      });
+      const submissionData = {
+        classId: defaultClass.id,
+        studentId: student.id,
+        title: submissionTitle,
+        codeUrl: 'https://github.com/example/aita-student-submission',
+        submissionStatus: 'submitted',
+      };
+      if (existingSubmission) {
+        await prisma.submission.update({ where: { id: existingSubmission.id }, data: submissionData });
+      } else {
+        await prisma.submission.create({ data: submissionData });
+      }
+    }
+
+    // 6. Seed SystemSettings (worker_concurrency & free_riding_threshold)
     await prisma.systemSetting.upsert({
       where: { settingKey: 'worker_concurrency' },
       update: { settingValue: '5' },

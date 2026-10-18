@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Request, Response } from 'express';
 import { prisma } from '@aita/database';
+import { getCached, setCached } from '../queues/cache';
 import { 
   addGradingJobToQueue, 
   getQueueTelemetryCounts 
@@ -721,6 +722,10 @@ export const createBatch = async (req: Request, res: Response) => {
  */
 export const getQueueStatus = async (_req: Request, res: Response) => {
   try {
+    const cacheKey = 'telemetry:grading';
+    const cached = await getCached<object>(cacheKey);
+    if (cached) return res.json(cached);
+
     let queueCounts: any = {};
     try {
       queueCounts = await getQueueTelemetryCounts();
@@ -745,7 +750,7 @@ export const getQueueStatus = async (_req: Request, res: Response) => {
       failedJobs = inMemoryJobs.filter((j) => j.status === 'failed' || j.status === 'dead').length;
     }
 
-    res.json({
+    const response = {
       success: true,
       data: {
         waiting: waitingJobs,
@@ -755,7 +760,9 @@ export const getQueueStatus = async (_req: Request, res: Response) => {
         total: waitingJobs + activeJobs + completedJobs + failedJobs,
         timestamp: new Date().toISOString(),
       },
-    });
+    };
+    await setCached(cacheKey, response, 1);
+    res.json(response);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

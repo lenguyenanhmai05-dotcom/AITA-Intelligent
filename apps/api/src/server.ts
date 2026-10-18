@@ -29,6 +29,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/grading', gradingRoutes);
 app.use('/api/dlq', gradingRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/system/settings', settingsRoutes);
 app.use('/api/git', gitRoutes);
 app.use('/api', gradingRoutes); // Also mount /api/submissions
 
