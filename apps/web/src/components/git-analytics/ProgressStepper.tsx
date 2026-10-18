@@ -99,11 +99,11 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
   return (
     <div
       style={{
-        background: 'var(--bg-surface, #FFFFFF)',
+        background: 'var(--color-terracotta-50, #FFFAF6)',
         borderRadius: '20px',
         padding: '32px 36px',
-        border: '1px solid var(--border-light, #E5E8D6)',
-        boxShadow: 'var(--shadow-card, 0 4px 16px rgba(0, 0, 0, 0.05))',
+        border: '1px solid var(--color-terracotta-200, #F7DBCC)',
+        boxShadow: '0 12px 32px rgba(122, 62, 46, 0.08), 0 2px 6px rgba(181, 82, 58, 0.04)',
         maxWidth: '680px',
         margin: '16px auto',
         boxSizing: 'border-box',
@@ -114,14 +114,14 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
           style={{
             fontSize: '1.35rem',
             fontWeight: 800,
-            color: 'var(--text-main, #1F2937)',
+            color: 'var(--color-terracotta-900, #7A3E2E)',
             marginBottom: '8px',
             fontFamily: 'var(--font-heading, inherit)',
           }}
         >
           Tiến Trình Phân Tích Kho Git (Analysis Progress)
         </h2>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #6B7280)', margin: 0 }}>
+        <p style={{ fontSize: '0.85rem', color: '#8C5E51', margin: 0 }}>
           {statusText ||
             (isAnalyzing
               ? `Hệ thống đang xử lý tác vụ ngầm theo quy chuẩn SRS... (Bước ${currentStep}/4)`
@@ -137,9 +137,9 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
             justifyContent: 'space-between',
             alignItems: 'center',
             fontSize: '0.78rem',
-            fontWeight: 700,
+            fontWeight: 800,
             marginBottom: '6px',
-            color: 'var(--color-orange-zest, #D9641F)',
+            color: 'var(--color-terracotta-700, #B5523A)',
           }}
         >
           <span>TIẾN ĐỘ TỔNG THỂ</span>
@@ -149,7 +149,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
           style={{
             width: '100%',
             height: '10px',
-            background: '#F3F4F6',
+            background: 'var(--color-terracotta-100, #FBEEE6)',
             borderRadius: '999px',
             overflow: 'hidden',
           }}
@@ -159,7 +159,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
               width: `${progressPercent}%`,
               height: '100%',
               background:
-                'linear-gradient(90deg, var(--color-kumquat, #F5A623), var(--color-orange-zest, #D9641F))',
+                'linear-gradient(90deg, var(--color-terracotta-500, #E7A27A), var(--color-terracotta-600, #D9794E), var(--color-terracotta-700, #B5523A))',
               borderRadius: '999px',
               transition: 'width 0.4s ease-in-out',
             }}
@@ -173,21 +173,21 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
           const isCompleted = currentStep > step.id;
           const isActive = currentStep === step.id;
 
-          let badgeBg = '#F3F4F6';
-          let badgeColor = '#9CA3AF';
-          let borderStyle = '1px solid #E5E7EB';
-          let cardBg = '#FAFAFA';
+          let badgeBg = 'var(--color-terracotta-50, #FFFAF6)';
+          let badgeColor = 'var(--color-terracotta-600, #D9794E)';
+          let borderStyle = '1px solid var(--color-terracotta-200, #F7DBCC)';
+          let cardBg = '#FFFFFF';
 
           if (isCompleted) {
-            badgeBg = '#ECFDF5';
-            badgeColor = '#10B981';
-            borderStyle = '1.5px solid #A7F3D0';
-            cardBg = '#F0FDF4';
+            badgeBg = 'var(--color-terracotta-100, #FBEEE6)';
+            badgeColor = 'var(--color-terracotta-700, #B5523A)';
+            borderStyle = '1.5px solid var(--color-terracotta-300, #F1C2A7)';
+            cardBg = 'var(--color-terracotta-50, #FFFAF6)';
           } else if (isActive) {
-            badgeBg = 'rgba(217, 100, 31, 0.12)';
-            badgeColor = 'var(--color-orange-zest, #D9641F)';
-            borderStyle = '1.5px solid var(--color-orange-zest, #D9641F)';
-            cardBg = 'var(--bg-surface-subtle, #FAF9F1)';
+            badgeBg = 'var(--color-terracotta-300, #F1C2A7)';
+            badgeColor = 'var(--color-terracotta-700, #B5523A)';
+            borderStyle = '2px solid var(--color-terracotta-700, #B5523A)';
+            cardBg = 'var(--color-terracotta-100, #FBEEE6)';
           }
 
           return (
@@ -203,7 +203,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                 background: cardBg,
                 border: borderStyle,
                 transition: 'all 0.25s ease',
-                boxShadow: isActive ? '0 4px 12px rgba(217, 100, 31, 0.12)' : 'none',
+                boxShadow: isActive ? '0 6px 18px rgba(181, 82, 58, 0.2)' : 'none',
               }}
             >
               {/* Step Icon Badge */}
@@ -247,10 +247,10 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                       fontSize: '0.92rem',
                       fontWeight: isActive ? 800 : 700,
                       color: isActive
-                        ? 'var(--color-orange-zest, #D9641F)'
+                        ? 'var(--color-terracotta-700, #B5523A)'
                         : isCompleted
-                        ? '#065F46'
-                        : 'var(--text-main, #374151)',
+                        ? 'var(--color-terracotta-900, #7A3E2E)'
+                        : 'var(--color-terracotta-900, #7A3E2E)',
                       margin: 0,
                     }}
                   >
@@ -262,8 +262,8 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                       fontWeight: 800,
                       padding: '2px 8px',
                       borderRadius: '6px',
-                      background: isCompleted ? '#D1FAE5' : isActive ? '#FFEDD5' : '#E5E7EB',
-                      color: isCompleted ? '#047857' : isActive ? '#C2410C' : '#6B7280',
+                      background: isCompleted ? 'var(--color-terracotta-100, #FBEEE6)' : isActive ? 'var(--color-terracotta-700, #B5523A)' : 'var(--color-terracotta-100, #FBEEE6)',
+                      color: isCompleted ? 'var(--color-terracotta-700, #B5523A)' : isActive ? '#FFFFFF' : '#8C5E51',
                     }}
                   >
                     {isCompleted ? 'Hoàn tất' : isActive ? 'Đang chạy' : 'Chờ xử lý'}
@@ -272,7 +272,7 @@ export const ProgressStepper: React.FC<ProgressStepperProps> = ({
                 <p
                   style={{
                     fontSize: '0.80rem',
-                    color: isActive ? 'var(--text-body, #4B5563)' : '#6B7280',
+                    color: isActive ? '#7A3E2E' : '#8C5E51',
                     margin: 0,
                     lineHeight: '1.45',
                   }}

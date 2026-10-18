@@ -133,7 +133,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
     >
       <div
         style={{
-          background: isDark ? 'var(--bg-surface, #1E293B)' : '#FFFFFF',
+          background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
           borderRadius: '24px',
           maxWidth: '780px',
           width: '100%',
@@ -142,9 +142,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
           flexDirection: 'column',
           boxShadow: isDark
             ? '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08)'
-            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-          border: isDark ? '1px solid var(--border-light, #334155)' : '1px solid #E2E8F0',
-          color: 'var(--text-main, #0F172A)',
+            : '0 25px 50px -12px rgba(122, 62, 46, 0.25), 0 0 0 1px rgba(181, 82, 58, 0.08)',
+          border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+          color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -153,11 +153,11 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
         <div
           style={{
             padding: '22px 28px',
-            borderBottom: isDark ? '1px solid var(--border-subtle, #334155)' : '1px solid #E2E8F0',
+            borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(248, 250, 252, 0.95)',
+            background: isDark ? 'rgba(45, 26, 22, 0.95)' : 'rgba(251, 238, 230, 0.95)',
             backdropFilter: 'blur(6px)',
           }}
         >
@@ -167,14 +167,14 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                 width: '46px',
                 height: '46px',
                 borderRadius: '50%',
-                background: member.color || '#2563EB',
+                background: member.color || 'var(--color-terracotta-700, #B5523A)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#FFFFFF',
                 fontWeight: 900,
                 fontSize: '1.1rem',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                boxShadow: '0 4px 12px rgba(122, 62, 46, 0.25)',
               }}
             >
               {member.initials || member.name.slice(0, 2).toUpperCase()}
@@ -186,16 +186,16 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   margin: 0,
                   fontSize: '1.25rem',
                   fontWeight: 800,
-                  color: isDark ? '#F8FAFC' : '#0F172A',
+                  color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
                   letterSpacing: '-0.3px',
                 }}
               >
                 {member.name}
               </h2>
-              <div style={{ fontSize: '0.8rem', color: isDark ? '#94A3B8' : '#64748B', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ fontSize: '0.8rem', color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>{member.email || `${member.name.toLowerCase().replace(/\s+/g, '.')}@fpt.edu.vn`}</span>
                 <span>•</span>
-                <span style={{ fontWeight: 700, color: member.color || (isDark ? '#60A5FA' : '#2563EB') }}>
+                <span style={{ fontWeight: 700, color: member.color || 'var(--color-terracotta-700, #B5523A)' }}>
                   {member.pct ? `${member.pct.toFixed(1)}% ${lang === 'vi' ? 'đóng góp' : 'contribution'}` : ''}
                 </span>
               </div>
@@ -205,11 +205,11 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
             onClick={onClose}
             aria-label="Close modal"
             style={{
-              background: isDark ? 'rgba(51, 65, 85, 0.5)' : '#F1F5F9',
-              border: 'none',
+              background: isDark ? 'rgba(74, 43, 36, 0.6)' : 'var(--color-terracotta-100, #FBEEE6)',
+              border: isDark ? '1px solid #4A2B24' : '1px solid var(--color-terracotta-200, #F7DBCC)',
               cursor: 'pointer',
               fontSize: '1.1rem',
-              color: isDark ? '#CBD5E1' : '#475569',
+              color: isDark ? '#FFFAF6' : 'var(--color-terracotta-700, #B5523A)',
               width: '32px',
               height: '32px',
               borderRadius: '8px',
@@ -236,72 +236,72 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
           >
             <div
               style={{
-                background: isDark ? 'rgba(30, 41, 59, 0.6)' : '#F8FAFC',
+                background: isDark ? 'rgba(45, 26, 22, 0.6)' : 'var(--color-terracotta-100, #FBEEE6)',
                 padding: '14px',
                 borderRadius: '14px',
-                border: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
+                border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
                 textAlign: 'center',
-                boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
+                boxShadow: isDark ? 'none' : '0 1px 3px rgba(122, 62, 46, 0.04)',
               }}
             >
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#94A3B8' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {lang === 'vi' ? 'Tổng Commits' : 'Total Commits'}
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#F8FAFC' : '#0F172A', marginTop: '4px', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', marginTop: '4px', fontFamily: 'monospace' }}>
                 {totalCommitsCount}
               </div>
             </div>
 
             <div
               style={{
-                background: isDark ? 'rgba(34, 197, 94, 0.12)' : '#DCFCE7',
+                background: isDark ? 'rgba(45, 26, 22, 0.6)' : 'var(--color-terracotta-100, #FBEEE6)',
                 padding: '14px',
                 borderRadius: '14px',
-                border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0',
+                border: isDark ? '1px solid var(--color-terracotta-300, #B5523A)' : '1px solid var(--color-terracotta-300, #F1C2A7)',
                 textAlign: 'center',
-                boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
+                boxShadow: isDark ? 'none' : '0 1px 3px rgba(122, 62, 46, 0.04)',
               }}
             >
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#4ADE80' : '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-terracotta-700, #B5523A)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {lang === 'vi' ? 'Dòng Thêm (+)' : 'Lines Added (+)'}
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#4ADE80' : '#15803D', marginTop: '4px', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--color-terracotta-700, #B5523A)', marginTop: '4px', fontFamily: 'monospace' }}>
                 +{totalAdditions.toLocaleString()}
               </div>
             </div>
 
             <div
               style={{
-                background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEE2E2',
+                background: isDark ? 'rgba(45, 26, 22, 0.6)' : 'var(--color-terracotta-100, #FBEEE6)',
                 padding: '14px',
                 borderRadius: '14px',
-                border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #FECACA',
+                border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
                 textAlign: 'center',
-                boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
+                boxShadow: isDark ? 'none' : '0 1px 3px rgba(122, 62, 46, 0.04)',
               }}
             >
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#F87171' : '#B91C1C', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {lang === 'vi' ? 'Dòng Xóa (-)' : 'Lines Deleted (-)'}
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#F87171' : '#DC2626', marginTop: '4px', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', marginTop: '4px', fontFamily: 'monospace' }}>
                 -{totalDeletions.toLocaleString()}
               </div>
             </div>
 
             <div
               style={{
-                background: isDark ? 'rgba(59, 130, 246, 0.12)' : '#DBEAFE',
+                background: isDark ? 'rgba(45, 26, 22, 0.6)' : 'var(--color-terracotta-100, #FBEEE6)',
                 padding: '14px',
                 borderRadius: '14px',
-                border: isDark ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #BFDBFE',
+                border: isDark ? '1px solid var(--color-terracotta-300, #B5523A)' : '1px solid var(--color-terracotta-300, #F1C2A7)',
                 textAlign: 'center',
-                boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
+                boxShadow: isDark ? 'none' : '0 1px 3px rgba(122, 62, 46, 0.04)',
               }}
             >
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#60A5FA' : '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-terracotta-600, #D9794E)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {lang === 'vi' ? 'Net LOC Ròng' : 'Net LOC Impact'}
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: isDark ? '#60A5FA' : '#2563EB', marginTop: '4px', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--color-terracotta-600, #D9794E)', marginTop: '4px', fontFamily: 'monospace' }}>
                 {netLOCImpact >= 0 ? `+${netLOCImpact.toLocaleString()}` : netLOCImpact.toLocaleString()}
               </div>
             </div>
@@ -310,15 +310,15 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
           {/* Activity Timeline Bar Chart */}
           <div
             style={{
-              background: isDark ? 'rgba(30, 41, 59, 0.5)' : '#F8FAFC',
+              background: isDark ? 'rgba(45, 26, 22, 0.5)' : 'var(--color-terracotta-100, #FBEEE6)',
               borderRadius: '16px',
               padding: '18px 20px',
-              border: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
+              border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
               marginBottom: '24px',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isDark ? '#F8FAFC' : '#0F172A' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>
                 📅 {lang === 'vi' ? 'Tần Suất Commit Theo Ngày (Sprint Pacing Timeline)' : 'Daily Commit Activity Timeline'}
               </div>
               {isSprintDumping ? (
@@ -328,9 +328,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                     fontWeight: 800,
                     padding: '4px 10px',
                     borderRadius: '999px',
-                    background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
-                    color: isDark ? '#FCA5A5' : '#DC2626',
-                    border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #FECACA',
+                    background: '#FEE2E2',
+                    color: '#DC2626',
+                    border: '1px solid #FECACA',
                   }}
                 >
                   ⚠️ {lang === 'vi' ? 'Cảnh báo: Dồn commit sát deadline (Sprint-dumping)' : 'Alert: Sprint-dumping pattern detected'}
@@ -339,12 +339,12 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                 <span
                   style={{
                     fontSize: '0.72rem',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     padding: '4px 10px',
                     borderRadius: '999px',
-                    background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7',
-                    color: isDark ? '#4ADE80' : '#15803D',
-                    border: isDark ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid #BBF7D0',
+                    background: 'var(--color-terracotta-50, #FFFAF6)',
+                    color: 'var(--color-terracotta-700, #B5523A)',
+                    border: '1px solid var(--color-terracotta-300, #F1C2A7)',
                   }}
                 >
                   ✓ {lang === 'vi' ? 'Phân bổ đều theo tiến độ' : 'Consistent sprint pacing'}
@@ -358,7 +358,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                 const barHeightPct = Math.max(15, Math.round((item.count / maxDailyCommits) * 100));
                 return (
                   <div key={item.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : 'var(--color-terracotta-900, #7A3E2E)' }}>
                       {item.count}
                     </span>
                     <div
@@ -367,13 +367,15 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                         maxWidth: '34px',
                         height: `${barHeightPct}%`,
                         borderRadius: '6px',
-                        background: isSprintDumping ? '#EF4444' : (member.color || '#2563EB'),
-                        boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
+                        background: isSprintDumping
+                          ? '#B5523A'
+                          : 'linear-gradient(180deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-700, #B5523A))',
+                        boxShadow: '0 2px 6px rgba(122, 62, 46, 0.15)',
                         transition: 'height 0.4s ease',
                       }}
                       title={`${item.day}: ${item.count} commits`}
                     />
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: isDark ? '#94A3B8' : '#64748B' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51' }}>
                       {item.day}
                     </span>
                   </div>
@@ -386,27 +388,27 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
           <div
             style={{
               borderRadius: '16px',
-              border: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
+              border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
               overflow: 'hidden',
-              background: isDark ? '#0F172A' : '#FFFFFF',
+              background: isDark ? '#1A100E' : '#FFFFFF',
             }}
           >
             {/* Table Header Bar */}
             <div
               style={{
                 padding: '12px 18px',
-                background: isDark ? 'rgba(30, 41, 59, 0.85)' : '#F1F5F9',
-                borderBottom: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
+                background: isDark ? 'rgba(45, 26, 22, 0.85)' : 'var(--color-terracotta-100, #FBEEE6)',
+                borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
                 fontSize: '0.82rem',
                 fontWeight: 800,
-                color: isDark ? '#F8FAFC' : '#334155',
+                color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}
             >
               <span>{lang === 'vi' ? 'NHẬT KÝ COMMITS CHI TIẾT' : 'GRANULAR COMMIT AUDIT LOG'}</span>
-              <span style={{ fontWeight: 600, color: isDark ? '#94A3B8' : '#64748B', fontSize: '0.75rem' }}>
+              <span style={{ fontWeight: 600, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', fontSize: '0.75rem' }}>
                 {displayCommits.length} {lang === 'vi' ? 'commits đã ghi nhận' : 'recorded commits'}
               </span>
             </div>
@@ -414,13 +416,13 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
             {/* Scroll Container with Sticky Header */}
             <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
-                <thead style={{ background: isDark ? '#1E293B' : '#F8FAFC', position: 'sticky', top: 0, zIndex: 1, borderBottom: isDark ? '1px solid #334155' : '1px solid #E2E8F0' }}>
+                <thead style={{ background: isDark ? '#2D1A16' : 'var(--color-terracotta-50, #FFFAF6)', position: 'sticky', top: 0, zIndex: 1, borderBottom: isDark ? '1px solid #4A2B24' : '1px solid var(--color-terracotta-200, #F7DBCC)' }}>
                   <tr>
-                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#94A3B8' : '#64748B' }}>SHA-1</th>
-                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#94A3B8' : '#64748B' }}>{lang === 'vi' ? 'Thời Gian' : 'Timestamp'}</th>
-                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#94A3B8' : '#64748B' }}>{lang === 'vi' ? 'Thông Điệp Commit' : 'Message'}</th>
-                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#94A3B8' : '#64748B', textAlign: 'right' }}>Net LOC</th>
-                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#94A3B8' : '#64748B', textAlign: 'center' }}>{lang === 'vi' ? 'Kiểm Toán' : 'Audit'}</th>
+                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>SHA-1</th>
+                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>{lang === 'vi' ? 'Thời Gian' : 'Timestamp'}</th>
+                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>{lang === 'vi' ? 'Thông Điệp Commit' : 'Message'}</th>
+                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textAlign: 'right' }}>Net LOC</th>
+                    <th style={{ padding: '10px 14px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textAlign: 'center' }}>{lang === 'vi' ? 'Kiểm Toán' : 'Audit'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -431,20 +433,20 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                       <tr
                         key={c.hash || idx}
                         style={{
-                          borderBottom: idx === paginatedCommits.length - 1 ? 'none' : isDark ? '1px solid #334155' : '1px solid #F1F5F9',
+                          borderBottom: idx === paginatedCommits.length - 1 ? 'none' : isDark ? '1px solid #4A2B24' : '1px solid var(--color-terracotta-200, #F7DBCC)',
                           transition: 'background 0.15s ease',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = isDark ? 'rgba(51, 65, 85, 0.4)' : '#F8FAFC';
+                          e.currentTarget.style.background = isDark ? 'rgba(74, 43, 36, 0.4)' : 'var(--color-terracotta-100, #FBEEE6)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = 'transparent';
                         }}
                       >
-                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 700, color: isDark ? '#60A5FA' : '#2563EB' }}>
+                        <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 800, color: 'var(--color-terracotta-700, #B5523A)' }}>
                           {shortHash}
                         </td>
-                        <td style={{ padding: '10px 14px', color: isDark ? '#94A3B8' : '#64748B', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '10px 14px', color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', whiteSpace: 'nowrap' }}>
                           {formattedDate}
                         </td>
                         <td
@@ -454,15 +456,15 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            color: isDark ? '#E2E8F0' : '#1E293B',
+                            color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
                           }}
                           title={c.message}
                         >
                           {c.message}
                         </td>
                         <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
-                          <span style={{ color: '#16A34A', marginRight: '6px' }}>+{c.linesAdded}</span>
-                          <span style={{ color: '#DC2626' }}>-{c.linesDeleted}</span>
+                          <span style={{ color: 'var(--color-terracotta-700, #B5523A)', marginRight: '6px' }}>+{c.linesAdded}</span>
+                          <span style={{ color: '#8C5E51' }}>-{c.linesDeleted}</span>
                         </td>
                         <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                           {c.isSuspicious ? (
@@ -470,7 +472,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                               ⚠️ Flagged
                             </span>
                           ) : (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: isDark ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', color: isDark ? '#4ADE80' : '#166534' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: 'var(--color-terracotta-100, #FBEEE6)', color: 'var(--color-terracotta-700, #B5523A)', border: '1px solid var(--color-terracotta-200, #F7DBCC)' }}>
                               ✓ Valid
                             </span>
                           )}
@@ -486,8 +488,8 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
             <div
               style={{
                 padding: '10px 18px',
-                background: isDark ? 'rgba(30, 41, 59, 0.85)' : '#F8FAFC',
-                borderTop: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
+                background: isDark ? 'rgba(45, 26, 22, 0.85)' : 'var(--color-terracotta-100, #FBEEE6)',
+                borderTop: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -498,7 +500,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
             >
               {/* Rows per page selector */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: isDark ? '#94A3B8' : '#64748B' }}>
+                <span style={{ color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51' }}>
                   {lang === 'vi' ? 'Số dòng:' : 'Rows:'}
                 </span>
                 <select
@@ -511,9 +513,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   style={{
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: isDark ? '1px solid #475569' : '1px solid #CBD5E1',
-                    background: isDark ? '#0F172A' : '#FFFFFF',
-                    color: isDark ? '#F8FAFC' : '#0F172A',
+                    border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                    background: isDark ? 'var(--color-terracotta-50, #1A100E)' : 'var(--color-terracotta-50, #FFFAF6)',
+                    color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
                     fontWeight: 700,
                     fontSize: '0.8rem',
                     cursor: 'pointer',
@@ -524,7 +526,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                 </select>
-                <span style={{ color: isDark ? '#94A3B8' : '#64748B', marginLeft: '6px' }}>
+                <span style={{ color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', marginLeft: '6px' }}>
                   {displayCommits.length > 0
                     ? `${startIndex + 1} - ${endIndex} / ${displayCommits.length}`
                     : '0 / 0'}
@@ -540,9 +542,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   style={{
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: isDark ? '1px solid #475569' : '1px solid #CBD5E1',
-                    background: isDark ? '#1E293B' : '#FFFFFF',
-                    color: currentPage === 1 ? (isDark ? '#475569' : '#CBD5E1') : (isDark ? '#F8FAFC' : '#0F172A'),
+                    border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                    background: isDark ? 'var(--color-terracotta-50, #1A100E)' : 'var(--color-terracotta-50, #FFFAF6)',
+                    color: currentPage === 1 ? '#D1D5DB' : (isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'),
                     cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                     fontWeight: 800,
                   }}
@@ -556,9 +558,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   style={{
                     padding: '4px 10px',
                     borderRadius: '6px',
-                    border: isDark ? '1px solid #475569' : '1px solid #CBD5E1',
-                    background: isDark ? '#1E293B' : '#FFFFFF',
-                    color: currentPage === 1 ? (isDark ? '#475569' : '#CBD5E1') : (isDark ? '#F8FAFC' : '#0F172A'),
+                    border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                    background: isDark ? 'var(--color-terracotta-50, #1A100E)' : 'var(--color-terracotta-50, #FFFAF6)',
+                    color: currentPage === 1 ? '#D1D5DB' : (isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'),
                     cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                     fontWeight: 700,
                   }}
@@ -566,7 +568,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   ‹ {lang === 'vi' ? 'Trước' : 'Prev'}
                 </button>
 
-                <span style={{ padding: '0 6px', fontWeight: 800, color: isDark ? '#60A5FA' : '#2563EB' }}>
+                <span style={{ padding: '0 6px', fontWeight: 800, color: 'var(--color-terracotta-700, #B5523A)' }}>
                   {currentPage} / {totalPages}
                 </span>
 
@@ -577,9 +579,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   style={{
                     padding: '4px 10px',
                     borderRadius: '6px',
-                    border: isDark ? '1px solid #475569' : '1px solid #CBD5E1',
-                    background: isDark ? '#1E293B' : '#FFFFFF',
-                    color: currentPage === totalPages ? (isDark ? '#475569' : '#CBD5E1') : (isDark ? '#F8FAFC' : '#0F172A'),
+                    border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                    background: isDark ? 'var(--color-terracotta-50, #1A100E)' : 'var(--color-terracotta-50, #FFFAF6)',
+                    color: currentPage === totalPages ? '#D1D5DB' : (isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'),
                     cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                     fontWeight: 700,
                   }}
@@ -593,9 +595,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                   style={{
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: isDark ? '1px solid #475569' : '1px solid #CBD5E1',
-                    background: isDark ? '#1E293B' : '#FFFFFF',
-                    color: currentPage === totalPages ? (isDark ? '#475569' : '#CBD5E1') : (isDark ? '#F8FAFC' : '#0F172A'),
+                    border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                    background: isDark ? 'var(--color-terracotta-50, #1A100E)' : 'var(--color-terracotta-50, #FFFAF6)',
+                    color: currentPage === totalPages ? '#D1D5DB' : (isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'),
                     cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                     fontWeight: 800,
                   }}
@@ -611,24 +613,25 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
         <div
           style={{
             padding: '16px 28px',
-            borderTop: isDark ? '1px solid var(--border-subtle, #334155)' : '1px solid #E2E8F0',
+            borderTop: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
             display: 'flex',
             justifyContent: 'flex-end',
-            background: isDark ? 'rgba(30, 41, 59, 0.85)' : '#F8FAFC',
+            background: isDark ? 'rgba(45, 26, 22, 0.85)' : 'var(--color-terracotta-100, #FBEEE6)',
           }}
         >
           <button
             onClick={onClose}
             style={{
-              padding: '9px 20px',
+              padding: '10px 22px',
               borderRadius: '10px',
-              background: isDark ? '#334155' : '#E2E8F0',
-              color: isDark ? '#F8FAFC' : '#0F172A',
+              background: 'linear-gradient(135deg, var(--color-terracotta-700, #B5523A), var(--color-terracotta-600, #D9794E))',
+              color: '#FFFFFF',
               border: 'none',
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: 'pointer',
               fontSize: '0.84rem',
-              transition: 'background 0.2s',
+              boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)',
+              transition: 'opacity 0.2s',
             }}
           >
             {lang === 'vi' ? 'Đóng Cửa Sổ' : 'Close Details'}
