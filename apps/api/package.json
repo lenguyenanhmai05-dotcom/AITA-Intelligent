@@ -6,10 +6,7 @@
   "scripts": {
     "dev": "tsx watch ./src/server.ts",
     "build": "tsc",
-<<<<<<< HEAD
     "test": "tsx --test ./src/services/gitAnalytics.service.test.ts",
-=======
->>>>>>> origin/main
     "start": "node ./dist/server.js"
   },
   "dependencies": {

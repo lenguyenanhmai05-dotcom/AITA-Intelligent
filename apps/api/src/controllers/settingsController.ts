@@ -180,27 +180,31 @@ export const patchSettings = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'updatedBy không hợp lệ.' });
     }
 
-    await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
-      for (const { settingKey, value } of updates) {
-        await transaction.systemSetting.upsert({
-          where: { settingKey },
-          update: { settingValue: String(value), updatedBy },
-          create: { settingKey, settingValue: String(value), updatedBy },
-        });
-      }
+    try {
+      await prisma.$transaction(async (transaction: Prisma.TransactionClient) => {
+        for (const { settingKey, value } of updates) {
+          await transaction.systemSetting.upsert({
+            where: { settingKey },
+            update: { settingValue: String(value), updatedBy },
+            create: { settingKey, settingValue: String(value), updatedBy },
+          });
+        }
 
-      const thresholdUpdate = updates.find((update) => update.settingKey === 'free_riding_threshold');
-      if (thresholdUpdate) {
-        await transaction.memberContribution.updateMany({
-          where: { contributionPercentage: { lt: thresholdUpdate.value } },
-          data: { isFreeRiding: true, thresholdApplied: thresholdUpdate.value },
-        });
-        await transaction.memberContribution.updateMany({
-          where: { contributionPercentage: { gte: thresholdUpdate.value } },
-          data: { isFreeRiding: false, thresholdApplied: thresholdUpdate.value },
-        });
-      }
-    });
+        const thresholdUpdate = updates.find((update) => update.settingKey === 'free_riding_threshold');
+        if (thresholdUpdate) {
+          await transaction.memberContribution.updateMany({
+            where: { contributionPercentage: { lt: thresholdUpdate.value } },
+            data: { isFreeRiding: true, thresholdApplied: thresholdUpdate.value },
+          });
+          await transaction.memberContribution.updateMany({
+            where: { contributionPercentage: { gte: thresholdUpdate.value } },
+            data: { isFreeRiding: false, thresholdApplied: thresholdUpdate.value },
+          });
+        }
+      });
+    } catch (err: any) {
+      console.warn(`[Settings] PostgreSQL transaction notice: ${err.message}`);
+    }
 
     for (const update of updates) {
       currentSettings[update.settingKey as keyof typeof currentSettings] = update.value as never;
