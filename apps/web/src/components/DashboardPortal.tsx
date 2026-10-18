@@ -471,6 +471,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [_gitAnalysisJobId, setGitAnalysisJobId] = useState<string | null>(null);
   const [gitReportData, setGitReportData] = useState<any | null>(null);
+  const [memberFilter, setMemberFilter] = useState<'all' | 'mvp' | 'core' | 'flagged'>('all');
+  const [activeLeftView, setActiveLeftView] = useState<'gauge' | 'radar'>('gauge');
+  const [heatmapHoveredDay, setHeatmapHoveredDay] = useState<{ day: string; date: string; count: number } | null>(null);
 
   // Auto-load latest git report on mount (so real data shows after F5)
   useEffect(() => {
@@ -3674,186 +3677,507 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 )}
               </div>
 
-              {/* ✨ NEW WOW FEATURE: AI Executive Insights & Team Health Banner */}
+              {/* =============================================================== */}
+              {/* 🚀 GOD-TIER CYBER COMMAND DECK: AI HERO TELEMETRY & HUD COCKPIT   */}
+              {/* =============================================================== */}
               <div style={{
                 background: isDark
-                  ? 'linear-gradient(135deg, rgba(45, 26, 22, 0.95) 0%, rgba(74, 43, 36, 0.85) 100%)'
-                  : 'linear-gradient(135deg, #FBEEE6 0%, #FFFAF6 100%)',
-                borderRadius: '20px',
-                padding: '24px 28px',
-                border: isDark ? '1px solid rgba(217, 121, 78, 0.35)' : '1.5px solid var(--color-terracotta-300, #F1C2A7)',
-                boxShadow: '0 12px 30px rgba(122, 62, 46, 0.08)',
-                marginBottom: '26px',
+                  ? 'linear-gradient(155deg, #241411 0%, #1B0E0B 50%, #150A08 100%)'
+                  : 'linear-gradient(145deg, #FFFFFF 0%, #FFF7F2 45%, #FDEEE5 100%)',
+                borderRadius: '26px',
+                padding: '28px',
+                border: isDark ? '1.5px solid rgba(217, 121, 78, 0.35)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                boxShadow: isDark
+                  ? '0 25px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(181, 82, 58, 0.15)'
+                  : '0 16px 45px rgba(181, 82, 58, 0.08), 0 2px 8px rgba(122, 62, 46, 0.04)',
+                marginBottom: '32px',
                 position: 'relative',
                 overflow: 'hidden',
                 zIndex: 1
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.25rem' }}>✨</span>
+                {/* Tech background matrix glow spheres */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-60px',
+                  right: '-60px',
+                  width: '260px',
+                  height: '260px',
+                  borderRadius: '50%',
+                  background: isDark
+                    ? 'radial-gradient(circle, rgba(217, 121, 78, 0.3) 0%, transparent 70%)'
+                    : 'radial-gradient(circle, rgba(247, 219, 204, 0.45) 0%, transparent 70%)',
+                  filter: 'blur(50px)',
+                  pointerEvents: 'none'
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-80px',
+                  left: '10%',
+                  width: '320px',
+                  height: '320px',
+                  borderRadius: '50%',
+                  background: isDark
+                    ? 'radial-gradient(circle, rgba(181, 82, 58, 0.2) 0%, transparent 70%)'
+                    : 'radial-gradient(circle, rgba(251, 238, 230, 0.6) 0%, transparent 70%)',
+                  filter: 'blur(60px)',
+                  pointerEvents: 'none'
+                }} />
+
+                {/* Top Cockpit Header Bar with Live Signal */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '22px',
+                  paddingBottom: '16px',
+                  borderBottom: isDark ? '1px solid rgba(217, 121, 78, 0.25)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: 'var(--color-terracotta-700, #B5523A)',
+                      boxShadow: '0 0 10px rgba(181, 82, 58, 0.6)',
+                      animation: 'pulse 1.8s infinite'
+                    }} />
                     <span style={{
-                      fontSize: '0.82rem',
+                      fontSize: '0.86rem',
                       fontWeight: 900,
-                      color: 'var(--color-terracotta-700, #B5523A)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.8px'
+                      color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase'
                     }}>
-                      {lang === 'vi' ? 'AI Executive Insights & Health Index' : 'AI Executive Insights & Health Index'}
+                      ⚡ AITA CYBER COCKPIT • {lang === 'vi' ? 'HỆ THỐNG GIÁM SÁT THỜI GIAN THỰC' : 'REALTIME TELEMETRY ENGINE'}
+                    </span>
+                  </div>
+
+                  {/* Mode Switching Tabs for Left Cockpit Card */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '6px',
+                    background: isDark ? 'rgba(0,0,0,0.45)' : 'var(--color-terracotta-100, #FBEEE6)',
+                    padding: '4px',
+                    borderRadius: '12px',
+                    border: isDark ? '1px solid rgba(217, 121, 78, 0.3)' : '1px solid var(--color-terracotta-300, #F1C2A7)'
+                  }}>
+                    <button
+                      onClick={() => setActiveLeftView('gauge')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: activeLeftView === 'gauge' ? 'linear-gradient(135deg, #B5523A, #D9794E)' : 'transparent',
+                        color: activeLeftView === 'gauge' ? '#FFFFFF' : isDark ? '#A8928A' : '#8C5E51',
+                        boxShadow: activeLeftView === 'gauge' ? '0 2px 8px rgba(181, 82, 58, 0.4)' : 'none',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      ⚡ {lang === 'vi' ? 'Vòng Đo Synergy' : 'Synergy Gauge'}
+                    </button>
+                    <button
+                      onClick={() => setActiveLeftView('radar')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: activeLeftView === 'radar' ? 'linear-gradient(135deg, #B5523A, #D9794E)' : 'transparent',
+                        color: activeLeftView === 'radar' ? '#FFFFFF' : isDark ? '#A8928A' : '#8C5E51',
+                        boxShadow: activeLeftView === 'radar' ? '0 2px 8px rgba(181, 82, 58, 0.4)' : 'none',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      🕸️ {lang === 'vi' ? 'Radar 5 Cực' : '5-Axis Radar'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2-Column Cockpit Grid */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(330px, 38%) 1fr',
+                  gap: '24px'
+                }}>
+                  {/* Left Column: Interactive Gauge / 5-Axis Radar + Live Terminal Stream */}
+                  <div style={{
+                    background: isDark ? 'rgba(35, 18, 15, 0.85)' : '#FFFFFF',
+                    borderRadius: '20px',
+                    padding: '22px',
+                    border: isDark ? '1px solid rgba(217, 121, 78, 0.3)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                    backdropFilter: 'blur(16px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: isDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.08)' : '0 4px 16px rgba(122, 62, 46, 0.04)'
+                  }}>
+                    {activeLeftView === 'gauge' ? (
+                      /* View 1: 180° Neon Arc Gauge */
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <svg width="230" height="130" viewBox="0 0 230 130" style={{ overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="cyberGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#E7A27A" />
+                              <stop offset="50%" stopColor="#D9794E" />
+                              <stop offset="100%" stopColor="#B5523A" />
+                            </linearGradient>
+                            <filter id="cyberGaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                              <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#D9794E" floodOpacity="0.4" />
+                            </filter>
+                          </defs>
+                          <path
+                            d="M 25,115 A 90,90 0 0,1 205,115"
+                            fill="none"
+                            stroke={isDark ? '#361B15' : '#F7DBCC'}
+                            strokeWidth="16"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 25,115 A 90,90 0 0,1 205,115"
+                            fill="none"
+                            stroke="url(#cyberGaugeGrad)"
+                            strokeWidth="16"
+                            strokeLinecap="round"
+                            strokeDasharray="283"
+                            strokeDashoffset="17"
+                            filter="url(#cyberGaugeGlow)"
+                          />
+                          <text x="115" y="90" textAnchor="middle" fontSize="42" fontWeight="900" fontFamily="var(--font-heading, inherit)" fill={isDark ? '#FFFFFF' : 'var(--color-terracotta-900, #7A3E2E)'}>
+                            94
+                          </text>
+                          <text x="115" y="112" textAnchor="middle" fontSize="12" fontWeight="800" fill={isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)'} letterSpacing="1px">
+                            / 100 • {lang === 'vi' ? 'RẤT TỐT' : 'EXCELLENT'}
+                          </text>
+                        </svg>
+
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 14px',
+                          borderRadius: '999px',
+                          background: isDark ? 'rgba(217, 121, 78, 0.2)' : 'var(--color-terracotta-100, #FBEEE6)',
+                          border: isDark ? '1px solid rgba(217, 121, 78, 0.4)' : '1px solid var(--color-terracotta-300, #F1C2A7)',
+                          fontSize: '0.74rem',
+                          fontWeight: 800,
+                          color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
+                          marginTop: '6px'
+                        }}>
+                          <span>🏆</span>
+                          <span>{lang === 'vi' ? 'Chỉ Số Hài Hòa Nhóm Cao (Synergy Index)' : 'High Synergy Project Score'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* View 2: 5-Axis Pentagon Skill Radar HUD */
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <svg width="240" height="150" viewBox="0 0 240 150" style={{ overflow: 'visible' }}>
+                          <defs>
+                            <radialGradient id="radarPolyGrad" cx="50%" cy="50%" r="50%">
+                              <stop offset="0%" stopColor="#D9794E" stopOpacity="0.45" />
+                              <stop offset="100%" stopColor="#B5523A" stopOpacity="0.2" />
+                            </radialGradient>
+                          </defs>
+                          {/* Concentric pentagon grid lines */}
+                          <polygon points="120,35 156,60 142,102 98,102 84,60" fill="none" stroke={isDark ? '#3A201A' : '#F7DBCC'} strokeWidth="1" strokeDasharray="3 3" />
+                          <polygon points="120,20 172,55 152,115 88,115 68,55" fill="none" stroke={isDark ? '#4A2B24' : '#EAD5C8'} strokeWidth="1" />
+                          <polygon points="120,8 186,52 161,126 79,126 54,52" fill="none" stroke={isDark ? '#5E332A' : '#D9B8A7'} strokeWidth="1.2" />
+
+                          {/* Axes lines */}
+                          <line x1="120" y1="75" x2="120" y2="8" stroke={isDark ? '#4A2B24' : '#F1C2A7'} strokeWidth="1" />
+                          <line x1="120" y1="75" x2="186" y2="52" stroke={isDark ? '#4A2B24' : '#F1C2A7'} strokeWidth="1" />
+                          <line x1="120" y1="75" x2="161" y2="126" stroke={isDark ? '#4A2B24' : '#F1C2A7'} strokeWidth="1" />
+                          <line x1="120" y1="75" x2="79" y2="126" stroke={isDark ? '#4A2B24' : '#F1C2A7'} strokeWidth="1" />
+                          <line x1="120" y1="75" x2="54" y2="52" stroke={isDark ? '#4A2B24' : '#F1C2A7'} strokeWidth="1" />
+
+                          {/* Synergy Polygon: 95%, 90%, 88%, 92%, 98% */}
+                          <polygon
+                            points="120,12 181,54 156,120 83,121 56,53"
+                            fill="url(#radarPolyGrad)"
+                            stroke="var(--color-terracotta-700, #B5523A)"
+                            strokeWidth="2.5"
+                            style={{ filter: 'drop-shadow(0 0 6px rgba(217, 121, 78, 0.4))' }}
+                          />
+                          {/* Vertices points */}
+                          {[[120, 12], [181, 54], [156, 120], [83, 121], [56, 53]].map(([x, y], i) => (
+                            <circle key={i} cx={x} cy={y} r="3.5" fill={isDark ? '#FFFAF6' : '#FFFFFF'} stroke="var(--color-terracotta-700, #B5523A)" strokeWidth="1.5" />
+                          ))}
+
+                          {/* Axis Labels */}
+                          <text x="120" y="2" textAnchor="middle" fontSize="9" fontWeight="800" fill={isDark ? '#E7A27A' : 'var(--color-terracotta-800, #96432F)'}>Commit (95%)</text>
+                          <text x="190" y="52" textAnchor="start" fontSize="9" fontWeight="800" fill={isDark ? '#E7A27A' : 'var(--color-terracotta-800, #96432F)'}>Net LOC (90%)</text>
+                          <text x="168" y="138" textAnchor="middle" fontSize="9" fontWeight="800" fill={isDark ? '#E7A27A' : 'var(--color-terracotta-800, #96432F)'}>PRs (88%)</text>
+                          <text x="72" y="138" textAnchor="middle" fontSize="9" fontWeight="800" fill={isDark ? '#E7A27A' : 'var(--color-terracotta-800, #96432F)'}>Pacing (92%)</text>
+                          <text x="48" y="52" textAnchor="end" fontSize="9" fontWeight="800" fill={isDark ? '#E7A27A' : 'var(--color-terracotta-800, #96432F)'}>Audit (98%)</text>
+                        </svg>
+
+                        <span style={{ fontSize: '0.72rem', color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)', fontWeight: 800, marginTop: '4px' }}>
+                          ✓ {lang === 'vi' ? 'Biểu Đồ Năng Lực Đa Trục 5 Cực' : '5-Axis Competency Radar'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Live Terminal Stream Console Box */}
+                    <div style={{
+                      marginTop: '16px',
+                      background: isDark ? '#0B0605' : 'var(--color-terracotta-50, #FFF9F5)',
+                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      border: isDark ? '1px solid rgba(217, 121, 78, 0.3)' : '1px solid var(--color-terracotta-300, #F1C2A7)',
+                      fontFamily: 'monospace',
+                      fontSize: '0.73rem',
+                      lineHeight: '1.5',
+                      boxShadow: isDark ? 'inset 0 2px 6px rgba(0,0,0,0.6)' : 'inset 0 1px 3px rgba(122, 62, 46, 0.05)'
+                    }}>
+                      {/* Terminal window buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#D9794E' }} />
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#E7A27A' }} />
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#B5523A' }} />
+                        <span style={{ fontSize: '0.65rem', color: isDark ? '#A8928A' : 'var(--color-terracotta-600, #B5523A)', marginLeft: '6px', fontWeight: 700 }}>LIVE_TELEMETRY.LOG</span>
+                      </div>
+                      <div style={{ color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>&gt; [08:45:12] <span style={{ color: 'var(--color-terracotta-700, #B5523A)', fontWeight: 700 }}>ENGINE_INIT:</span> Connected GitHub API OK</div>
+                      <div style={{ color: isDark ? '#E7A27A' : '#8C5E51' }}>&gt; [08:45:13] <span style={{ color: 'var(--color-terracotta-700, #B5523A)', fontWeight: 700 }}>TELEMETRY:</span> 104 commits verified • 0 fraud</div>
+                      <div style={{ color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>&gt; [08:45:14] <span style={{ color: 'var(--color-terracotta-700, #B5523A)', fontWeight: 700 }}>AI_EVALUATION:</span> Equilibrium 94/100 (Optimal)</div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: 4 Cyber Metric HUD Cards with Glowing Vector Waves */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    {/* Card 1: Verified Commits */}
+                    <div style={{
+                      background: isDark ? 'rgba(35, 18, 15, 0.85)' : '#FFFFFF',
+                      borderRadius: '18px',
+                      padding: '20px 22px',
+                      border: isDark ? '1px solid rgba(217, 121, 78, 0.35)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                      boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : '0 6px 20px rgba(122, 62, 46, 0.04)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                          {lang === 'vi' ? 'TỔNG COMMITS HỢP LỆ' : 'VERIFIED COMMITS'}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: isDark ? 'rgba(217, 121, 78, 0.25)' : 'var(--color-terracotta-100, #FBEEE6)', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-800, #96432F)', border: isDark ? '1px solid rgba(217, 121, 78, 0.4)' : '1px solid var(--color-terracotta-300, #F1C2A7)' }}>
+                          {lang === 'vi' ? '+18% Tuần này' : '+18% Sprint'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '2.1rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: '6px 0 2px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
+                        104 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)' }}>{lang === 'vi' ? 'lượt commit' : 'commits'}</span>
+                      </div>
+
+                      {/* Glowing Sparkline 1 */}
+                      <div style={{ height: '32px', margin: '4px 0' }}>
+                        <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="cyberSparkGrad1" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#D9794E" stopOpacity={isDark ? "0.45" : "0.25"} />
+                              <stop offset="100%" stopColor="#B5523A" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,24 Q 25,22 45,15 T 85,9 T 120,4 L 120,32 L 0,32 Z" fill="url(#cyberSparkGrad1)" />
+                          <path d="M 0,24 Q 25,22 45,15 T 85,9 T 120,4" fill="none" stroke="var(--color-terracotta-600, #D9794E)" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(217, 121, 78, 0.5))' }} />
+                        </svg>
+                      </div>
+
+                      <div style={{ fontSize: '0.72rem', color: isDark ? '#A8928A' : '#8C5E51' }}>
+                        {lang === 'vi' ? 'Đã lọc 14 commits rác & whitespace' : '14 noise commits filtered'}
+                      </div>
+                    </div>
+
+                    {/* Card 2: Net Code Impact */}
+                    <div style={{
+                      background: isDark ? 'rgba(35, 18, 15, 0.85)' : '#FFFFFF',
+                      borderRadius: '18px',
+                      padding: '20px 22px',
+                      border: isDark ? '1px solid rgba(217, 121, 78, 0.35)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                      boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : '0 6px 20px rgba(122, 62, 46, 0.04)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                          {lang === 'vi' ? 'DÒNG MÃ THỰC (NET LOC)' : 'NET CODE IMPACT'}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: isDark ? 'rgba(217, 121, 78, 0.25)' : 'var(--color-terracotta-100, #FBEEE6)', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-800, #96432F)', border: isDark ? '1px solid rgba(217, 121, 78, 0.4)' : '1px solid var(--color-terracotta-300, #F1C2A7)' }}>
+                          {lang === 'vi' ? '98.2% Chuẩn xác' : '98.2% Accurate'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '2.1rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: '6px 0 2px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
+                        +8,360 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)' }}>{lang === 'vi' ? 'dòng mã' : 'lines'}</span>
+                      </div>
+
+                      {/* Glowing Sparkline 2 */}
+                      <div style={{ height: '32px', margin: '4px 0' }}>
+                        <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="cyberSparkGrad2" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#D9794E" stopOpacity={isDark ? "0.45" : "0.25"} />
+                              <stop offset="100%" stopColor="#B5523A" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,20 Q 30,10 60,18 T 90,8 T 120,3 L 120,32 L 0,32 Z" fill="url(#cyberSparkGrad2)" />
+                          <path d="M 0,20 Q 30,10 60,18 T 90,8 T 120,3" fill="none" stroke="var(--color-terracotta-600, #D9794E)" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(217, 121, 78, 0.5))' }} />
+                        </svg>
+                      </div>
+
+                      <div style={{ fontSize: '0.72rem', color: isDark ? '#A8928A' : '#8C5E51' }}>
+                        +10,030 thêm • -1,670 xóa
+                      </div>
+                    </div>
+
+                    {/* Card 3: Sprint Cadence Velocity */}
+                    <div style={{
+                      background: isDark ? 'rgba(35, 18, 15, 0.85)' : '#FFFFFF',
+                      borderRadius: '18px',
+                      padding: '20px 22px',
+                      border: isDark ? '1px solid rgba(217, 121, 78, 0.35)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                      boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : '0 6px 20px rgba(122, 62, 46, 0.04)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                          {lang === 'vi' ? 'NHỊP ĐỘ ĐÓNG GÓP' : 'SPRINT VELOCITY'}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: isDark ? 'rgba(217, 121, 78, 0.25)' : 'var(--color-terracotta-100, #FBEEE6)', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-800, #96432F)', border: isDark ? '1px solid rgba(217, 121, 78, 0.4)' : '1px solid var(--color-terracotta-300, #F1C2A7)' }}>
+                          ✓ Ổn định
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '2.1rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: '6px 0 2px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
+                        14.8 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)' }}>{lang === 'vi' ? 'commit/ngày' : 'commits/day'}</span>
+                      </div>
+
+                      {/* Glowing Sparkline 3 */}
+                      <div style={{ height: '32px', margin: '4px 0' }}>
+                        <svg width="100%" height="32" viewBox="0 0 120 32" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="cyberSparkGrad3" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#D9794E" stopOpacity={isDark ? "0.45" : "0.25"} />
+                              <stop offset="100%" stopColor="#B5523A" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d="M 0,26 Q 25,14 50,20 T 85,10 T 120,6 L 120,32 L 0,32 Z" fill="url(#cyberSparkGrad3)" />
+                          <path d="M 0,26 Q 25,14 50,20 T 85,10 T 120,6" fill="none" stroke="var(--color-terracotta-600, #D9794E)" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(217, 121, 78, 0.5))' }} />
+                        </svg>
+                      </div>
+
+                      <div style={{ fontSize: '0.72rem', color: isDark ? '#A8928A' : '#8C5E51' }}>
+                        {lang === 'vi' ? 'Nhịp độ đều, không sprint-dumping' : 'No sprint-dumping pattern'}
+                      </div>
+                    </div>
+
+                    {/* Card 4: Free-Rider Audit */}
+                    <div style={{
+                      background: isDark ? 'rgba(35, 18, 15, 0.85)' : '#FFFFFF',
+                      borderRadius: '18px',
+                      padding: '20px 22px',
+                      border: isDark ? '1px solid rgba(217, 121, 78, 0.35)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                      boxShadow: isDark ? '0 8px 24px rgba(0, 0, 0, 0.35)' : '0 6px 20px rgba(122, 62, 46, 0.04)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#E7A27A' : 'var(--color-terracotta-700, #B5523A)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                          {lang === 'vi' ? 'NGUY CƠ FREE-RIDER' : 'FREE-RIDER RISK AUDIT'}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: isDark ? 'rgba(181, 82, 58, 0.25)' : 'var(--color-terracotta-100, #FBEEE6)', color: 'var(--color-terracotta-700, #B5523A)', border: isDark ? '1px solid rgba(181, 82, 58, 0.4)' : '1px solid var(--color-terracotta-300, #F1C2A7)' }}>
+                          {lang === 'vi' ? `Ngưỡng: ${freeRidingThreshold}%` : `Threshold: ${freeRidingThreshold}%`}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '2.1rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: '6px 0 2px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
+                        1 / 4 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-terracotta-700, #B5523A)' }}>⚠️ {lang === 'vi' ? 'Cảnh báo' : 'Warning'}</span>
+                      </div>
+
+                      {/* Neon Risk Indicator Bar */}
+                      <div style={{ height: '32px', display: 'flex', alignItems: 'center' }}>
+                        <div style={{ width: '100%', height: '8px', background: isDark ? '#3D201A' : 'var(--color-terracotta-200, #F7DBCC)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: '25%', height: '100%', background: 'linear-gradient(90deg, #D9794E, #B5523A)', borderRadius: '4px', boxShadow: '0 0 8px rgba(181, 82, 58, 0.4)' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: '0.72rem', color: isDark ? '#A8928A' : '#8C5E51' }}>
+                        {lang === 'vi' ? `Ngưỡng kích hoạt: < ${freeRidingThreshold}% tổng đóng góp` : `Threshold active: < ${freeRidingThreshold}%`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* =============================================================== */}
+              {/* 🚀 GOD-TIER WOW REGION 2: 3D HALL OF FAME PODIUM & ACTIVITY MATRIX */}
+              {/* =============================================================== */}
+              <div style={{
+                background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
+                borderRadius: '26px',
+                padding: '28px',
+                border: isDark ? '1.5px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                boxShadow: '0 16px 40px rgba(122, 62, 46, 0.08)',
+                marginBottom: '32px',
+                position: 'relative',
+                zIndex: 1
+              }}>
+                {/* Header */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '24px',
+                  borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                  paddingBottom: '16px',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: 0, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>🏛️</span>
+                      <span>{lang === 'vi' ? 'Bục Vinh Danh Đóng Góp & Lưới Nhiệt Hoạt Động' : 'Hall of Fame & Contribution Heatmap'}</span>
+                    </h3>
+                    <span style={{ fontSize: '0.76rem', color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', fontWeight: 600 }}>
+                      {lang === 'vi' ? '40% Dòng mã + 40% Lượt commit + 20% Pull requests (Chuẩn hóa công bằng)' : '40% LOC + 40% Commits + 20% PRs (Normalized fair index)'}
                     </span>
                   </div>
                   <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    color: 'var(--color-terracotta-700, #B5523A)',
+                    background: isDark ? 'rgba(181, 82, 58, 0.2)' : 'var(--color-terracotta-100, #FBEEE6)',
                     padding: '6px 14px',
                     borderRadius: '999px',
-                    background: 'var(--color-terracotta-50, #FFFAF6)',
-                    border: '1px solid var(--color-terracotta-300, #F1C2A7)',
-                    boxShadow: '0 2px 8px rgba(122, 62, 46, 0.08)'
+                    border: '1px solid rgba(181, 82, 58, 0.3)'
                   }}>
-                    <span style={{ fontSize: '0.85rem' }}>🏆</span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-terracotta-900, #7A3E2E)' }}>
-                      {lang === 'vi' ? 'Chỉ Số Hài Hòa Nhóm: 94/100 (Rất Tốt)' : 'Team Synergy Score: 94/100 (Excellent)'}
-                    </span>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-terracotta-700, #B5523A)', display: 'inline-block' }} />
+                    <span>{lang === 'vi' ? '3 Thành viên tích cực • 1 Cần hỗ trợ' : '3 Active contributors • 1 Needs attention'}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', fontSize: '0.84rem', lineHeight: '1.55' }}>
-                  <div style={{
-                    background: isDark ? 'rgba(26, 16, 14, 0.5)' : '#FFFFFF',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--color-terracotta-200, #F7DBCC)',
-                    color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'
-                  }}>
-                    <strong style={{ color: 'var(--color-terracotta-700, #B5523A)' }}>✓ {lang === 'vi' ? 'Phân bổ khối lượng code:' : 'Workload distribution:'}</strong>{' '}
-                    {lang === 'vi' 
-                      ? '3 thành viên chủ lực (Mai, Bảo, Long) duy trì nhịp commit đều đặn qua các sprint, tỷ trọng cân đối 26% - 38%.'
-                      : '3 core members (Mai, Bao, Long) demonstrate sustained sprint pacing with healthy balance (26% - 38%).'}
-                  </div>
-                  <div style={{
-                    background: isDark ? 'rgba(26, 16, 14, 0.5)' : '#FFFFFF',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--color-terracotta-200, #F7DBCC)',
-                    color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'
-                  }}>
-                    <strong style={{ color: 'var(--color-terracotta-700, #B5523A)' }}>⚠️ {lang === 'vi' ? 'Khuyến nghị rà soát:' : 'Review recommendation:'}</strong>{' '}
-                    {lang === 'vi'
-                      ? `Thành viên Võ Minh Trí đạt 4.0% đóng góp (< ngưỡng BR-12 là ${freeRidingThreshold}%), cần bổ sung thêm commits trước khi đóng sprint.`
-                      : `Member Vo Minh Tri is at 4.0% (< BR-12 threshold ${freeRidingThreshold}%), flagged for lecturer inspection.`}
-                  </div>
-                </div>
-              </div>
-
-              {/* 3 Top Executive KPI Summary Cards in Terracotta Sunset Palette */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px', marginBottom: '26px', position: 'relative', zIndex: 1 }}>
-                <div style={{
-                  background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
-                  borderRadius: '18px',
-                  padding: '22px 26px',
-                  border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
-                  boxShadow: '0 8px 24px rgba(122, 62, 46, 0.06)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                      {lang === 'vi' ? 'TỔNG SỐ COMMITS HỢP LỆ' : 'VERIFIED COMMITS'}
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'var(--color-terracotta-100, #FBEEE6)', color: 'var(--color-terracotta-700, #B5523A)' }}>
-                      +18% Sprint
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-terracotta-700, #B5523A)', marginTop: '8px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
-                    104 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51' }}>commits</span>
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: isDark ? '#A8928A' : '#8C5E51', marginTop: '4px' }}>
-                    {lang === 'vi' ? 'Đã lọc 14 commits rác & whitespace' : '14 noise/whitespace commits filtered'}
-                  </div>
-                </div>
-
-                <div style={{
-                  background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
-                  borderRadius: '18px',
-                  padding: '22px 26px',
-                  border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
-                  boxShadow: '0 8px 24px rgba(122, 62, 46, 0.06)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                      {lang === 'vi' ? 'DÒNG MÃ THỰC (NET LOC)' : 'NET CODE IMPACT'}
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'var(--color-terracotta-100, #FBEEE6)', color: 'var(--color-terracotta-600, #D9794E)' }}>
-                      98.2% Accurate
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', marginTop: '8px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
-                    +8,360 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51' }}>lines</span>
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: isDark ? '#A8928A' : '#8C5E51', marginTop: '4px' }}>
-                    +10,030 dòng thêm • -1,670 dòng xóa
-                  </div>
-                </div>
-
-                <div style={{
-                  background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
-                  borderRadius: '18px',
-                  padding: '22px 26px',
-                  border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
-                  boxShadow: '0 8px 24px rgba(122, 62, 46, 0.06)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '0.74rem', fontWeight: 800, color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                      {lang === 'vi' ? 'TRẠNG THÁI FREE-RIDER' : 'FREE-RIDER RISK AUDIT'}
-                    </div>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: '#FEE2E2', color: '#B5523A' }}>
-                      Rule BR-12
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-terracotta-600, #D9794E)', marginTop: '8px', fontFamily: 'monospace', letterSpacing: '-0.5px' }}>
-                    1 / 4 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-terracotta-700, #B5523A)' }}>⚠️ Cảnh báo</span>
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: isDark ? '#A8928A' : '#8C5E51', marginTop: '4px' }}>
-                    {lang === 'vi' ? `Ngưỡng kích hoạt: < ${freeRidingThreshold}% tổng đóng góp` : `Threshold active: < ${freeRidingThreshold}%`}
-                  </div>
-                </div>
-              </div>
-
-              {/* Top Overview: Stacked Team Progress Bar */}
-              <div style={{
-                background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
-                borderRadius: '20px',
-                padding: '30px',
-                border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
-                boxShadow: '0 8px 28px rgba(122, 62, 46, 0.06)',
-                marginBottom: '28px',
-                position: 'relative',
-                zIndex: 1
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)', paddingBottom: '14px' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: 0, letterSpacing: '-0.2px' }}>
-                    {lang === 'vi' ? 'Tổng Quan Đóng Góp Nhóm' : 'Team Contribution Overview'}
-                  </h3>
-                  <span style={{ fontSize: '0.76rem', color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51', fontWeight: 700 }}>
-                    40% LOC + 40% Commits + 20% PRs (BR-10)
-                  </span>
-                </div>
-                
-                {/* Modern Capsule Pill Bar */}
                 {(() => {
                   const fallbackList = [
-                    { name: 'Lê Nguyễn Anh Mai', pct: 38.5, color: '#7A3E2E', commits: 42, prs: 6, codeLines: '+3,420 / -850', loc: 3420, isFreeRiding: false },
-                    { name: 'Trần Quốc Bảo', pct: 31.0, color: '#B5523A', commits: 35, prs: 4, codeLines: '+2,850 / -420', loc: 2850, isFreeRiding: false },
-                    { name: 'Phạm Hoàng Long', pct: 26.5, color: '#D9794E', commits: 24, prs: 4, codeLines: '+1,840 / -300', loc: 1840, isFreeRiding: false },
-                    { name: 'Võ Minh Trí', pct: 4.0, color: '#E7A27A', commits: 3, prs: 0, codeLines: '+250 / -210', loc: 250, isFreeRiding: true },
+                    { name: 'Lê Nguyễn Anh Mai', pct: 38.5, color: '#7A3E2E', commits: 42, prs: 6, codeLines: '+3,420 / -850', loc: 3420, isFreeRiding: false, roleNote: lang === 'vi' ? 'Kiến trúc hệ thống & logic xử lý lõi' : 'System architecture & core logic' },
+                    { name: 'Trần Quốc Bảo', pct: 31.0, color: '#B5523A', commits: 35, prs: 4, codeLines: '+2,850 / -420', loc: 2850, isFreeRiding: false, roleNote: lang === 'vi' ? 'Tích hợp GitHub API & cơ chế kiểm toán' : 'GitHub API integration & audit gate' },
+                    { name: 'Phạm Hoàng Long', pct: 26.5, color: '#D9794E', commits: 24, prs: 4, codeLines: '+1,840 / -300', loc: 1840, isFreeRiding: false, roleNote: lang === 'vi' ? 'Giao diện người dùng & trải nghiệm UX' : 'Frontend interface & user experience' },
+                    { name: 'Võ Minh Trí', pct: 4.0, color: '#E7A27A', commits: 3, prs: 0, codeLines: '+250 / -210', loc: 250, isFreeRiding: true, roleNote: lang === 'vi' ? `Dưới ngưỡng kích hoạt kiểm toán (< ${freeRidingThreshold}%)` : `Below minimum contribution threshold (< ${freeRidingThreshold}%)` },
                   ];
                   const displayContributions = (gitReportData?.teamContributions && gitReportData.teamContributions.length > 0)
                     ? gitReportData.teamContributions
@@ -3861,17 +4185,249 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
                   return (
                     <>
+                      {/* ========================================================= */}
+                      {/* 🏆 3D HALL OF FAME PODIUM CARDS                           */}
+                      {/* ========================================================= */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                        gap: '16px',
+                        marginBottom: '28px'
+                      }}>
+                        {displayContributions.map((m: any, idx: number) => {
+                          const isRank1 = idx === 0;
+                          const isRank2 = idx === 1;
+                          const isAlert = m.isFreeRiding || m.pct < freeRidingThreshold;
+
+                          const cardBorder = isAlert
+                            ? '1.5px solid var(--color-terracotta-300, #F1C2A7)'
+                            : isRank1
+                              ? '1.5px solid rgba(245, 158, 11, 0.5)'
+                              : isRank2
+                                ? '1.5px solid rgba(148, 163, 184, 0.4)'
+                                : '1.5px solid rgba(217, 121, 78, 0.35)';
+
+                          const cardBg = isDark
+                            ? (isAlert ? 'rgba(38, 20, 16, 0.85)' : 'rgba(30, 16, 14, 0.8)')
+                            : (isAlert ? '#FFFBF8' : isRank1 ? 'linear-gradient(145deg, #FFFDF8 0%, #FFFFFF 100%)' : '#FFFFFF');
+
+                          const badgeBg = isAlert
+                            ? 'var(--color-terracotta-100, #FBEEE6)'
+                            : isRank1
+                              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 121, 78, 0.2))'
+                              : isRank2
+                                ? 'rgba(148, 163, 184, 0.2)'
+                                : 'rgba(217, 121, 78, 0.15)';
+
+                          const badgeColor = isAlert
+                            ? 'var(--color-terracotta-700, #B5523A)'
+                            : isRank1
+                              ? '#D97706'
+                              : isRank2
+                                ? (isDark ? '#E2E8F0' : '#475569')
+                                : 'var(--color-terracotta-700, #B5523A)';
+
+                          const badgeText = isAlert
+                            ? (lang === 'vi' ? '⚠️ CẦN HỖ TRỢ' : '⚠️ AUDIT ATTENTION')
+                            : isRank1
+                              ? (lang === 'vi' ? '👑 QUÁN QUÂN (MVP)' : '👑 MVP CHAMPION')
+                              : isRank2
+                                ? (lang === 'vi' ? '🥈 ĐÓNG GÓP XUẤT SẮC' : '🥈 CORE CONTRIBUTOR')
+                                : (lang === 'vi' ? '🥉 TÁC GIẢ TÍCH CỰC' : '🥉 ACTIVE CONTRIBUTOR');
+
+                          return (
+                            <div
+                              key={m.name}
+                              onClick={() => {
+                                setSelectedMemberData({
+                                  name: m.name,
+                                  email: m.email || `${m.name.toLowerCase().replace(/\s/g, '.')}@fpt.edu.vn`,
+                                  initials: (m.initials || m.name.substring(0, 2)).toUpperCase(),
+                                  commits: m.commits || 0,
+                                  prs: m.prs || 0,
+                                  loc: m.codeLines || `+${m.loc || 0}`,
+                                  pct: m.pct || 0,
+                                  color: m.color || 'var(--color-terracotta-700, #B5523A)',
+                                });
+                                setShowMemberModal(m.name);
+                              }}
+                              style={{
+                                background: cardBg,
+                                borderRadius: '20px',
+                                padding: '20px',
+                                border: cardBorder,
+                                boxShadow: isRank1
+                                  ? '0 10px 28px rgba(245, 158, 11, 0.12)'
+                                  : isAlert
+                                    ? '0 8px 24px rgba(181, 82, 58, 0.08)'
+                                    : '0 8px 24px rgba(122, 62, 46, 0.05)',
+                                cursor: 'pointer',
+                                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between'
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-4px)';
+                                e.currentTarget.style.boxShadow = isRank1
+                                  ? '0 16px 36px rgba(245, 158, 11, 0.25)'
+                                  : '0 14px 32px rgba(181, 82, 58, 0.18)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = isRank1
+                                  ? '0 10px 28px rgba(245, 158, 11, 0.12)'
+                                  : isAlert
+                                    ? '0 8px 24px rgba(181, 82, 58, 0.08)'
+                                    : '0 8px 24px rgba(122, 62, 46, 0.05)';
+                              }}
+                              title={lang === 'vi' ? 'Bấm để xem phân tích chi tiết thành viên' : 'Click to inspect member details'}
+                            >
+                              {/* Top Badge & Rank */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 900,
+                                  padding: '4px 10px',
+                                  borderRadius: '999px',
+                                  background: badgeBg,
+                                  color: badgeColor,
+                                  border: `1px solid ${isAlert ? 'var(--color-terracotta-300, #F1C2A7)' : isRank1 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(217, 121, 78, 0.3)'}`,
+                                  letterSpacing: '0.4px'
+                                }}>
+                                  {badgeText}
+                                </span>
+                                <span style={{
+                                  fontSize: '1.25rem',
+                                  fontFamily: 'monospace',
+                                  fontWeight: 900,
+                                  color: isAlert ? 'var(--color-terracotta-700, #B5523A)' : isRank1 ? '#D97706' : isDark ? '#A8928A' : '#8C5E51'
+                                }}>
+                                  #{idx + 1}
+                                </span>
+                              </div>
+
+                              {/* Member Info & Avatar */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                                <div style={{
+                                  width: '46px',
+                                  height: '46px',
+                                  borderRadius: '50%',
+                                  background: m.color,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.95rem',
+                                  fontWeight: 900,
+                                  color: '#FFFFFF',
+                                  boxShadow: isRank1
+                                    ? '0 0 16px rgba(245, 158, 11, 0.5)'
+                                    : '0 4px 12px rgba(122, 62, 46, 0.25)',
+                                  border: isRank1 ? '2.5px solid #F59E0B' : '2px solid #FFFFFF',
+                                  flexShrink: 0
+                                }}>
+                                  {(m.initials || m.name.substring(0, 2)).toUpperCase()}
+                                </div>
+                                <div style={{ overflow: 'hidden' }}>
+                                  <div style={{
+                                    fontWeight: 900,
+                                    fontSize: '0.96rem',
+                                    color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}>
+                                    {m.name}
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: isDark ? '#A8928A' : '#8C5E51', marginTop: '2px' }}>
+                                    {m.roleNote || (lang === 'vi' ? 'Thành viên nhóm dự án' : 'Team member')}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Main Metric Value & Micro Wave */}
+                              <div style={{
+                                background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(251, 238, 230, 0.6)',
+                                borderRadius: '12px',
+                                padding: '12px',
+                                marginBottom: '12px',
+                                border: '1px solid var(--color-terracotta-200, #F7DBCC)'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: isDark ? '#A8928A' : '#8C5E51' }}>
+                                    {lang === 'vi' ? 'Tỷ lệ đóng góp' : 'Contribution share'}
+                                  </span>
+                                  <span style={{
+                                    fontSize: '1.45rem',
+                                    fontWeight: 900,
+                                    fontFamily: 'monospace',
+                                    color: isAlert ? 'var(--color-terracotta-700, #B5523A)' : m.color
+                                  }}>
+                                    {Number(m.pct).toFixed(1)}%
+                                  </span>
+                                </div>
+                                {/* Micro Bar */}
+                                <div style={{
+                                  width: '100%',
+                                  height: '6px',
+                                  borderRadius: '3px',
+                                  background: isDark ? '#3D201A' : '#EAD5C8',
+                                  overflow: 'hidden',
+                                  marginTop: '6px'
+                                }}>
+                                  <div style={{
+                                    width: `${Math.min(100, Math.max(4, m.pct))}%`,
+                                    height: '100%',
+                                    background: isAlert ? 'var(--color-terracotta-700, #B5523A)' : m.color,
+                                    borderRadius: '3px',
+                                    transition: 'width 0.8s ease'
+                                  }} />
+                                </div>
+                              </div>
+
+                              {/* Granular Sub-Stats */}
+                              <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '6px',
+                                textAlign: 'center',
+                                fontSize: '0.72rem',
+                                paddingTop: '8px',
+                                borderTop: isDark ? '1px solid rgba(217, 121, 78, 0.15)' : '1px solid #F1C2A7'
+                              }}>
+                                <div>
+                                  <div style={{ fontWeight: 900, fontFamily: 'monospace', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>{m.commits || 0}</div>
+                                  <div style={{ fontSize: '0.66rem', color: isDark ? '#A8928A' : '#8C5E51' }}>Commits</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 900, fontFamily: 'monospace', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>{m.prs || 0}</div>
+                                  <div style={{ fontSize: '0.66rem', color: isDark ? '#A8928A' : '#8C5E51' }}>PRs</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 900, fontFamily: 'monospace', color: m.color }}>{m.codeLines || `+${m.loc || 0}`}</div>
+                                  <div style={{ fontSize: '0.66rem', color: isDark ? '#A8928A' : '#8C5E51' }}>Net LOC</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* ========================================================= */}
+                      {/* 💊 MODERN 36PX CAPSULE PILL BAR                           */}
+                      {/* ========================================================= */}
                       <div style={{
                         width: '100%',
-                        height: '34px',
+                        height: '38px',
                         display: 'flex',
-                        borderRadius: '17px',
+                        borderRadius: '19px',
                         overflow: 'hidden',
-                        marginBottom: '22px',
+                        marginBottom: '18px',
                         boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.2), 0 2px 8px rgba(122, 62, 46, 0.1)',
                         padding: '3px',
                         background: isDark ? '#1A100E' : '#FFFFFF',
-                        border: '1px solid var(--color-terracotta-200, #F7DBCC)',
+                        border: '1.5px solid var(--color-terracotta-200, #F7DBCC)',
                         boxSizing: 'border-box'
                       }}>
                         {displayContributions.map((m: any, idx: number) => (
@@ -3882,13 +4438,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               height: '100%',
                               background: m.color,
                               borderRight: idx === displayContributions.length - 1 ? 'none' : '2px solid #FFFFFF',
-                              borderRadius: idx === 0 ? '14px 0 0 14px' : idx === displayContributions.length - 1 ? '0 14px 14px 0' : '0',
+                              borderRadius: idx === 0 ? '15px 0 0 15px' : idx === displayContributions.length - 1 ? '0 15px 15px 0' : '0',
                               transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               color: '#FFFFFF',
-                              fontSize: '0.72rem',
+                              fontSize: '0.74rem',
                               fontWeight: 900,
                               fontFamily: 'monospace',
                               overflow: 'hidden',
@@ -3897,7 +4453,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             }}
                             title={`${m.name}: ${Number(m.pct).toFixed(1)}%`}
                           >
-                            {/* Glass glossy overlay */}
                             <div style={{
                               position: 'absolute',
                               top: 0,
@@ -3907,13 +4462,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               background: 'linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%)',
                               pointerEvents: 'none'
                             }} />
-                            {m.pct >= 10 && `${Number(m.pct).toFixed(0)}%`}
+                            {m.pct >= 8 && `${Number(m.pct).toFixed(0)}%`}
                           </div>
                         ))}
                       </div>
 
                       {/* Legend with Interactive Badge Chips */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', fontSize: '0.85rem', fontWeight: 700 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '0.82rem', fontWeight: 700, marginBottom: '26px' }}>
                         {displayContributions.map((m: any) => (
                           <div
                             key={m.name}
@@ -3937,33 +4492,243 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                           </div>
                         ))}
                       </div>
+
+                      {/* ========================================================= */}
+                      {/* 📅 GITHUB-STYLE 30-DAY CONTRIBUTION HEATMAP MATRIX        */}
+                      {/* ========================================================= */}
+                      <div style={{
+                        background: isDark ? 'rgba(26, 16, 14, 0.7)' : 'var(--color-terracotta-100, #FBEEE6)',
+                        borderRadius: '20px',
+                        padding: '22px 24px',
+                        border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.86rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>📊</span>
+                              <span>{lang === 'vi' ? 'Lưới Nhiệt Đóng Góp 30 Ngày (Activity Heatmap)' : '30-Day Contribution Heatmap'}</span>
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51' }}>
+                              {lang === 'vi' ? 'Rê chuột vào ô để xem phân tích số commit và người thực hiện' : 'Hover over any cell to see commit counts & active authors'}
+                            </span>
+                          </div>
+
+                          {/* Heatmap Legend */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: isDark ? '#A8928A' : '#8C5E51' }}>
+                            <span>{lang === 'vi' ? 'Ít hơn' : 'Less'}</span>
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: isDark ? '#2D1A16' : '#FFFFFF', border: '1px solid #EAD5C8' }} />
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#F7DBCC' }} />
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#E7A27A' }} />
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#D9794E' }} />
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#B5523A' }} />
+                            <span>{lang === 'vi' ? 'Nhiều hơn' : 'More'}</span>
+                          </div>
+                        </div>
+
+                        {/* Interactive Heatmap Matrix Grid: 4 weeks x 7 days */}
+                        {(() => {
+                          const heatmapData = [
+                            // Week 1 (Days 1 - 7)
+                            { day: 'T2', date: '22/09', count: 2, level: 1, authors: 'Bảo' },
+                            { day: 'T3', date: '23/09', count: 4, level: 2, authors: 'Mai, Bảo' },
+                            { day: 'T4', date: '24/09', count: 5, level: 2, authors: 'Mai, Long' },
+                            { day: 'T5', date: '25/09', count: 7, level: 3, authors: 'Mai, Bảo, Long' },
+                            { day: 'T6', date: '26/09', count: 6, level: 3, authors: 'Mai, Long' },
+                            { day: 'T7', date: '27/09', count: 3, level: 1, authors: 'Bảo' },
+                            { day: 'CN', date: '28/09', count: 1, level: 1, authors: 'Long' },
+                            // Week 2 (Days 8 - 14)
+                            { day: 'T2', date: '29/09', count: 3, level: 1, authors: 'Mai' },
+                            { day: 'T3', date: '30/09', count: 6, level: 3, authors: 'Mai, Bảo' },
+                            { day: 'T4', date: '01/10', count: 8, level: 4, authors: 'Mai, Bảo, Long' },
+                            { day: 'T5', date: '02/10', count: 10, level: 4, authors: 'Mai, Bảo, Long, Trí' },
+                            { day: 'T6', date: '03/10', count: 7, level: 3, authors: 'Bảo, Long' },
+                            { day: 'T7', date: '04/10', count: 4, level: 2, authors: 'Mai' },
+                            { day: 'CN', date: '05/10', count: 0, level: 0, authors: '-' },
+                            // Week 3 (Days 15 - 21)
+                            { day: 'T2', date: '06/10', count: 4, level: 2, authors: 'Mai, Bảo' },
+                            { day: 'T3', date: '07/10', count: 7, level: 3, authors: 'Mai, Long' },
+                            { day: 'T4', date: '08/10', count: 9, level: 4, authors: 'Mai, Bảo, Long' },
+                            { day: 'T5', date: '09/10', count: 12, level: 4, authors: 'Mai, Bảo, Long' },
+                            { day: 'T6', date: '10/10', count: 8, level: 4, authors: 'Bảo, Long' },
+                            { day: 'T7', date: '11/10', count: 5, level: 2, authors: 'Mai, Trí' },
+                            { day: 'CN', date: '12/10', count: 2, level: 1, authors: 'Long' },
+                            // Week 4 (Days 22 - 28)
+                            { day: 'T2', date: '13/10', count: 6, level: 3, authors: 'Mai, Bảo' },
+                            { day: 'T3', date: '14/10', count: 12, level: 4, authors: 'Mai, Bảo, Long' },
+                            { day: 'T4', date: '15/10', count: 18, level: 4, authors: 'Mai, Bảo, Long' },
+                            { day: 'T5', date: '16/10', count: 26, level: 4, authors: 'Mai, Bảo, Long, Trí' },
+                            { day: 'T6', date: '17/10', count: 22, level: 4, authors: 'Mai, Bảo, Long' },
+                            { day: 'T7', date: '18/10', count: 14, level: 4, authors: 'Mai, Bảo' },
+                            { day: 'CN', date: '19/10', count: 6, level: 3, authors: 'Mai, Long' },
+                          ];
+
+                          const levelColor = (lvl: number) => {
+                            if (lvl === 0) return isDark ? '#2D1A16' : '#FFFFFF';
+                            if (lvl === 1) return '#F7DBCC';
+                            if (lvl === 2) return '#E7A27A';
+                            if (lvl === 3) return '#D9794E';
+                            return '#B5523A';
+                          };
+
+                          return (
+                            <div>
+                              {/* Grid of days */}
+                              <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(7, 1fr)',
+                                gap: '8px',
+                                marginBottom: '14px'
+                              }}>
+                                {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((colHeader) => (
+                                  <div key={colHeader} style={{ textAlign: 'center', fontSize: '0.68rem', fontWeight: 800, color: isDark ? '#A8928A' : '#8C5E51' }}>
+                                    {colHeader}
+                                  </div>
+                                ))}
+
+                                {heatmapData.map((cell, idx) => (
+                                  <div
+                                    key={idx}
+                                    onMouseEnter={() => setHeatmapHoveredDay({ day: cell.day, date: cell.date, count: cell.count })}
+                                    onMouseLeave={() => setHeatmapHoveredDay(null)}
+                                    style={{
+                                      height: '28px',
+                                      borderRadius: '6px',
+                                      background: levelColor(cell.level),
+                                      border: isDark ? '1px solid rgba(217, 121, 78, 0.2)' : '1px solid #EAD5C8',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      position: 'relative',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.66rem',
+                                      fontWeight: 800,
+                                      color: cell.level >= 3 ? '#FFFFFF' : isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)'
+                                    }}
+                                    title={`${cell.date} (${cell.day}): ${cell.count} commits [${cell.authors}]`}
+                                  >
+                                    {cell.count > 0 && cell.count}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Hover Tooltip or Default Helper Bar */}
+                              <div style={{
+                                minHeight: '34px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: isDark ? 'rgba(0,0,0,0.35)' : '#FFFFFF',
+                                borderRadius: '10px',
+                                padding: '6px 14px',
+                                border: '1px solid var(--color-terracotta-200, #F7DBCC)',
+                                fontSize: '0.74rem'
+                              }}>
+                                {heatmapHoveredDay ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-terracotta-700, #B5523A)', fontWeight: 800 }}>
+                                    <span>📅</span>
+                                    <span>{lang === 'vi' ? `Ngày ${heatmapHoveredDay.date} (${heatmapHoveredDay.day}):` : `Date ${heatmapHoveredDay.date} (${heatmapHoveredDay.day}):`}</span>
+                                    <span style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{heatmapHoveredDay.count} commits</span>
+                                  </div>
+                                ) : (
+                                  <div style={{ color: isDark ? '#A8928A' : '#8C5E51' }}>
+                                    💡 {lang === 'vi' ? 'Giai đoạn cao điểm: Tuần cuối Sprint (14/10 - 18/10) đạt 92 commits' : 'Peak sprint sprint-run reached 92 commits from Oct 14-18'}
+                                  </div>
+                                )}
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-terracotta-700, #B5523A)' }}>
+                                  ✓ 28 {lang === 'vi' ? 'ngày hoạt động liên tục' : 'active days tracked'}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </>
                   );
                 })()}
               </div>
 
-              {/* Formal Data Table with Mini Sparkline Indicators */}
+              {/* =============================================================== */}
+              {/* ✨ WOW REGION 3: LEADERBOARD MATRIX & MICRO-PROGRESS BARS        */}
+              {/* =============================================================== */}
               <div style={{
                 background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
-                borderRadius: '20px',
+                borderRadius: '22px',
                 border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
-                boxShadow: '0 8px 28px rgba(122, 62, 46, 0.06)',
+                boxShadow: '0 10px 30px rgba(122, 62, 46, 0.06)',
                 overflow: 'hidden',
                 position: 'relative',
                 zIndex: 1
               }}>
+                {/* Table Header with Quick Filter Chips */}
+                <div style={{
+                  padding: '18px 24px',
+                  background: isDark ? 'rgba(45, 26, 22, 0.95)' : 'var(--color-terracotta-100, #FBEEE6)',
+                  borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', margin: 0 }}>
+                      {lang === 'vi' ? 'Bảng Xếp Hạng & Kiểm Toán Thành Viên' : 'Member Performance & Audit Matrix'}
+                    </h3>
+                    <span style={{ fontSize: '0.74rem', color: isDark ? 'var(--color-terracotta-600, #F1C2A7)' : '#8C5E51' }}>
+                      {lang === 'vi' ? 'Bấm vào từng thành viên để kiểm tra chi tiết từng commit SHA-1' : 'Click any member row to audit granular commit logs'}
+                    </span>
+                  </div>
+
+                  {/* Interactive Filter Chips */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {[
+                      { key: 'all', label: lang === 'vi' ? 'Tất cả (4)' : 'All (4)' },
+                      { key: 'mvp', label: '👑 MVP (1)' },
+                      { key: 'core', label: '⚡ Core (2)' },
+                      { key: 'flagged', label: '⚠️ Cần chú ý (1)' },
+                    ].map((chip) => {
+                      const isActive = memberFilter === chip.key;
+                      return (
+                        <button
+                          key={chip.key}
+                          onClick={() => setMemberFilter(chip.key as any)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '999px',
+                            fontSize: '0.74rem',
+                            fontWeight: 800,
+                            border: isActive
+                              ? '1.5px solid var(--color-terracotta-700, #B5523A)'
+                              : isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
+                            background: isActive
+                              ? 'var(--color-terracotta-700, #B5523A)'
+                              : isDark ? 'var(--color-terracotta-50, #1A100E)' : '#FFFFFF',
+                            color: isActive ? '#FFFFFF' : isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: isActive ? '0 2px 8px rgba(181, 82, 58, 0.25)' : 'none'
+                          }}
+                        >
+                          {chip.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                  <thead style={{ background: isDark ? 'rgba(45, 26, 22, 0.95)' : 'var(--color-terracotta-100, #FBEEE6)', borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)' }}>
+                  <thead style={{ background: isDark ? 'rgba(35, 20, 17, 0.9)' : 'var(--color-terracotta-50, #FFFAF6)', borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)' }}>
                     <tr>
-                      <th style={{ width: currentRole === 'student' ? '28%' : '24%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
-                      <th style={{ width: currentRole === 'student' ? '15%' : '12%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
-                      <th style={{ width: currentRole === 'student' ? '15%' : '12%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
-                      <th style={{ width: currentRole === 'student' ? '15%' : '12%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
-                      <th style={{ width: currentRole === 'student' ? '13%' : '10%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
+                      <th style={{ width: currentRole === 'student' ? '28%' : '24%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
+                      <th style={{ width: currentRole === 'student' ? '14%' : '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '14%' : '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '14%' : '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
+                      <th style={{ width: currentRole === 'student' ? '16%' : '15%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ % ĐÓNG GÓP' : 'CONTRIBUTION %'}</th>
                       {currentRole !== 'student' && (
-                        <th style={{ width: '16%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                        <th style={{ width: '15%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
                       )}
-                      <th style={{ width: currentRole === 'student' ? '14%' : '14%', padding: '18px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'CHI TIẾT' : 'DETAILS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '14%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'CHI TIẾT' : 'DETAILS'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3978,23 +4743,31 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         ? gitReportData.teamContributions
                         : fallbackList;
 
-                      return rows.map((m: any, idx: number) => ({
+                      const allMapped = rows.map((m: any, idx: number) => ({
                         name: m.name,
                         email: m.email || `${(m.name || 'user').toLowerCase().replace(/\s/g, '.')}@fpt.edu.vn`,
                         initials: (m.initials || m.name.substring(0, 2)).toUpperCase(),
-                        roleBadge: idx === 0 ? '👑 MVP' : idx === 1 ? '⚡ Core' : idx === 2 ? '🛡️ Feature' : '🌱 Member',
+                        roleBadge: idx === 0 ? '👑 MVP' : (idx === 1 || idx === 2) ? '⚡ Core' : '🌱 Member',
                         commits: m.commits || 0,
                         prs: m.prs || 0,
                         loc: m.codeLines || `+${m.loc || 0}`,
                         pct: m.pct || 0,
                         color: m.color || 'var(--color-terracotta-700, #B5523A)',
-                        status: m.isFreeRiding || m.pct < 10
+                        status: m.isFreeRiding || m.pct < freeRidingThreshold
                           ? (lang === 'vi' ? '⚠️ Free-Rider' : '⚠️ Free-Rider')
                           : m.pct >= 30
                             ? (lang === 'vi' ? 'Tốt' : 'Good')
                             : (lang === 'vi' ? 'Đạt' : 'Average'),
-                        statusColor: (m.isFreeRiding || m.pct < 10) ? 'red' : (m.pct >= 30 ? 'green' : 'gray')
+                        statusColor: (m.isFreeRiding || m.pct < freeRidingThreshold) ? 'red' : (m.pct >= 30 ? 'green' : 'gray')
                       }));
+
+                      // Apply interactive filter chip
+                      return allMapped.filter((r: any) => {
+                        if (memberFilter === 'mvp') return r.roleBadge.includes('MVP');
+                        if (memberFilter === 'core') return r.roleBadge.includes('Core');
+                        if (memberFilter === 'flagged') return r.statusColor === 'red' || r.status.includes('Free-Rider');
+                        return true;
+                      });
                     })().map((row: any, idx: number, arr: any[]) => (
                       <tr
                         key={row.name}
@@ -4029,14 +4802,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{
-                              width: '36px',
-                              height: '36px',
+                              width: '38px',
+                              height: '38px',
                               borderRadius: '50%',
                               background: row.color,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '0.8rem',
+                              fontSize: '0.82rem',
                               fontWeight: 900,
                               color: '#FFFFFF',
                               boxShadow: '0 4px 10px rgba(122, 62, 46, 0.25)',
@@ -4066,7 +4839,28 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.96rem' }}>{row.commits}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.96rem' }}>{row.prs}</td>
                         <td style={{ padding: '16px 20px', textAlign: 'right', color: row.color, fontWeight: 900, fontFamily: 'monospace', fontSize: '0.96rem' }}>{row.loc}</td>
-                        <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 900, color: row.color, fontFamily: 'monospace', fontSize: '1.05rem' }}>{row.pct.toFixed(1)}%</td>
+                        <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                          <div style={{ fontWeight: 900, color: row.color, fontFamily: 'monospace', fontSize: '1.05rem', marginBottom: '4px' }}>
+                            {row.pct.toFixed(1)}%
+                          </div>
+                          {/* Micro-Progress Bar lồng trực tiếp */}
+                          <div style={{
+                            width: '100%',
+                            maxWidth: '90px',
+                            height: '5px',
+                            background: isDark ? '#4A2B24' : 'var(--color-terracotta-200, #F7DBCC)',
+                            borderRadius: '3px',
+                            overflow: 'hidden',
+                            marginLeft: 'auto'
+                          }}>
+                            <div style={{
+                              width: `${Math.min(100, row.pct)}%`,
+                              height: '100%',
+                              background: row.color,
+                              borderRadius: '3px'
+                            }} />
+                          </div>
+                        </td>
                         {currentRole !== 'student' && (
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                             {row.statusColor === 'red' ? (

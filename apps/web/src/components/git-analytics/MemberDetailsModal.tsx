@@ -328,9 +328,9 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                     fontWeight: 800,
                     padding: '4px 10px',
                     borderRadius: '999px',
-                    background: '#FEE2E2',
-                    color: '#DC2626',
-                    border: '1px solid #FECACA',
+                    background: isDark ? 'rgba(181, 82, 58, 0.2)' : 'var(--color-terracotta-100, #FBEEE6)',
+                    color: 'var(--color-terracotta-700, #B5523A)',
+                    border: '1px solid var(--color-terracotta-300, #F1C2A7)',
                   }}
                 >
                   ⚠️ {lang === 'vi' ? 'Cảnh báo: Dồn commit sát deadline (Sprint-dumping)' : 'Alert: Sprint-dumping pattern detected'}
@@ -468,7 +468,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({
                         </td>
                         <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                           {c.isSuspicious ? (
-                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: '#FEE2E2', color: '#DC2626' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', background: isDark ? 'rgba(181, 82, 58, 0.2)' : 'var(--color-terracotta-100, #FBEEE6)', color: 'var(--color-terracotta-700, #B5523A)', border: '1px solid var(--color-terracotta-300, #F1C2A7)' }}>
                               ⚠️ Flagged
                             </span>
                           ) : (
