@@ -11,6 +11,16 @@
   --color-kumquat: #EEA64B;       /* Vibrant Kumquat Orange */
   --color-orange-zest: #D9641F;   /* Rich Terracotta Orange */
 
+  /* Terracotta Sunset Palette Tokens (Light Mode) */
+  --color-terracotta-900: #7A3E2E; /* Deep Terracotta Espresso (Headers, High-Contrast Text) */
+  --color-terracotta-700: #B5523A; /* Warm Terracotta (Primary CTA, Active Elements, Badges) */
+  --color-terracotta-600: #D9794E; /* Sunset Amber (Accent Highlights, Metric Values) */
+  --color-terracotta-500: #E7A27A; /* Soft Terracotta (Secondary Buttons, Progress Bar) */
+  --color-terracotta-300: #F1C2A7; /* Peach Glow (Input Focus Rings, Subtle Borders) */
+  --color-terracotta-200: #F7DBCC; /* Pale Peach (Delicate Dividers & Card Outlines) */
+  --color-terracotta-100: #FBEEE6; /* Warm Alabaster (Cards, Hover States, Pill Surfaces) */
+  --color-terracotta-50:  #FFFAF6; /* Warm Pearl (Backgrounds, Canvas Surfaces) */
+
   /* Neutral & Functional Colors - Light */
   --bg-page: #FAF9F3;
   --bg-page-gradient: radial-gradient(circle at 15% 15%, #FFFFFF 0%, #FAF9F3 45%, #F1F4E4 100%);
@@ -59,6 +69,16 @@
   --color-cantaloupe: #ECAE52;
   --color-kumquat: #F5A642;
   --color-orange-zest: #E06C28;
+
+  /* Terracotta Sunset Palette Tokens (Dark Mode) */
+  --color-terracotta-900: #FFFAF6; /* High contrast light text on dark */
+  --color-terracotta-700: #E7A27A; /* Softer terracotta for dark backgrounds */
+  --color-terracotta-600: #F1C2A7; /* Sunset glow accent */
+  --color-terracotta-500: #D9794E; /* Amber terracotta */
+  --color-terracotta-300: #B5523A; /* Deep warm accent */
+  --color-terracotta-200: #4A2B24; /* Subtle dark divider border */
+  --color-terracotta-100: #2D1A16; /* Dark surface / card background */
+  --color-terracotta-50:  #1A100E; /* Deepest canvas / background */
 
   /* Neutral & Functional Colors - Dark */
   --bg-page: #10140D;

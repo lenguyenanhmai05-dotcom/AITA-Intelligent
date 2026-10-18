@@ -31,14 +31,14 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
       padding: '16px'
     }}>
       <div style={{
-        background: 'var(--bg-surface, #FFFFFF)',
+        background: 'var(--color-terracotta-50, #FFFAF6)',
         borderRadius: '20px',
         padding: '28px 32px',
-        boxShadow: '0 20px 45px rgba(0, 0, 0, 0.25)',
+        boxShadow: '0 25px 50px rgba(122, 62, 46, 0.25)',
         maxWidth: '440px',
         width: '100%',
         position: 'relative',
-        border: '1px solid var(--border-light, #E5E8D6)',
+        border: '1px solid var(--color-terracotta-200, #F7DBCC)',
         boxSizing: 'border-box'
       }}>
         <button
@@ -50,7 +50,7 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
             background: 'transparent',
             border: 'none',
             fontSize: '1.2rem',
-            color: 'var(--text-muted, #6B7280)',
+            color: 'var(--color-terracotta-600, #D9794E)',
             cursor: 'pointer',
             padding: '4px'
           }}
@@ -61,14 +61,14 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
           fontSize: '1.2rem',
           fontWeight: 800,
           marginBottom: '8px',
-          color: 'var(--text-main, #1F2937)',
+          color: 'var(--color-terracotta-900, #7A3E2E)',
           fontFamily: 'var(--font-heading, inherit)'
         }}>
           Private Repository Access
         </h3>
         <p style={{
           fontSize: '0.84rem',
-          color: 'var(--text-body, #4B5563)',
+          color: '#8C5E51',
           marginBottom: '20px',
           lineHeight: '1.5'
         }}>
@@ -84,9 +84,9 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
               width: '100%',
               padding: '11px 68px 11px 14px',
               borderRadius: '11px',
-              border: '1.5px solid var(--border-light, #E5E8D6)',
-              background: 'var(--bg-surface-input, #FFFFFF)',
-              color: 'var(--text-main, #1F2937)',
+              border: '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+              background: 'var(--color-terracotta-100, #FBEEE6)',
+              color: 'var(--color-terracotta-900, #7A3E2E)',
               fontSize: '0.88rem',
               outline: 'none',
               boxSizing: 'border-box',
@@ -107,7 +107,7 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
               cursor: 'pointer',
               fontSize: '0.78rem',
               fontWeight: 700,
-              color: 'var(--color-orange-zest, #D9641F)',
+              color: 'var(--color-terracotta-700, #B5523A)',
               padding: '4px 6px'
             }}
           >
@@ -121,9 +121,9 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
             style={{
               padding: '10px 18px',
               borderRadius: '10px',
-              border: '1.5px solid var(--border-light, #E5E8D6)',
-              background: 'var(--bg-surface-subtle, #FAF9F1)',
-              color: 'var(--text-main, #374151)',
+              border: '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+              background: 'var(--color-terracotta-100, #FBEEE6)',
+              color: 'var(--color-terracotta-900, #7A3E2E)',
               fontWeight: 700,
               fontSize: '0.84rem',
               cursor: 'pointer'
@@ -138,13 +138,13 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
               padding: '10px 22px',
               borderRadius: '10px',
               border: 'none',
-              background: 'linear-gradient(135deg, var(--color-kumquat, #F5A623), var(--color-orange-zest, #D9641F))',
+              background: 'linear-gradient(135deg, var(--color-terracotta-700, #B5523A), var(--color-terracotta-600, #D9794E))',
               color: '#FFFFFF',
               fontWeight: 800,
               fontSize: '0.84rem',
               cursor: !tokenInput.trim() ? 'not-allowed' : 'pointer',
               opacity: !tokenInput.trim() ? 0.5 : 1,
-              boxShadow: '0 3px 10px rgba(217, 100, 31, 0.25)',
+              boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)',
               transition: 'opacity 0.2s'
             }}
           >
