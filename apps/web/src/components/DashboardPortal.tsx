@@ -36,6 +36,8 @@ import {
 import { GitRepoSubmissionForm } from './git-analytics/GitRepoSubmissionForm';
 import { ProgressStepper } from './git-analytics/ProgressStepper';
 import { ReportSkeleton } from './git-analytics/ReportSkeleton';
+import { MemberDetailsModal, MemberDetailInfo } from './git-analytics/MemberDetailsModal';
+import { FreeRidingThresholdModal } from './git-analytics/FreeRidingThresholdModal';
 import { Language, translations } from '../translations';
 import { isAdminEmail, Theme } from '../App';
 import { VietnamFlag, UsFlag } from './FlagIcons';
@@ -334,6 +336,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [showDlqModal, setShowDlqModal] = useState<number | null>(null);
   const [showPatModal, setShowPatModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState<string | null>(null);
+  const [selectedMemberData, setSelectedMemberData] = useState<MemberDetailInfo | null>(null);
+  const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [showFlaggedModal, setShowFlaggedModal] = useState(false);
   const [showLecturerApprovalModal, setShowLecturerApprovalModal] = useState(false);
 
@@ -3582,22 +3586,42 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   </h1>
                 </div>
                 {currentRole !== 'student' && (
-<button
-                  onClick={() => setShowFlaggedModal(true)}
-                  style={{
-                    padding: '10px 16px',
-                    borderRadius: '10px',
-                    background: isDark ? 'rgba(245, 158, 11, 0.18)' : '#FEF3C7',
-                    border: isDark ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #FDE68A',
-                    color: isDark ? '#FBBF24' : '#B45309',
-                    fontWeight: 700,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {lang === 'vi' ? '⚠️ Xem Commit Bất Thường Bị Gắn Cờ' : '⚠️ View Flagged Irregular Commits'}
-                </button>
-)}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => setShowThresholdModal(true)}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+                        border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #FECACA',
+                        color: isDark ? '#FCA5A5' : '#DC2626',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      ⚙️ {lang === 'vi' ? `Ngưỡng Free-Rider: ${freeRidingThreshold}%` : `Threshold: ${freeRidingThreshold}%`}
+                    </button>
+                    <button
+                      onClick={() => setShowFlaggedModal(true)}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        background: isDark ? 'rgba(245, 158, 11, 0.18)' : '#FEF3C7',
+                        border: isDark ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #FDE68A',
+                        color: isDark ? '#FBBF24' : '#B45309',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {lang === 'vi' ? '⚠️ Xem Commit Bất Thường Bị Gắn Cờ' : '⚠️ View Flagged Irregular Commits'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Top Overview: Stacked Team Progress Bar */}
@@ -3629,14 +3653,15 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                   <thead style={{ background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC', borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #E2E8F0' }}>
                     <tr>
-                      <th style={{ width: currentRole === 'student' ? '32%' : '28%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
-                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
-                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
-                      <th style={{ width: currentRole === 'student' ? '17%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
-                      <th style={{ width: currentRole === 'student' ? '17%' : '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
+                      <th style={{ width: currentRole === 'student' ? '28%' : '24%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
+                      <th style={{ width: currentRole === 'student' ? '15%' : '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '15%' : '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
+                      <th style={{ width: currentRole === 'student' ? '15%' : '12%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
+                      <th style={{ width: currentRole === 'student' ? '13%' : '10%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ %' : 'PERCENTAGE'}</th>
                       {currentRole !== 'student' && (
-                        <th style={{ width: '18%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                        <th style={{ width: '16%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
                       )}
+                      <th style={{ width: currentRole === 'student' ? '14%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#94A3B8' : '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem', textAlign: 'center' }}>{lang === 'vi' ? 'CHI TIẾT' : 'DETAILS'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3652,12 +3677,29 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       statusColor: m.pct >= 30 ? 'green' : (m.pct < 10 ? 'red' : 'gray')
                     })) : (gitAnalysisJobId ? [{name: (lang==='vi'?'Đang tải dữ liệu từ GitHub... (vui lòng chờ khoảng 30s)':'Loading data from GitHub... (please wait ~30s)'), initials: '...', commits: 0, prs: 0, loc: '...', pct: 0, status: '...', statusColor: 'gray', color: '#94A3B8'}] : [])).map((row: any, idx: number, arr: any[]) => (
                       <tr key={row.name} style={{ borderBottom: idx === arr.length - 1 ? 'none' : isDark ? '1px solid var(--border-subtle)' : '1px solid #F1F5F9', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = isDark ? 'var(--bg-surface-hover)' : '#F8FAFC'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '16px 20px', fontWeight: 700, color: 'var(--text-main)' }}>
+                        <td
+                          style={{ padding: '16px 20px', fontWeight: 700, color: 'var(--text-main)', cursor: 'pointer' }}
+                          onClick={() => {
+                            setSelectedMemberData({
+                              name: row.name,
+                              email: row.email,
+                              initials: row.initials,
+                              commits: row.commits,
+                              prs: row.prs,
+                              loc: row.loc,
+                              codeLines: row.codeLines,
+                              pct: row.pct,
+                              color: row.color,
+                            });
+                            setShowMemberModal(row.name);
+                          }}
+                          title={lang === 'vi' ? 'Bấm để xem lịch sử đóng góp chi tiết' : 'Click to view detailed contribution history'}
+                        >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: row.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                               {row.initials}
                             </div>
-                            {row.name}
+                            <span>{row.name}</span>
                           </div>
                         </td>
                         <td style={{ padding: '16px 20px', textAlign: 'center', color: isDark ? '#F1F5F9' : '#334155', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.95rem' }}>{row.commits}</td>
@@ -3685,6 +3727,40 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             )}
                           </td>
                         )}
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => {
+                              setSelectedMemberData({
+                                name: row.name,
+                                email: row.email,
+                                initials: row.initials,
+                                commits: row.commits,
+                                prs: row.prs,
+                                loc: row.loc,
+                                codeLines: row.codeLines,
+                                pct: row.pct,
+                                color: row.color,
+                              });
+                              setShowMemberModal(row.name);
+                            }}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: '8px',
+                              background: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
+                              color: isDark ? '#93C5FD' : '#2563EB',
+                              border: isDark ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #BFDBFE',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <span>🔍 {lang === 'vi' ? 'Xem' : 'View'}</span>
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -5394,55 +5470,25 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         </div>
       )}
 
-      {/* MODAL 6: MEMBER DETAILS MODAL */}
-      {showMemberModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '16px'
-        }}>
-          <div style={{
-            background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-            borderRadius: '20px',
-            maxWidth: '520px',
-            width: '100%',
-            padding: '28px',
-            border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-            color: 'var(--text-main)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Lịch Sử Đóng Góp: {showMemberModal}</h3>
-              <button
-                onClick={() => setShowMemberModal(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
-              <div>Tổng Net LOC: <strong style={{ color: 'var(--color-exocarp)' }}>+1,840 lines</strong></div>
-              <div>Tổng Commits sạch: <strong>24 commits</strong></div>
-              <div>Pull Requests: <strong>4 PRs</strong></div>
-            </div>
-            <button
-              onClick={() => setShowMemberModal(null)}
-              style={{
-                width: '100%',
-                marginTop: '20px',
-                padding: '10px',
-                borderRadius: '10px',
-                background: isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6',
-                color: 'var(--text-body)',
-                border: isDark ? '1px solid var(--border-light)' : 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
+      {/* MODAL 6: MEMBER DETAILS MODAL (TASK 15) */}
+      <MemberDetailsModal
+        isOpen={!!showMemberModal}
+        onClose={() => setShowMemberModal(null)}
+        member={selectedMemberData}
+        commits={gitReportData?.commits || []}
+        lang={lang}
+        isDark={isDark}
+      />
+
+      {/* MODAL: FREE RIDING THRESHOLD MODAL (TASK 16 - BR-12) */}
+      <FreeRidingThresholdModal
+        isOpen={showThresholdModal}
+        onClose={() => setShowThresholdModal(false)}
+        currentThreshold={freeRidingThreshold}
+        onSave={handleUpdateFreeRidingThreshold}
+        lang={lang}
+        isDark={isDark}
+      />
 
       {/* MODAL 7: LECTURER APPROVAL MODAL (ADMIN ONLY) */}
       <LecturerApprovalModal
