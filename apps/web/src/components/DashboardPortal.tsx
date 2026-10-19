@@ -1769,8 +1769,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       <span>🏷️ <strong>Mã nộp:</strong> {lastSubmissionDetails.id}</span>
                       <span>📂 <strong>Phương thức:</strong> {lastSubmissionDetails.method}</span>
                       <span>⏰ <strong>Thời gian:</strong> {lastSubmissionDetails.time}</span>
-                      <span style={{ color: '#16A34A', fontWeight: 700 }}>🐘 <strong>PostgreSQL:</strong> COMMITTED (Table: submissions)</span>
-                      <span style={{ color: 'var(--color-orange-zest)', fontWeight: 700 }}>⚡ <strong>BullMQ:</strong> Sẵn sàng chấm bài</span>
+                      <span style={{ color: '#16A34A', fontWeight: 700 }}>✓ <strong>Trạng thái:</strong> {lang === 'vi' ? 'Đã lưu an toàn' : 'Saved to system'}</span>
+                      <span style={{ color: 'var(--color-orange-zest)', fontWeight: 700 }}>⚡ <strong>Tiến trình:</strong> {lang === 'vi' ? 'Sẵn sàng chấm bài' : 'Ready for grading'}</span>
                     </div>
                   )}
                 </div>

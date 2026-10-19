@@ -6,7 +6,6 @@ import {
   CheckCircle2, 
   ExternalLink,
   Users,
-  Sparkles,
   Search
 } from 'lucide-react';
 import { MemberDetailInfo } from './MemberDetailsModal';
@@ -94,30 +93,15 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
       }))
     : fallbackMembers;
 
-  const heatmapWeeks = [
-    [2, 4, 5, 7, 6, 3, 1],
-    [3, 6, 8, 10, 7, 4, 0],
-    [4, 7, 9, 12, 8, 5, 2],
-    [6, 12, 18, 26, 22, 14, 6],
-  ];
-
-  const getHeatmapColor = (count: number) => {
-    if (count === 0) return isDark ? '#1F2937' : '#F3F4F6';
-    if (count <= 3) return isDark ? '#064E3B' : '#D1FAE5';
-    if (count <= 7) return isDark ? '#047857' : '#6EE7B7';
-    if (count <= 14) return isDark ? '#059669' : '#10B981';
-    return isDark ? '#10B981' : '#047857';
-  };
-
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.4s ease' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', animation: 'fadeIn 0.35s ease' }}>
       
       {/* 1. Header Bar: Friendly Student Peer Progress */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: '26px',
+        marginBottom: '24px',
         flexWrap: 'wrap',
         gap: '16px'
       }}>
@@ -141,24 +125,24 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
             <span>{lang === 'vi' ? 'NHÓM 2 • ĐỒ ÁN SWP391 • AITA INTELLIGENT' : 'GROUP 2 • SWP391 CAPSTONE • AITA INTELLIGENT'}</span>
           </div>
           <h1 style={{
-            fontSize: '1.95rem',
+            fontSize: '1.85rem',
             fontWeight: 900,
             fontFamily: 'var(--font-heading)',
             color: isDark ? '#F9FAFB' : '#0F172A',
             margin: '0 0 6px 0',
-            letterSpacing: '-0.4px',
+            letterSpacing: '-0.3px',
           }}>
             {lang === 'vi' ? 'Tiến Độ Dự Án & Phân Bổ Công Việc Nhóm 2' : 'Group 2 Project Progress & Workload Balance'}
           </h1>
           <p style={{
-            fontSize: '0.88rem',
+            fontSize: '0.86rem',
             color: isDark ? '#9CA3AF' : '#475569',
             margin: 0,
             lineHeight: 1.5,
           }}>
             {lang === 'vi'
-              ? 'Theo dõi mức độ hoàn thành nhiệm vụ, nhịp độ làm việc và tỷ lệ đóng góp công bằng giữa các thành viên trong nhóm.'
-              : 'Track project milestones, teamwork rhythm, and fair workload distribution among team members.'}
+              ? 'Theo dõi tiến độ chung, tỷ lệ phân chia công việc và kết quả đóng góp của các bạn trong nhóm.'
+              : 'Track project milestones, workload balance, and contribution results among team members.'}
           </p>
         </div>
 
@@ -197,18 +181,18 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
         </a>
       </div>
 
-      {/* 2. Top 3 Clean Metric Summary Cards */}
+      {/* 2. Top 3 Clean Encouraging Metric Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-        gap: '18px',
-        marginBottom: '26px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gap: '16px',
+        marginBottom: '24px'
       }}>
         {/* Card 1: Verified Commits */}
         <div style={{
           background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
           borderRadius: '18px',
-          padding: '22px 24px',
+          padding: '20px 22px',
           border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
           boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 18px rgba(0,0,0,0.03)',
         }}>
@@ -220,10 +204,10 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
               <GitCommit size={18} color="#2563EB" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: isDark ? '#F9FAFB' : '#0F172A', marginTop: '8px' }}>
-            104 <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#64748B' }}>{lang === 'vi' ? 'lượt' : 'commits'}</span>
+          <div style={{ fontSize: '2.0rem', fontWeight: 900, color: isDark ? '#F9FAFB' : '#0F172A', marginTop: '8px' }}>
+            104 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748B' }}>{lang === 'vi' ? 'lượt' : 'commits'}</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 700, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ fontSize: '0.76rem', color: '#10B981', fontWeight: 700, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <CheckCircle2 size={13} />
             <span>{lang === 'vi' ? 'Đã đồng bộ từ kho GitHub chính' : 'Synced from GitHub repository'}</span>
           </div>
@@ -233,47 +217,47 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
         <div style={{
           background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
           borderRadius: '18px',
-          padding: '22px 24px',
+          padding: '20px 22px',
           border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
           boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 18px rgba(0,0,0,0.03)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? '#9CA3AF' : '#64748B' }}>
-              {lang === 'vi' ? 'DÒNG CODE ĐÓNG GÓP (NET LOC)' : 'NET CODE CONTRIBUTIONS'}
+              {lang === 'vi' ? 'DÒNG CODE ĐÓNG GÓP' : 'NET CODE CONTRIBUTIONS'}
             </span>
             <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <GitPullRequest size={18} color="#10B981" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#10B981', marginTop: '8px' }}>
-            +8,360 <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#64748B' }}>{lang === 'vi' ? 'dòng code' : 'lines'}</span>
+          <div style={{ fontSize: '2.0rem', fontWeight: 900, color: '#10B981', marginTop: '8px' }}>
+            +8,360 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748B' }}>{lang === 'vi' ? 'dòng code' : 'lines'}</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: isDark ? '#9CA3AF' : '#64748B', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.76rem', color: isDark ? '#9CA3AF' : '#64748B', marginTop: '6px' }}>
             +10,030 {lang === 'vi' ? 'dòng thêm' : 'added'} • -1,670 {lang === 'vi' ? 'dòng xóa' : 'deleted'}
           </div>
         </div>
 
-        {/* Card 3: Team Harmony & Synergy */}
+        {/* Card 3: Team Progress Status (Encouraging, No Confusion) */}
         <div style={{
           background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
           borderRadius: '18px',
-          padding: '22px 24px',
+          padding: '20px 22px',
           border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
           boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 18px rgba(0,0,0,0.03)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: isDark ? '#9CA3AF' : '#64748B' }}>
-              {lang === 'vi' ? 'ĐỘ HÀI HÒA CÔNG VIỆC' : 'TEAMWORK SYNERGY'}
+              {lang === 'vi' ? 'TIẾN ĐỘ & TRẠNG THÁI' : 'PROJECT STATUS'}
             </span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: isDark ? 'rgba(245, 158, 11, 0.2)' : '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={18} color="#F59E0B" />
+            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={18} color="#10B981" />
             </div>
           </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#F59E0B', marginTop: '8px' }}>
-            94 <span style={{ fontSize: '1.1rem', color: '#64748B' }}>/ 100</span>
+          <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#10B981', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{lang === 'vi' ? 'Đúng Kế Hoạch' : 'On Track'}</span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: 700, marginTop: '6px' }}>
-            ✓ {lang === 'vi' ? 'Phân bổ công việc công bằng, tích cực' : 'Fair and active workload distribution'}
+          <div style={{ fontSize: '0.76rem', color: isDark ? '#9CA3AF' : '#64748B', marginTop: '8px' }}>
+            {lang === 'vi' ? 'Cả 4 thành viên đều tích cực đóng góp' : 'All 4 members actively contributing'}
           </div>
         </div>
       </div>
@@ -282,26 +266,26 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
       <div style={{
         background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
         borderRadius: '20px',
-        padding: '24px 26px',
+        padding: '22px 24px',
         border: isDark ? '1px solid var(--border-light)' : '1.5px solid #E2E8F0',
-        marginBottom: '26px',
+        marginBottom: '24px',
         boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 18px rgba(0,0,0,0.03)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: isDark ? '#F9FAFB' : '#0F172A' }}>
+            <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0, color: isDark ? '#F9FAFB' : '#0F172A' }}>
               {lang === 'vi' ? 'Tỷ Lệ Phân Bổ Khối Lượng Công Việc' : 'Team Workload Distribution Ratio'}
             </h3>
             <p style={{ fontSize: '0.78rem', color: isDark ? '#9CA3AF' : '#64748B', margin: '4px 0 0 0' }}>
-              {lang === 'vi' ? 'Tính toán chuẩn hóa theo: 40% Dòng mã thực + 40% Lượt commits + 20% Pull requests' : 'Calculated by: 40% Net LOC + 40% Commits + 20% Pull Requests'}
+              {lang === 'vi' ? 'Tổng hợp theo khối lượng code, số lượt commit và đóng góp thực tế trong dự án.' : 'Aggregated from code volume, commit counts, and project contributions.'}
             </p>
           </div>
         </div>
 
-        {/* 38px Capsule Bar */}
+        {/* 36px Capsule Bar */}
         <div style={{
           width: '100%',
-          height: '38px',
+          height: '36px',
           borderRadius: '999px',
           background: isDark ? '#1F2937' : '#F1F5F9',
           overflow: 'hidden',
@@ -355,74 +339,7 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
         </div>
       </div>
 
-      {/* 4. 30-Day Activity Heatmap */}
-      <div style={{
-        background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-        borderRadius: '20px',
-        padding: '24px 26px',
-        border: isDark ? '1px solid var(--border-light)' : '1.5px solid #E2E8F0',
-        marginBottom: '26px',
-        boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 18px rgba(0,0,0,0.03)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: isDark ? '#F9FAFB' : '#0F172A' }}>
-              {lang === 'vi' ? 'Lưới Nhiệt Hoạt Động 30 Ngày (Activity Heatmap)' : '30-Day Team Activity Heatmap'}
-            </h3>
-            <p style={{ fontSize: '0.78rem', color: isDark ? '#9CA3AF' : '#64748B', margin: '4px 0 0 0' }}>
-              {lang === 'vi' ? 'Ghi nhận tần suất làm việc đều đặn của cả nhóm trong suốt thời gian thực hiện dự án.' : 'Rhythm of daily commits pushed by team members across 30 days.'}
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: isDark ? '#9CA3AF' : '#64748B', fontWeight: 700 }}>
-            <span>{lang === 'vi' ? 'Ít hơn' : 'Less'}</span>
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: getHeatmapColor(0) }} />
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: getHeatmapColor(3) }} />
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: getHeatmapColor(7) }} />
-            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: getHeatmapColor(15) }} />
-            <span>{lang === 'vi' ? 'Nhiều hơn' : 'More'}</span>
-          </div>
-        </div>
-
-        {/* Heatmap Grid */}
-        <div style={{ overflowX: 'auto', paddingBottom: '6px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', minWidth: '480px' }}>
-            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day, dIdx) => (
-              <div key={dIdx} style={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 800, color: isDark ? '#9CA3AF' : '#64748B', paddingBottom: '4px' }}>
-                {day}
-              </div>
-            ))}
-            {heatmapWeeks.flatMap((week, wIdx) =>
-              week.map((val, dIdx) => (
-                <div
-                  key={`${wIdx}-${dIdx}`}
-                  style={{
-                    height: '42px',
-                    borderRadius: '8px',
-                    background: getHeatmapColor(val),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.78rem',
-                    fontWeight: 800,
-                    color: val > 6 ? '#FFFFFF' : isDark ? '#D1D5DB' : '#1E293B',
-                    border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.03)',
-                  }}
-                  title={`${val} commits`}
-                >
-                  {val > 0 ? val : ''}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: isDark ? '1px solid #374151' : '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: isDark ? '#9CA3AF' : '#64748B' }}>
-          <span>💡 {lang === 'vi' ? 'Giai đoạn cao điểm Sprint đạt 92 commits' : 'Peak sprint reached 92 commits'}</span>
-          <span style={{ color: '#10B981', fontWeight: 700 }}>✓ {lang === 'vi' ? '28 ngày ghi nhận hoạt động liên tục' : '28 active days recorded'}</span>
-        </div>
-      </div>
-
-      {/* 5. Clean Member Contribution Table */}
+      {/* 4. Clean & Focused Member Contribution Table */}
       <div style={{
         background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
         borderRadius: '20px',
@@ -431,12 +348,12 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
         boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 18px rgba(0,0,0,0.03)',
         marginBottom: '32px'
       }}>
-        <div style={{ padding: '22px 26px', borderBottom: isDark ? '1px solid #374151' : '1px solid #F1F5F9' }}>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: isDark ? '#F9FAFB' : '#0F172A' }}>
-            {lang === 'vi' ? 'Bảng Phân Bổ Công Việc Thành Viên Nhóm 2' : 'Group 2 Member Workload Breakdown'}
+        <div style={{ padding: '20px 24px', borderBottom: isDark ? '1px solid #374151' : '1px solid #F1F5F9' }}>
+          <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0, color: isDark ? '#F9FAFB' : '#0F172A' }}>
+            {lang === 'vi' ? 'Bảng Đóng Góp Thành Viên Nhóm 2' : 'Group 2 Member Contribution Breakdown'}
           </h3>
           <p style={{ fontSize: '0.78rem', color: isDark ? '#9CA3AF' : '#64748B', margin: '4px 0 0 0' }}>
-            {lang === 'vi' ? 'Tổng hợp số lượt commit, pull request, dòng mã thực tế và vai trò trong đồ án của từng bạn.' : 'Granular commits, pull requests, net LOC, and project roles for each team member.'}
+            {lang === 'vi' ? 'Chi tiết số lượt commit, dòng mã thực tế và vai trò trong đồ án của từng bạn.' : 'Details of commits, net code lines, and project roles for each member.'}
           </p>
         </div>
 
@@ -444,25 +361,19 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
             <thead style={{ background: isDark ? 'rgba(31, 41, 55, 0.6)' : '#F8FAFC', borderBottom: isDark ? '1px solid #374151' : '1px solid #E2E8F0' }}>
               <tr>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  {lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}
+                <th style={{ width: '40%', padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {lang === 'vi' ? 'THÀNH VIÊN & VAI TRÒ' : 'MEMBER & ROLE'}
                 </th>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <th style={{ width: '15%', padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
                   {lang === 'vi' ? 'COMMITS' : 'COMMITS'}
                 </th>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
-                  {lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}
-                </th>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
+                <th style={{ width: '15%', padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
                   {lang === 'vi' ? 'NET LOC' : 'NET LOC'}
                 </th>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
-                  {lang === 'vi' ? 'TỶ LỆ % ĐÓNG GÓP' : 'CONTRIBUTION %'}
+                <th style={{ width: '18%', padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
+                  {lang === 'vi' ? 'TỶ LỆ ĐÓNG GÓP' : 'CONTRIBUTION %'}
                 </th>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
-                  {lang === 'vi' ? 'VAI TRÒ TRONG ĐỒ ÁN' : 'PROJECT ROLE'}
-                </th>
-                <th style={{ padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
+                <th style={{ width: '12%', padding: '14px 20px', fontWeight: 800, color: isDark ? '#D1D5DB' : '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
                   {lang === 'vi' ? 'CHI TIẾT' : 'DETAILS'}
                 </th>
               </tr>
@@ -474,12 +385,12 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
                 return (
                   <tr key={idx} style={{ borderBottom: isDark ? '1px solid #374151' : '1px solid #F1F5F9', transition: 'background 0.15s' }}>
                     
-                    {/* Member Name + Avatar */}
+                    {/* Member Name + Role Badge + Avatar */}
                     <td style={{ padding: '16px 20px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{
-                          width: '38px',
-                          height: '38px',
+                          width: '40px',
+                          height: '40px',
                           borderRadius: '50%',
                           background: color,
                           color: '#FFFFFF',
@@ -493,10 +404,37 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
                           {m.initials}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 800, color: isDark ? '#F9FAFB' : '#0F172A', fontSize: '0.90rem' }}>
-                            {m.name}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, color: isDark ? '#F9FAFB' : '#0F172A', fontSize: '0.92rem' }}>
+                              {m.name}
+                            </span>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '2px 8px',
+                              borderRadius: '999px',
+                              fontSize: '0.70rem',
+                              fontWeight: 700,
+                              background: idx === 0 
+                                ? (isDark ? 'rgba(245, 158, 11, 0.18)' : '#FEF3C7') 
+                                : (idx === 1 || idx === 2) 
+                                ? (isDark ? 'rgba(14, 165, 233, 0.18)' : '#E0F2FE')
+                                : (isDark ? 'rgba(148, 163, 184, 0.18)' : '#F1F5F9'),
+                              color: idx === 0 
+                                ? '#D97706' 
+                                : (idx === 1 || idx === 2) 
+                                ? '#0284C7' 
+                                : (isDark ? '#CBD5E1' : '#475569'),
+                              border: idx === 0 
+                                ? '1px solid #FCD34D' 
+                                : (idx === 1 || idx === 2) 
+                                ? '1px solid #BAE6FD' 
+                                : '1px solid #CBD5E1',
+                            }}>
+                              {lang === 'vi' ? m.roleNameVi : m.roleNameEn}
+                            </span>
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: isDark ? '#9CA3AF' : '#64748B', marginTop: '1px' }}>
+                          <div style={{ fontSize: '0.74rem', color: isDark ? '#9CA3AF' : '#64748B', marginTop: '2px' }}>
                             {m.email}
                           </div>
                         </div>
@@ -504,17 +442,12 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
                     </td>
 
                     {/* Commits */}
-                    <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 800, color: isDark ? '#E5E7EB' : '#1E293B' }}>
-                      {m.commits}
-                    </td>
-
-                    {/* PRs */}
-                    <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 800, color: isDark ? '#E5E7EB' : '#1E293B' }}>
-                      {m.prs}
+                    <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 800, color: isDark ? '#E5E7EB' : '#1E293B', fontSize: '0.90rem' }}>
+                      {m.commits} <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>commits</span>
                     </td>
 
                     {/* Net LOC */}
-                    <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 700, fontFamily: 'monospace', color: '#10B981' }}>
+                    <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 700, fontFamily: 'monospace', color: '#10B981', fontSize: '0.86rem' }}>
                       {m.codeLines || `+${m.loc}`}
                     </td>
 
@@ -528,36 +461,6 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
                           <div style={{ width: `${m.pct}%`, height: '100%', background: color, borderRadius: '3px' }} />
                         </div>
                       </div>
-                    </td>
-
-                    {/* Project Role Badge (Friendly, No Free-rider wording!) */}
-                    <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        padding: '5px 12px',
-                        borderRadius: '999px',
-                        fontSize: '0.74rem',
-                        fontWeight: 800,
-                        background: idx === 0 
-                          ? (isDark ? 'rgba(245, 158, 11, 0.18)' : '#FEF3C7') 
-                          : (idx === 1 || idx === 2) 
-                          ? (isDark ? 'rgba(14, 165, 233, 0.18)' : '#E0F2FE')
-                          : (isDark ? 'rgba(148, 163, 184, 0.18)' : '#F1F5F9'),
-                        color: idx === 0 
-                          ? '#D97706' 
-                          : (idx === 1 || idx === 2) 
-                          ? '#0284C7' 
-                          : (isDark ? '#CBD5E1' : '#475569'),
-                        border: idx === 0 
-                          ? '1px solid #FCD34D' 
-                          : (idx === 1 || idx === 2) 
-                          ? '1px solid #BAE6FD' 
-                          : '1px solid #CBD5E1',
-                      }}>
-                        {lang === 'vi' ? m.roleNameVi : m.roleNameEn}
-                      </span>
                     </td>
 
                     {/* Action Button: View Granular Milestones */}
