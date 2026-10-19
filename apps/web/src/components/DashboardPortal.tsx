@@ -38,6 +38,7 @@ import { ProgressStepper } from './git-analytics/ProgressStepper';
 import { ReportSkeleton } from './git-analytics/ReportSkeleton';
 import { MemberDetailsModal, MemberDetailInfo } from './git-analytics/MemberDetailsModal';
 import { FreeRidingThresholdModal } from './git-analytics/FreeRidingThresholdModal';
+import { StudentTeamProgressView } from './git-analytics/StudentTeamProgressView';
 import { Language, translations } from '../translations';
 import { isAdminEmail, Theme } from '../App';
 import { VietnamFlag, UsFlag } from './FlagIcons';
@@ -1076,11 +1077,17 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     switch (activeTab) {
       case 'student_upload': return lang === 'vi' ? 'Sinh Viên / Nộp Bài Làm' : 'Student / Submit Assignment';
       case 'dashboard': return lang === 'vi' ? 'Quản Trị Hệ Thống / Tổng Quan Vĩ Mô' : 'Admin / Macro System Overview';
-      case 'submissions': return lang === 'vi' ? 'Giảng Viên / Bài Nộp Của Lớp' : 'Lecturer / Class Submissions';
+      case 'submissions': return currentRole === 'student'
+        ? (lang === 'vi' ? 'Sinh Viên / Điểm Số & Phúc Khảo' : 'Student / Grades & Appeals')
+        : (lang === 'vi' ? 'Giảng Viên / Bài Nộp Của Lớp' : 'Lecturer / Class Submissions');
       case 'queue': return lang === 'vi' ? 'Giảng Viên / Hàng Đợi Chấm BullMQ' : 'Lecturer / BullMQ Grading Queue';
       case 'dlq': return lang === 'vi' ? 'Giảng Viên / Hàng Đợi Lỗi (DLQ)' : 'Lecturer / Dead-Letter Queue';
-      case 'git': return lang === 'vi' ? 'Giảng Viên / Phân Tích Git & AST' : 'Lecturer / Git & AST Analytics';
-      case 'report': return lang === 'vi' ? 'Giảng Viên / Báo Cáo Đóng Góp Nhóm' : 'Lecturer / Team Contribution Reports';
+      case 'git': return currentRole === 'student'
+        ? (lang === 'vi' ? 'Sinh Viên / Nộp Kho Git Nhóm 2' : 'Student / Submit Group 2 Git Repo')
+        : (lang === 'vi' ? 'Giảng Viên / Phân Tích Git & AST' : 'Lecturer / Git & AST Analytics');
+      case 'report': return currentRole === 'student'
+        ? (lang === 'vi' ? 'Sinh Viên / Đóng Góp Nhóm 2 (SWP391)' : 'Student / Group 2 Contribution (SWP391)')
+        : (lang === 'vi' ? 'Giảng Viên / Báo Cáo Đóng Góp Nhóm' : 'Lecturer / Team Contribution Reports');
       case 'subsystem1': return lang === 'vi' ? 'Quản Trị / Lớp Học & Danh Sách Sinh Viên' : 'Admin / Classes & Student Rosters';
       case 'subsystem2': return lang === 'vi' ? 'Quản Trị / Thống Kê Bài Nộp Toàn Trường' : 'Admin / Macro Submissions Overview';
       case 'subsystem3': return lang === 'vi' ? 'Quản Trị / Giám Sát Docker Sandbox' : 'Admin / Docker Sandbox Monitor';
@@ -1444,7 +1451,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     </button>
 
                     <button
-                      onClick={() => setActiveTab('git')}
+                      onClick={() => setActiveTab('report')}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1452,12 +1459,12 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         padding: '7px 14px',
                         borderRadius: '9px',
                         fontSize: '0.80rem',
-                        fontWeight: activeTab === 'git' ? 800 : 600,
-                        background: activeTab === 'git' ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
-                        color: activeTab === 'git' ? '#FFFFFF' : 'var(--text-body)',
+                        fontWeight: (activeTab === 'git' || activeTab === 'report') ? 800 : 600,
+                        background: (activeTab === 'git' || activeTab === 'report') ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))' : 'transparent',
+                        color: (activeTab === 'git' || activeTab === 'report') ? '#FFFFFF' : 'var(--text-body)',
                         border: 'none',
                         cursor: 'pointer',
-                        boxShadow: activeTab === 'git' ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
+                        boxShadow: (activeTab === 'git' || activeTab === 'report') ? '0 2px 8px rgba(217, 100, 31, 0.25)' : 'none',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -3561,8 +3568,17 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             <div style={{ maxWidth: '760px', margin: '0 auto', animation: 'fadeIn 0.4s ease' }}>
               <div style={{ textAlign: 'center', marginBottom: '28px' }}>
                 <h1 style={{ fontSize: '1.85rem', fontWeight: 900, fontFamily: 'var(--font-heading)', color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', marginBottom: '10px' }}>
-                  {lang === 'vi' ? 'Phân Tích Git Repo' : 'Git Repo Analysis'}
+                  {currentRole === 'student'
+                    ? (lang === 'vi' ? 'Nộp Kho Git Dự Án Nhóm 2' : 'Submit Group 2 Git Repository')
+                    : (lang === 'vi' ? 'Phân Tích Git Repo' : 'Git Repo Analysis')}
                 </h1>
+                {currentRole === 'student' && (
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', margin: 0 }}>
+                    {lang === 'vi'
+                      ? 'Nhập URL kho GitHub của Nhóm 2 để hệ thống tự động bóc tách commit và cập nhật bảng đóng góp thành viên.'
+                      : 'Provide Group 2 GitHub repository URL to parse commits and update member contribution metrics.'}
+                  </p>
+                )}
               </div>
 
               <div style={{ marginBottom: '24px' }}>
@@ -3581,6 +3597,26 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           {activeTab === 'report' && (
             isReportLoading ? (
               <ReportSkeleton />
+            ) : currentRole === 'student' ? (
+              <StudentTeamProgressView
+                lang={lang}
+                isDark={isDark}
+                onSelectMember={(m) => {
+                  setSelectedMemberData({
+                    name: m.name,
+                    email: m.email,
+                    initials: m.initials,
+                    commits: m.commits,
+                    prs: m.prs,
+                    loc: m.loc,
+                    codeLines: m.codeLines,
+                    pct: m.pct,
+                    color: m.color,
+                  });
+                  setShowMemberModal(m.name);
+                }}
+                gitReportData={gitReportData}
+              />
             ) : (
             <div style={{ position: 'relative', animation: 'fadeIn 0.5s ease' }}>
               {/* Ambient Glow Background Lighting */}
@@ -3631,50 +3667,48 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     {lang === 'vi' ? 'Báo Cáo Đóng Góp & Free-Rider' : 'Contribution & Free-Rider Report'}
                   </h1>
                 </div>
-                {currentRole !== 'student' && (
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => setShowThresholdModal(true)}
-                      style={{
-                        padding: '11px 18px',
-                        borderRadius: '12px',
-                        background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-100, #FBEEE6)',
-                        border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-300, #F1C2A7)',
-                        color: 'var(--color-terracotta-700, #B5523A)',
-                        fontWeight: 800,
-                        fontSize: '0.84rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        boxShadow: '0 4px 14px rgba(122, 62, 46, 0.08)',
-                        transition: 'transform 0.15s, box-shadow 0.15s'
-                      }}
-                    >
-                      ⚙️ {lang === 'vi' ? `Ngưỡng Free-Rider: ${freeRidingThreshold}%` : `Threshold: ${freeRidingThreshold}%`}
-                    </button>
-                    <button
-                      onClick={() => setShowFlaggedModal(true)}
-                      style={{
-                        padding: '11px 18px',
-                        borderRadius: '12px',
-                        background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-100, #FBEEE6)',
-                        border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
-                        color: 'var(--color-terracotta-600, #D9794E)',
-                        fontWeight: 800,
-                        fontSize: '0.84rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        boxShadow: '0 4px 14px rgba(122, 62, 46, 0.08)',
-                        transition: 'transform 0.15s, box-shadow 0.15s'
-                      }}
-                    >
-                      {lang === 'vi' ? '⚠️ Xem Commit Bất Thường Bị Gắn Cờ' : '⚠️ View Flagged Irregular Commits'}
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setShowThresholdModal(true)}
+                    style={{
+                      padding: '11px 18px',
+                      borderRadius: '12px',
+                      background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-100, #FBEEE6)',
+                      border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-300, #F1C2A7)',
+                      color: 'var(--color-terracotta-700, #B5523A)',
+                      fontWeight: 800,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(122, 62, 46, 0.08)',
+                      transition: 'transform 0.15s, box-shadow 0.15s'
+                    }}
+                  >
+                    ⚙️ {lang === 'vi' ? `Ngưỡng Free-Rider: ${freeRidingThreshold}%` : `Threshold: ${freeRidingThreshold}%`}
+                  </button>
+                  <button
+                    onClick={() => setShowFlaggedModal(true)}
+                    style={{
+                      padding: '11px 18px',
+                      borderRadius: '12px',
+                      background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-100, #FBEEE6)',
+                      border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)',
+                      color: 'var(--color-terracotta-600, #D9794E)',
+                      fontWeight: 800,
+                      fontSize: '0.84rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(122, 62, 46, 0.08)',
+                      transition: 'transform 0.15s, box-shadow 0.15s'
+                    }}
+                  >
+                    {lang === 'vi' ? '⚠️ Xem Commit Bất Thường Bị Gắn Cờ' : '⚠️ View Flagged Irregular Commits'}
+                  </button>
+                </div>
               </div>
 
               {/* =============================================================== */}
@@ -4720,15 +4754,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                   <thead style={{ background: isDark ? 'rgba(35, 20, 17, 0.9)' : 'var(--color-terracotta-50, #FFFAF6)', borderBottom: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)' }}>
                     <tr>
-                      <th style={{ width: currentRole === 'student' ? '28%' : '24%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
-                      <th style={{ width: currentRole === 'student' ? '14%' : '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
-                      <th style={{ width: currentRole === 'student' ? '14%' : '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
-                      <th style={{ width: currentRole === 'student' ? '14%' : '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
-                      <th style={{ width: currentRole === 'student' ? '16%' : '15%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ % ĐÓNG GÓP' : 'CONTRIBUTION %'}</th>
-                      {currentRole !== 'student' && (
-                        <th style={{ width: '15%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
-                      )}
-                      <th style={{ width: currentRole === 'student' ? '14%' : '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'CHI TIẾT' : 'DETAILS'}</th>
+                      <th style={{ width: '24%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem' }}>{lang === 'vi' ? 'THÀNH VIÊN' : 'MEMBER'}</th>
+                      <th style={{ width: '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'COMMITS' : 'COMMITS'}</th>
+                      <th style={{ width: '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'PULL REQUESTS' : 'PULL REQUESTS'}</th>
+                      <th style={{ width: '11%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'NET LOC' : 'NET LOC'}</th>
+                      <th style={{ width: '15%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'right' }}>{lang === 'vi' ? 'TỶ LỆ % ĐÓNG GÓP' : 'CONTRIBUTION %'}</th>
+                      <th style={{ width: '15%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'ĐÁNH GIÁ' : 'EVALUATION'}</th>
+                      <th style={{ width: '14%', padding: '16px 20px', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)', textTransform: 'uppercase', letterSpacing: '0.6px', fontSize: '0.74rem', textAlign: 'center' }}>{lang === 'vi' ? 'CHI TIẾT' : 'DETAILS'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4861,7 +4893,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             }} />
                           </div>
                         </td>
-                        {currentRole !== 'student' && (
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                             {row.statusColor === 'red' ? (
                               <span style={{ fontSize: '0.72rem', fontWeight: 800, background: 'var(--color-terracotta-100, #FBEEE6)', color: 'var(--color-terracotta-700, #B5523A)', padding: '5px 12px', borderRadius: '999px', border: '1.5px solid var(--color-terracotta-700, #B5523A)', display: 'inline-block', boxShadow: '0 2px 6px rgba(181, 82, 58, 0.15)' }}>
@@ -4877,7 +4908,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               </span>
                             )}
                           </td>
-                        )}
                         <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                           <button
                             onClick={() => {
