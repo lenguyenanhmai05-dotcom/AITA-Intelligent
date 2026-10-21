@@ -27,6 +27,7 @@ model User {
   teamMemberships     TeamMember[]
   submissions         Submission[]          @relation("StudentSubmissions")
   createdBatches      GradingBatch[]        @relation("BatchCreator")
+  createdAssignments Assignment[]          @relation("AssignmentCreator")
   dismissedJobs       GradingJob[]          @relation("JobDismisser")
   reviewedJobs        GradingJob[]          @relation("JobReviewer")
   submittedRepos      GitRepo[]             @relation("RepoSubmitter")
@@ -62,6 +63,7 @@ model Class {
   teams       Team[]
   submissions Submission[]
   batches     GradingBatch[]
+  assignments Assignment[]
 
   @@map("classes")
 }
@@ -96,11 +98,38 @@ model TeamMember {
   @@map("team_members")
 }
 
-// 6. Submissions (Student code submissions linked to Class)
+// 5b. Assignments (Tasks, Exams, Practice problem statements & Grading Rubrics)
+model Assignment {
+  id              Int          @id @default(autoincrement())
+  classId         Int
+  title           String
+  type            String       @default("Assignment") // Assignment | Exam | Practice
+  description     String       @db.Text
+  rubric          Json?        // Grading Rubric Matrix [{ criterion, weight, description, maxScore }]
+  testCases       Json?        // Automated & Sample test cases [{ name, input, expectedOutput, points }]
+  difficulty      String?      @default("Medium") // Easy | Medium | Hard
+  programmingLang String?      @default("Java")
+  deadline        DateTime?
+  allowedFormat   String       @default("both") // both | git | zip
+  sourceFileName  String?      // Uploaded slide or curriculum document
+  createdById     Int
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  class           Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator         User         @relation("AssignmentCreator", fields: [createdById], references: [id])
+  submissions     Submission[]
+
+  @@map("assignments")
+}
+
+// 6. Submissions (Student code submissions linked to Class & Assignment)
 model Submission {
   id               Int          @id @default(autoincrement())
   classId          Int
   studentId        Int
+  assignmentId     Int?
   title            String
   codeUrl          String
   submissionStatus String       @default("submitted") // submitted | late
@@ -109,6 +138,7 @@ model Submission {
   // Relations
   class            Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
   student          User         @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  assignment       Assignment?  @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
   gradingJobs      GradingJob[]
 
   @@map("submissions")
