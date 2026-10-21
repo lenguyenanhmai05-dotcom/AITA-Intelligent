@@ -1,0 +1,13 @@
+[
+  {
+    "id": "req-1",
+    "email": "lenguyenanhmai113@gmail.com",
+    "fullName": "Lê Nguyễn Anh Mai",
+    "department": "Bộ môn Kỹ thuật phần mềm (SE)",
+    "reason": "Đăng ký tài khoản Giảng viên giảng dạy & chấm thi đồ án",
+    "status": "APPROVED",
+    "requestedAt": "2026-10-14 08:30:15",
+    "reviewedAt": "2026-10-19 18:30:00",
+    "reviewedBy": "Lê Nguyễn Anh Mai (Admin)"
+  }
+]
