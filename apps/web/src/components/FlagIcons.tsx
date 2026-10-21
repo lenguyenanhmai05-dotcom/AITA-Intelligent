@@ -136,14 +136,18 @@ interface LanguageFlagToggleProps {
   lang: Language;
   onToggle: (newLang: Language) => void;
   variant?: 'card' | 'navbar';
+  theme?: 'light' | 'dark';
 }
 
 export const LanguageFlagToggle: React.FC<LanguageFlagToggleProps> = ({
   lang,
   onToggle,
   variant = 'card',
+  theme,
 }) => {
   const isVi = lang === 'vi';
+  const isDark = theme === 'dark';
+
   const handleToggle = () => {
     onToggle(isVi ? 'en' : 'vi');
   };
@@ -162,25 +166,26 @@ export const LanguageFlagToggle: React.FC<LanguageFlagToggleProps> = ({
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '5px 8px',
-        background: variant === 'navbar' ? 'var(--bg-surface, #FFFFFF)' : '#F6F5ED',
-        border: '1px solid var(--border-light, #E2E6D0)',
-        borderRadius: '8px',
+        height: '34px',
+        padding: '0 8px',
+        background: variant === 'navbar' ? 'var(--bg-surface, #FFFFFF)' : (isDark ? 'rgba(255, 255, 255, 0.08)' : '#FBEEE6'),
+        border: isDark ? '1px solid rgba(231, 162, 122, 0.25)' : '1px solid #F7DBCC',
+        borderRadius: '10px',
         cursor: 'pointer',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: variant === 'navbar' ? '0 1px 4px rgba(0, 0, 0, 0.05)' : 'none',
+        boxShadow: '0 1px 3px rgba(122, 62, 46, 0.04)',
         userSelect: 'none',
         flexShrink: 0,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--color-orange-zest)';
+        e.currentTarget.style.borderColor = '#D9794E';
         e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 3px 8px rgba(217, 100, 31, 0.18)';
+        e.currentTarget.style.boxShadow = '0 3px 8px rgba(181, 82, 58, 0.18)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--border-light, #E2E6D0)';
+        e.currentTarget.style.borderColor = isDark ? 'rgba(231, 162, 122, 0.25)' : '#F7DBCC';
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = variant === 'navbar' ? '0 1px 4px rgba(0, 0, 0, 0.05)' : 'none';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(122, 62, 46, 0.04)';
       }}
     >
       {/* Flag icon only: Vietnam Flag -> click to show US Flag */}
