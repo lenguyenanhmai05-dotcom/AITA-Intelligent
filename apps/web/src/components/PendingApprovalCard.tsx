@@ -64,7 +64,7 @@ export const PendingApprovalCard: React.FC<PendingApprovalCardProps> = ({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {onToggleTheme && <ThemeToggle theme={theme || (isDark ? 'dark' : 'light')} onToggle={onToggleTheme} variant="card" />}
-          {onToggleLang && <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="card" />}
+          {onToggleLang && <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="card" theme={theme || (isDark ? 'dark' : 'light')} />}
         </div>
       </div>
 
