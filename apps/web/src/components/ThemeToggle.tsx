@@ -30,30 +30,30 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       style={{
         width: '36px',
         height: '34px',
-        borderRadius: '8px',
-        background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-surface, #FFFFFF)',
-        border: isDark ? '1px solid rgba(255, 255, 255, 0.16)' : '1px solid var(--border-light, #E2E6D0)',
-        color: isDark ? '#F5A642' : 'var(--color-orange-zest)',
+        borderRadius: '10px',
+        background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FBEEE6',
+        border: isDark ? '1px solid rgba(231, 162, 122, 0.25)' : '1px solid #F7DBCC',
+        color: isDark ? '#E7A27A' : '#B5523A',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        boxShadow: '0 1px 3px rgba(122, 62, 46, 0.04)',
         flexShrink: 0,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--color-orange-zest)';
+        e.currentTarget.style.borderColor = '#D9794E';
         e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 3px 8px rgba(217, 100, 31, 0.18)';
+        e.currentTarget.style.boxShadow = '0 3px 8px rgba(181, 82, 58, 0.18)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.16)' : 'var(--border-light, #E2E6D0)';
+        e.currentTarget.style.borderColor = isDark ? 'rgba(231, 162, 122, 0.25)' : '#F7DBCC';
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.05)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(122, 62, 46, 0.04)';
       }}
     >
-      {isDark ? <Moon size={16} color="#F5A642" /> : <Sun size={16} color="var(--color-orange-zest)" />}
+      {isDark ? <Moon size={16} color="#E7A27A" /> : <Sun size={16} color="#B5523A" />}
     </button>
   );
 };
