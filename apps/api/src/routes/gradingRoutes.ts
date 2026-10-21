@@ -11,6 +11,7 @@ import {
   manualRetryJob,
   dismissJob,
   reviewGradingJob,
+  getSubmissionReport,
 } from '../controllers/gradingController';
 
 const router = Router();
@@ -18,6 +19,7 @@ const router = Router();
 // Submissions (Student submission & Lecturer listing)
 router.get('/submissions', getSubmissions);
 router.post('/submissions', createSubmission);
+router.get('/submissions/:id/report', getSubmissionReport);
 
 // Batch Grading Orchestration (UC-01 & BR-02)
 router.get('/batches', getBatches);
