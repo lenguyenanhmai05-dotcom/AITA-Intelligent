@@ -1,8 +1,22 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@aita/database';
+import fs from 'fs';
+import path from 'path';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aita-jwt-secret-key-swp391-2026';
+
+// Persistent Storage Paths
+const DATA_DIR = path.resolve(__dirname, '../../data');
+const REQUESTS_FILE = path.join(DATA_DIR, 'lecturer_requests.json');
+const APPROVED_FILE = path.join(DATA_DIR, 'approved_lecturers.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  } catch {}
+}
 
 // Danh sách email Quản trị viên tối cao của hệ thống (System Administrator)
 export const SYSTEM_ADMIN_EMAILS: string[] = [
@@ -20,11 +34,11 @@ export const isSystemAdminEmail = (email: string): boolean => {
 };
 
 // Danh sách email Giảng viên được phê duyệt (Approved Lecturer Whitelist)
-// Áp dụng cho mô hình thực tế khi nhà trường / bộ môn sử dụng tài khoản Gmail hoặc email nội bộ
 export const APPROVED_LECTURER_EMAILS: string[] = [
   'giangnv@fpt.edu.vn',              // TS. Nguyễn Văn Giảng (Giảng viên FPT)
   'giangvien.aita@gmail.com',        // Tài khoản test Giảng viên
   'giangvien.aita@fpt.edu.vn',       // Giảng viên FPT
+  'lenguyenanhmai113@gmail.com',     // Giảng viên Đồ án SWP391 (Đã duyệt)
   ...(process.env.APPROVED_LECTURERS ? process.env.APPROVED_LECTURERS.split(',').map((e) => e.trim().toLowerCase()) : []),
 ];
 
@@ -56,55 +70,171 @@ export interface LecturerRequest {
   reviewedBy?: string;
 }
 
+export const sanitizeFullName = (name?: string, email?: string): string => {
+  if (email) {
+    const cleanEmail = email.toLowerCase().trim();
+    if (cleanEmail === 'lenguyenlinhnhi2110@gmail.com' || cleanEmail.includes('linhnhi')) {
+      return 'Lê Nguyễn Linh Nhi';
+    }
+    if (cleanEmail === 'lenguyenanhmai113@gmail.com' || cleanEmail === 'lenguyenanhmai05@gmail.com' || cleanEmail.includes('anhmai')) {
+      return 'Lê Nguyễn Anh Mai';
+    }
+    if (cleanEmail === 'tuongvy22102004@gmail.com' || cleanEmail === 'n133vy@gmail.com') {
+      return 'Nguyễn Tường Vy';
+    }
+    if (cleanEmail === 'giangnv@fpt.edu.vn') {
+      return 'TS. Nguyễn Văn Giảng';
+    }
+    if (cleanEmail === 'khanhlinh9a4tqd@gmail.com') {
+      return 'Nguyễn Châu Khánh Linh';
+    }
+  }
+  if (!name || !name.trim() || name.includes('?') || name.includes('\uFFFD')) {
+    if (email) {
+      const prefix = email.split('@')[0];
+      return prefix
+        .split(/[._-]/)
+        .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+    return 'Lê Nguyễn Linh Nhi';
+  }
+  return name.trim();
+};
+
 // Danh sách yêu cầu cấp quyền Giảng viên (Được quản lý bởi Admin)
 export let lecturerRequests: LecturerRequest[] = [
   {
     id: 'req-1',
     email: 'lenguyenanhmai113@gmail.com',
-    fullName: 'Ánh Mai Lê Nguyễn',
+    fullName: 'Lê Nguyễn Anh Mai',
     department: 'Bộ môn Kỹ thuật phần mềm (SE)',
     reason: 'Đăng ký tài khoản Giảng viên giảng dạy & chấm thi đồ án',
-    status: 'PENDING',
+    status: 'APPROVED',
     requestedAt: '2026-10-14 08:30:15',
+    reviewedAt: '2026-10-19 18:30:00',
+    reviewedBy: 'Lê Nguyễn Anh Mai (Admin)',
   },
 ];
 
+// Circuit breaker cho kết nối PostgreSQL Docker (Tránh API bị delay khi DB chưa chạy)
+let isPostgresAvailable = true;
+let lastDbAttemptTime = 0;
+const DB_RETRY_COOLDOWN_MS = 60000; // Thử lại kết nối DB tối đa 1 lần mỗi phút nếu DB đang tắt
+
+export const safeDbQuery = async <T>(queryFn: () => Promise<T>, timeoutMs = 1500): Promise<T | null> => {
+  if (!isPostgresAvailable && Date.now() - lastDbAttemptTime < DB_RETRY_COOLDOWN_MS) {
+    return null;
+  }
+  let timer: any;
+  try {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('PostgreSQL connection timeout')), timeoutMs);
+    });
+    const result = await Promise.race([queryFn(), timeoutPromise]);
+    clearTimeout(timer);
+    isPostgresAvailable = true;
+    return result as T;
+  } catch (err: any) {
+    clearTimeout(timer);
+    isPostgresAvailable = false;
+    lastDbAttemptTime = Date.now();
+    return null;
+  }
+};
+
 const SETTING_KEY_REQUESTS = 'lecturer_approval_requests';
 
-// Đồng bộ danh sách duyệt vào PostgreSQL system_settings
+// Đồng bộ danh sách duyệt vào Disk JSON và PostgreSQL system_settings
 const persistRequestsToDb = async () => {
   try {
-    await prisma.systemSetting.upsert({
-      where: { settingKey: SETTING_KEY_REQUESTS },
-      update: { settingValue: JSON.stringify(lecturerRequests) },
-      create: { settingKey: SETTING_KEY_REQUESTS, settingValue: JSON.stringify(lecturerRequests) },
-    });
+    // 1. Lưu file JSON dự phòng trên ổ đĩa để không bao giờ bị mất khi restart server
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(REQUESTS_FILE, JSON.stringify(lecturerRequests, null, 2), 'utf-8');
+    fs.writeFileSync(APPROVED_FILE, JSON.stringify(APPROVED_LECTURER_EMAILS, null, 2), 'utf-8');
+  } catch (fileErr: any) {
+    console.warn(`[LecturerApproval] File sync warning: ${fileErr.message}`);
+  }
+
+  try {
+    // 2. Lưu vào CSDL PostgreSQL Docker qua Prisma (safeDbQuery)
+    await safeDbQuery(() =>
+      prisma.systemSetting.upsert({
+        where: { settingKey: SETTING_KEY_REQUESTS },
+        update: { settingValue: JSON.stringify(lecturerRequests) },
+        create: { settingKey: SETTING_KEY_REQUESTS, settingValue: JSON.stringify(lecturerRequests) },
+      })
+    );
   } catch (err: any) {
     console.warn(`[LecturerApproval] DB sync warning: ${err.message}`);
   }
 };
 
-// Khôi phục danh sách duyệt từ PostgreSQL
+// Khôi phục danh sách duyệt từ Disk JSON và PostgreSQL
 const loadRequestsFromDb = async () => {
+  // 1. Tải từ file disk trước
   try {
-    const setting = await prisma.systemSetting.findUnique({
-      where: { settingKey: SETTING_KEY_REQUESTS },
-    });
+    if (fs.existsSync(APPROVED_FILE)) {
+      const fileData = fs.readFileSync(APPROVED_FILE, 'utf-8');
+      const parsedApproved = JSON.parse(fileData);
+      if (Array.isArray(parsedApproved)) {
+        parsedApproved.forEach((email: string) => {
+          const e = email.toLowerCase().trim();
+          if (!APPROVED_LECTURER_EMAILS.includes(e)) {
+            APPROVED_LECTURER_EMAILS.push(e);
+          }
+        });
+      }
+    }
+
+    if (fs.existsSync(REQUESTS_FILE)) {
+      const fileData = fs.readFileSync(REQUESTS_FILE, 'utf-8');
+      const parsedRequests = JSON.parse(fileData);
+      if (Array.isArray(parsedRequests) && parsedRequests.length > 0) {
+        lecturerRequests = parsedRequests.map((r: any) => ({
+          ...r,
+          fullName: sanitizeFullName(r.fullName, r.email),
+        }));
+        for (const r of parsedRequests.filter((item: any) => item.status === 'APPROVED')) {
+          const e = r.email.toLowerCase().trim();
+          if (!APPROVED_LECTURER_EMAILS.includes(e)) {
+            APPROVED_LECTURER_EMAILS.push(e);
+          }
+        }
+      }
+    }
+  } catch (fileErr: any) {
+    console.warn(`[LecturerApproval] File load warning: ${fileErr.message}`);
+  }
+
+  // 2. Tải bổ sung từ PostgreSQL nếu CSDL đang chạy (safeDbQuery)
+  try {
+    const setting = await safeDbQuery(() =>
+      prisma.systemSetting.findUnique({
+        where: { settingKey: SETTING_KEY_REQUESTS },
+      })
+    );
     if (setting?.settingValue) {
       const parsed = JSON.parse(setting.settingValue);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        lecturerRequests = parsed;
-        // Thêm các email đã APPROVED vào whitelist và đồng bộ quyền lecturer trong DB
+        lecturerRequests = parsed.map((r: any) => ({
+          ...r,
+          fullName: sanitizeFullName(r.fullName, r.email),
+        }));
         for (const r of parsed.filter((item: any) => item.status === 'APPROVED')) {
-          const e = r.email.toLowerCase();
+          const e = r.email.toLowerCase().trim();
           if (!APPROVED_LECTURER_EMAILS.includes(e)) {
             APPROVED_LECTURER_EMAILS.push(e);
           }
           try {
-            await prisma.user.updateMany({
-              where: { email: e },
-              data: { role: 'lecturer' },
-            });
+            await safeDbQuery(() =>
+              prisma.user.updateMany({
+                where: { email: e },
+                data: { role: 'lecturer' },
+              })
+            );
           } catch {}
         }
       }
@@ -118,13 +248,18 @@ loadRequestsFromDb();
 /**
  * Kiểm tra xem một email có quyền truy cập vai trò Giảng viên hay không
  */
-export const isApprovedLecturer = (email: string): boolean => {
+export const isApprovedLecturer = (email: string, dbUserRole?: string): boolean => {
   if (!email) return false;
   const cleanEmail = email.trim().toLowerCase();
 
   // Admin tối cao không tính là lecturer thông thường
   if (isSystemAdminEmail(cleanEmail)) {
     return false;
+  }
+
+  // 0. Nếu trong database user đã mang role lecturer
+  if (dbUserRole === 'lecturer') {
+    return true;
   }
 
   // 1. Nếu nằm trong Whitelist Giảng viên được cấp phép
@@ -205,16 +340,11 @@ export const login = async (req: Request, res: Response) => {
       : (role === 'admin' ? 'admin' : (role === 'lecturer' ? 'lecturer' : 'student'));
 
     // Tìm user trong DB trước
-    let dbUser: any = null;
-    try {
-      dbUser = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-      });
-    } catch (e: any) {
-      console.warn('Prisma lookup warning:', e.message);
-    }
+    let dbUser: any = await safeDbQuery(() => prisma.user.findUnique({
+      where: { email: cleanEmail },
+    }));
 
-    const isApproved = isApprovedLecturer(cleanEmail);
+    const isApproved = isApprovedLecturer(cleanEmail, dbUser?.role);
     const hasApprovedLecturerRecord = isApproved || dbUser?.role === 'lecturer';
     const existingReq = lecturerRequests.find((r) => r.email.toLowerCase() === cleanEmail);
 
@@ -229,7 +359,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // 2. RÀNG BUỘC KHÓA VAI TRÒ: Nếu tài khoản đã là Sinh viên trong DB -> Khóa khi chọn Giảng viên nếu chưa duyệt
-    if (dbUser && dbUser.role === 'student' && requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
+    if (dbUser && dbUser.role === 'student' && requestedRole === 'lecturer' && !hasApprovedLecturerRecord && !isSystemAdmin) {
       return res.status(403).json({
         success: false,
         roleMismatch: true,
@@ -240,7 +370,7 @@ export const login = async (req: Request, res: Response) => {
 
 
     // 4. QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
-    if (requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
+    if (requestedRole === 'lecturer' && !hasApprovedLecturerRecord && !isSystemAdmin) {
       const prefix = cleanEmail.split('@')[0];
       if (STUDENT_CODE_REGEX.test(prefix)) {
         return res.status(403).json({
@@ -284,27 +414,12 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Tự động tạo tên hiển thị đẹp nếu là user mới
-    let displayName = fullName;
-    if (!displayName) {
-      if (cleanEmail.includes('lenguyenanhmai') || cleanEmail.includes('anhmai')) {
-        displayName = 'Lê Nguyễn Anh Mai';
-      } else {
-        const prefix = cleanEmail.split('@')[0];
-        displayName = prefix
-          .split(/[._-]/)
-          .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ');
-      }
-    }
+    const displayName = sanitizeFullName(fullName, cleanEmail);
 
     let user: any = null;
 
     // 1. Tìm hoặc lưu tài khoản trực tiếp vào Docker PostgreSQL
     try {
-      let dbUser = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-      });
-
       // Nếu user đã tồn tại trong DB với vai trò Sinh viên và không thuộc whitelist
       if (dbUser && requestedRole === 'lecturer' && dbUser.role === 'student' && !isApprovedLecturer(cleanEmail) && !isSystemAdmin) {
         return res.status(403).json({
@@ -318,7 +433,7 @@ export const login = async (req: Request, res: Response) => {
         : (isApprovedLecturer(cleanEmail) ? requestedRole : 'student');
 
       if (!dbUser) {
-        dbUser = await prisma.user.create({
+        dbUser = await safeDbQuery(() => prisma.user.create({
           data: {
             fullName: displayName,
             email: cleanEmail,
@@ -329,23 +444,29 @@ export const login = async (req: Request, res: Response) => {
               create: { gitEmail: cleanEmail },
             },
           },
-        });
-        console.log(`[PostgreSQL Docker] 👤 New user registered: ${cleanEmail} (${assignedRole})`);
+        }));
+        if (dbUser) {
+          console.log(`[PostgreSQL Docker] 👤 New user registered: ${cleanEmail} (${assignedRole})`);
+        }
       } else if ((isApprovedLecturer(cleanEmail) || isSystemAdmin) && dbUser.role !== assignedRole) {
         // Cập nhật vai trò nếu là admin hoặc giảng viên được duyệt
-        dbUser = await prisma.user.update({
+        dbUser = await safeDbQuery(() => prisma.user.update({
           where: { id: dbUser.id },
           data: { role: assignedRole },
-        });
+        }));
       }
 
-      user = {
-        id: dbUser.id,
-        fullName: dbUser.fullName,
-        email: dbUser.email,
-        githubUsername: dbUser.githubUsername,
-        role: dbUser.role,
-      };
+      if (dbUser) {
+        user = {
+          id: dbUser.id,
+          fullName: dbUser.fullName,
+          email: dbUser.email,
+          githubUsername: dbUser.githubUsername,
+          role: dbUser.role,
+        };
+      } else {
+        throw new Error('Database unavailable, using fallback mock user');
+      }
     } catch (dbErr: any) {
       console.warn(`[PostgreSQL Docker] Fallback to in-memory: ${dbErr.message}`);
       let fallbackUser = mockUsers.find((u) => u.email.toLowerCase() === cleanEmail);
@@ -426,30 +547,14 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
       ? 'admin'
       : (role === 'admin' ? 'admin' : (role === 'lecturer' ? 'lecturer' : 'student'));
 
-    let userName = name;
-    if (!userName) {
-      if (userEmail.includes('lenguyenanhmai') || userEmail.includes('anhmai')) {
-        userName = 'Lê Nguyễn Anh Mai';
-      } else {
-        const prefix = userEmail.split('@')[0];
-        userName = prefix
-          .split(/[._-]/)
-          .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ');
-      }
-    }
+    let userName = sanitizeFullName(name, userEmail);
 
     // Tìm user trong DB trước
-    let dbUser: any = null;
-    try {
-      dbUser = await prisma.user.findUnique({
-        where: { email: userEmail },
-      });
-    } catch (dbErr: any) {
-      console.warn(`[PostgreSQL Docker] Lookup error: ${dbErr.message}`);
-    }
+    let dbUser: any = await safeDbQuery(() => prisma.user.findUnique({
+      where: { email: userEmail },
+    }));
 
-    const isApproved = isApprovedLecturer(userEmail);
+    const isApproved = isApprovedLecturer(userEmail, dbUser?.role);
     const hasApprovedLecturerRecord = isApproved || dbUser?.role === 'lecturer';
     const existingReq = lecturerRequests.find((r) => r.email.toLowerCase() === userEmail);
 
@@ -464,7 +569,7 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
     }
 
     // 2. RÀNG BUỘC KHÓA VAI TRÒ: Nếu tài khoản đã là Sinh viên trong DB -> Khóa khi chọn Giảng viên nếu chưa duyệt
-    if (dbUser && dbUser.role === 'student' && requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
+    if (dbUser && dbUser.role === 'student' && requestedRole === 'lecturer' && !hasApprovedLecturerRecord && !isSystemAdmin) {
       return res.status(403).json({
         success: false,
         roleMismatch: true,
@@ -475,7 +580,7 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
 
 
     // 4. QUY TRÌNH DUYỆT GIẢNG VIÊN (Approval Workflow)
-    if (requestedRole === 'lecturer' && !isApproved && !isSystemAdmin) {
+    if (requestedRole === 'lecturer' && !hasApprovedLecturerRecord && !isSystemAdmin) {
       const prefix = userEmail.split('@')[0];
       if (STUDENT_CODE_REGEX.test(prefix)) {
         return res.status(403).json({
@@ -528,7 +633,7 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
     // Đồng bộ vào Docker PostgreSQL
     try {
       if (!dbUser) {
-        dbUser = await prisma.user.create({
+        dbUser = await safeDbQuery(() => prisma.user.create({
           data: {
             fullName: userName,
             email: userEmail,
@@ -539,22 +644,29 @@ export const googleSsoLogin = async (req: Request, res: Response) => {
               create: { gitEmail: userEmail },
             },
           },
-        });
-        console.log(`[PostgreSQL Docker] 👤 New Google SSO user registered: ${userEmail} (${userRole})`);
+        }));
+        if (dbUser) {
+          console.log(`[PostgreSQL Docker] 👤 New Google SSO user registered: ${userEmail} (${userRole})`);
+        }
       } else if (dbUser.role !== userRole && (isSystemAdmin || (requestedRole === 'lecturer' && isApproved))) {
         // Chỉ cho phép update role nếu email thuộc danh sách phê duyệt hoặc admin
-        dbUser = await prisma.user.update({
+        dbUser = await safeDbQuery(() => prisma.user.update({
           where: { id: dbUser.id },
           data: { role: userRole },
-        });
+        }));
       }
-      user = {
-        id: dbUser.id,
-        fullName: dbUser.fullName,
-        email: dbUser.email,
-        githubUsername: dbUser.githubUsername,
-        role: dbUser.role,
-      };
+
+      if (dbUser) {
+        user = {
+          id: dbUser.id,
+          fullName: dbUser.fullName,
+          email: dbUser.email,
+          githubUsername: dbUser.githubUsername,
+          role: dbUser.role,
+        };
+      } else {
+        throw new Error('Database unavailable, using fallback mock user');
+      }
     } catch (dbErr: any) {
       console.warn(`[PostgreSQL Docker] Fallback to mock user for Google SSO: ${dbErr.message}`);
       let fallbackUser = mockUsers.find((u) => u.email.toLowerCase() === userEmail.toLowerCase());
@@ -616,9 +728,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
 
     try {
-      const dbUser = await prisma.user.findUnique({
+      const dbUser = await safeDbQuery(() => prisma.user.findUnique({
         where: { id: decoded.userId },
-      });
+      }));
       if (dbUser) {
         const { password: _, ...userSafe } = dbUser;
         return res.json({ success: true, data: userSafe });
@@ -743,19 +855,20 @@ export const checkLecturerRequestStatus = async (req: Request, res: Response) =>
       // Đã được duyệt -> Cấp phát JWT token để vào thẳng Cổng Giảng viên
       let dbUser: any = null;
       try {
-        dbUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        dbUser = await safeDbQuery(() => prisma.user.findUnique({ where: { email: cleanEmail } }));
         if (dbUser && dbUser.role !== 'lecturer') {
-          dbUser = await prisma.user.update({
+          dbUser = await safeDbQuery(() => prisma.user.update({
             where: { id: dbUser.id },
             data: { role: 'lecturer' },
-          });
+          }));
         }
       } catch {}
 
-      const user = dbUser || {
-        id: 99,
+      const resolvedName = sanitizeFullName(existingReq?.fullName || dbUser?.fullName, cleanEmail);
+      const user = {
+        id: dbUser?.id || 99,
         email: cleanEmail,
-        fullName: existingReq?.fullName || cleanEmail.split('@')[0],
+        fullName: resolvedName,
         role: 'lecturer',
       };
 
