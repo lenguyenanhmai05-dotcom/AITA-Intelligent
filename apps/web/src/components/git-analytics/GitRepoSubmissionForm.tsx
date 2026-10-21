@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useGitAuth } from '../../contexts/GitAuthContext';
-import PATAuthModal from './PATAuthModal';
 
 const GITHUB_URL_REGEX = /^https:\/\/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+?)(?:\.git)?$/;
 
@@ -21,6 +19,10 @@ interface GitRepoSubmissionFormProps {
   isDark?: boolean;
   defaultUrl?: string;
   defaultBranch?: string;
+  role?: 'student' | 'lecturer' | 'admin';
+  hasSubmitted?: boolean;
+  submittedAt?: string;
+  onViewReport?: () => void;
 }
 
 export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({ 
@@ -28,16 +30,18 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
   lang = 'en', 
   isDark = false,
   defaultUrl,
-  defaultBranch
+  defaultBranch,
+  role = 'student',
+  hasSubmitted: initialHasSubmitted = false,
+  submittedAt,
+  onViewReport
 }) => {
-  const { patToken, clearToken } = useGitAuth();
-  
+  const isStudent = role === 'student';
   const [selectedGroup, setSelectedGroup] = useState('2');
   const [url, setUrl] = useState(defaultUrl !== undefined ? defaultUrl : GROUP_REPOS['2'].url);
   const [branch, setBranch] = useState(defaultBranch !== undefined ? defaultBranch : GROUP_REPOS['2'].branch);
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEditForm, setShowEditForm] = useState(!initialHasSubmitted);
 
   const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const groupVal = e.target.value;
@@ -52,16 +56,6 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
     if (error) setError(null);
-  };
-
-  const handleTogglePrivate = () => {
-    const newIsPrivate = !isPrivate;
-    setIsPrivate(newIsPrivate);
-    if (newIsPrivate) {
-      setIsModalOpen(true);
-    } else {
-      clearToken();
-    }
   };
 
   const validateForm = () => {
@@ -80,12 +74,6 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
       return false;
     }
 
-    if (isPrivate && !patToken) {
-      setError('A Personal Access Token is required for private repositories.');
-      setIsModalOpen(true);
-      return false;
-    }
-
     return true;
   };
 
@@ -95,9 +83,9 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
       const match = url.trim().match(GITHUB_URL_REGEX);
       if (match) {
         const [, owner, repo] = match;
-        console.log('Submitting:', { owner, repo, branch, isPrivate, hasToken: !!patToken });
+        console.log('Submitting:', { owner, repo, branch });
         if (onSubmit) {
-          onSubmit(url.trim(), branch.trim(), patToken || undefined);
+          onSubmit(url.trim(), branch.trim(), undefined);
         }
       }
     }
@@ -107,12 +95,12 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
     <div style={{
       background: isDark ? 'var(--color-terracotta-100, #2D1A16)' : 'var(--color-terracotta-50, #FFFAF6)',
       borderRadius: '24px',
-      padding: '36px 40px',
+      padding: '28px 36px',
       border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1px solid var(--color-terracotta-200, #F7DBCC)',
       boxShadow: isDark
         ? '0 16px 40px rgba(0, 0, 0, 0.45)'
         : '0 16px 40px rgba(122, 62, 46, 0.08), 0 2px 6px rgba(181, 82, 58, 0.04)',
-      maxWidth: '720px',
+      maxWidth: '100%',
       margin: '0 auto',
       position: 'relative',
       overflow: 'hidden',
@@ -128,15 +116,79 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
         background: 'linear-gradient(90deg, #7A3E2E 0%, #B5523A 35%, #D9794E 70%, #E7A27A 100%)'
       }} />
 
-      <h2 style={{
-        fontSize: '1.25rem',
-        fontWeight: 800,
-        color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
-        marginBottom: '24px',
-        fontFamily: 'var(--font-heading, inherit)'
-      }}>
-        {lang === 'vi' ? 'Thông Tin Khởi Động Phân Tích Git' : 'Submit Repository for Analysis'}
-      </h2>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{
+          fontSize: '1.15rem',
+          fontWeight: 800,
+          color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)',
+          margin: 0,
+          fontFamily: 'var(--font-heading, inherit)'
+        }}>
+          {isStudent
+            ? (lang === 'vi' ? 'Thông Tin Repository Nộp Bài' : 'Repository Submission Details')
+            : (lang === 'vi' ? 'Cấu Hình Phân Tích Git' : 'Git Analysis Configuration')}
+        </h2>
+      </div>
+
+      {isStudent && initialHasSubmitted && !showEditForm && (
+        <div style={{
+          padding: '16px 20px',
+          borderRadius: '16px',
+          background: isDark ? 'rgba(34, 197, 94, 0.12)' : '#ECFDF5',
+          border: '1.5px solid #10B981',
+          marginBottom: '22px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#16A34A', fontWeight: 800, fontSize: '0.90rem' }}>
+              <span>✓ Đã nộp Git Repository thành công cho Giảng viên</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Thời gian nộp: <strong>{submittedAt || 'Hôm nay'}</strong> • Repository: <strong>{url}</strong> ({branch})
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {onViewReport && (
+              <button
+                type="button"
+                onClick={onViewReport}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  background: 'var(--color-terracotta-700, #B5523A)',
+                  color: '#FFF',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                📊 Xem Đóng Góp Git
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowEditForm(true)}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '8px',
+                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                color: 'var(--text-main)',
+                border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                cursor: 'pointer'
+              }}
+            >
+              ✏️ Cập Nhật Link
+            </button>
+          </div>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
         {/* Project Group Selector (from main) */}
@@ -267,66 +319,6 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
           />
         </div>
 
-        {/* Private Repository Toggle (BR-08 / Week 5 feature) */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 18px',
-          background: isDark ? 'var(--color-terracotta-50, #1A100E)' : 'var(--color-terracotta-100, #FBEEE6)',
-          borderRadius: '14px',
-          border: isDark ? '1px solid var(--color-terracotta-200, #4A2B24)' : '1.5px solid var(--color-terracotta-200, #F7DBCC)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta-700, #B5523A)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <div>
-              <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>
-                {lang === 'vi' ? 'Kho Lưu Trữ Riêng Tư (Private Repo)' : 'Private Repository'}
-              </span>
-              <span style={{ fontSize: '0.76rem', color: isDark ? 'var(--color-terracotta-700, #E7A27A)' : '#8C5E51' }}>
-                {lang === 'vi' 
-                  ? (patToken ? '✓ Đã lưu token PAT an toàn trong RAM' : 'Yêu cầu Personal Access Token (PAT) để truy cập') 
-                  : (patToken ? '✓ Personal Access Token configured' : 'Requires a Personal Access Token')}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleTogglePrivate}
-            style={{
-              position: 'relative',
-              display: 'inline-flex',
-              alignItems: 'center',
-              width: '46px',
-              height: '26px',
-              borderRadius: '999px',
-              background: isPrivate ? 'var(--color-terracotta-700, #B5523A)' : (isDark ? '#4A2B24' : '#D1D5DB'),
-              border: 'none',
-              cursor: 'pointer',
-              padding: '3px',
-              transition: 'background 0.2s ease',
-              outline: 'none'
-            }}
-            role="switch"
-            aria-checked={isPrivate}
-            aria-label="Private Repository"
-          >
-            <span
-              style={{
-                display: 'inline-block',
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                background: '#FFFFFF',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                transform: isPrivate ? 'translateX(20px)' : 'translateX(0px)',
-                transition: 'transform 0.2s ease'
-              }}
-            />
-          </button>
-        </div>
 
         {error && (
           <div style={{
@@ -342,7 +334,7 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
           </div>
         )}
 
-        {/* Submit Button with Play icon */}
+        {/* Submit Button */}
         <div style={{ marginTop: '8px' }}>
           <button
             type="submit"
@@ -364,18 +356,26 @@ export const GitRepoSubmissionForm: React.FC<GitRepoSubmissionFormProps> = ({
               transition: 'transform 0.15s, opacity 0.2s, box-shadow 0.2s'
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            <span>{lang === 'vi' ? 'Khởi Động Engine Phân Tích' : 'Start Analysis'}</span>
+            {isStudent ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                <path d="M12 12v9"/>
+                <path d="m16 16-4-4-4 4"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            )}
+            <span>
+              {isStudent
+                ? (lang === 'vi' ? '📤 Nộp Link Git Cho Giảng Viên' : '📤 Submit Git Repo to Lecturer')
+                : (lang === 'vi' ? '⚡ Khởi Động Engine Phân Tích Git AST' : '⚡ Start Git AST Analysis')}
+            </span>
           </button>
         </div>
       </form>
 
-      <PATAuthModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
     </div>
   );
 };
