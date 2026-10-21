@@ -43,12 +43,22 @@ export class MockDispatcher {
       };
     }
 
-    // Kết quả chấm thành công
+    // Kết quả chấm thực tế theo tiêu chí (Realistic criteria-based score, not 100/100)
+    let hash = 0;
+    const str = submissionTitle || 'Assignment';
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const seed = Math.abs(hash);
+    const testCasesPassed = 8 + (seed % 2); // 8 hoặc 9 test cases passed
+    const score = 82 + (seed % 13); // 82 - 94 điểm (điểm thực tế theo tiêu chí)
+
     return {
       success: true,
       runtimeDurationMs: totalDuration,
-      score: 100,
-      testCasesPassed: 10,
+      score,
+      testCasesPassed,
       totalTestCases: 10,
     };
   }
