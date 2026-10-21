@@ -25,9 +25,9 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: aita_intelligent
+      POSTGRES_USER: aita_user
+      POSTGRES_PASSWORD: aita_password_123
+      POSTGRES_DB: aita_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
