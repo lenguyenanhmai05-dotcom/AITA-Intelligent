@@ -57,13 +57,18 @@ export const translations = {
 
     // Navigation Tabs - Student
     studentNavTitle: 'Cổng Sinh Viên',
+    navAssignments: 'Đề Bài & Nhiệm Vụ',
     navSubmit: 'Nộp Bài Làm',
-    navTeamGit: 'Đóng Góp Nhóm (Git)',
+    navSubmissionsResults: 'Xem Bài Nộp & Kết Quả Chấm',
+    navTeamGit: 'Nộp Đồ Án Nhóm & Đánh Giá Git',
+    navTeamSubmit: 'Nộp Đồ Án Nhóm',
+    navTeamReport: 'Xem Đóng Góp Git',
     navGrades: 'Điểm Số & Phúc Khảo',
     navClassroom: 'Lớp Học (SWP391)',
 
     // Navigation Tabs - Lecturer
     lecturerNavTitle: 'Bàn Làm Việc Giảng Viên',
+    navClassManagement: 'Lớp Học & Giao Task',
     navClassSubmissions: 'Bài Nộp Cả Lớp',
     navQueueMonitor: 'Giám Sát Queue',
     navDlq: 'Dead-Letter Queue',
@@ -206,13 +211,18 @@ export const translations = {
 
     // Navigation Tabs - Student
     studentNavTitle: 'Student Portal',
+    navAssignments: 'Assignments & Tasks',
     navSubmit: 'Submit Assignment',
-    navTeamGit: 'Team Git',
+    navSubmissionsResults: 'Submissions & Results',
+    navTeamGit: 'Team Project & Git Analytics',
+    navTeamSubmit: 'Submit Team Project',
+    navTeamReport: 'Team Git Evaluation',
     navGrades: 'Grades & Appeals',
     navClassroom: 'Classroom (SWP391)',
 
     // Navigation Tabs - Lecturer
     lecturerNavTitle: 'Lecturer Workspace',
+    navClassManagement: 'Classes & Assign Tasks',
     navClassSubmissions: 'Class Submissions',
     navQueueMonitor: 'Queue Monitor',
     navDlq: 'Dead-Letter Queue',
