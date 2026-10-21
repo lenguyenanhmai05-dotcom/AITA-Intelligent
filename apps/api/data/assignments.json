@@ -1,0 +1,176 @@
+[
+  {
+    "id": 5,
+    "classCode": "SDN_SE20B",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SDN_SE20B. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả các ca kiểm thử tự động và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua 100% các ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01 - Kiểm tra luồng dữ liệu hợp lệ cơ bản",
+        "input": "ValidPayload { id: 1, action: \"PROCESS\", priority: \"HIGH\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 3,
+        "isHidden": false
+      },
+      {
+        "name": "TC02 - Kiểm tra xử lý biên & dữ liệu trống (Edge Case)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 3,
+        "isHidden": false
+      },
+      {
+        "name": "TC03 - Kiểm tra chịu lỗi và tự hồi phục (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 4,
+        "isHidden": true
+      }
+    ],
+    "difficulty": "Easy",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-10-27 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot3.1_ExpressJS.pptx",
+    "createdAt": "2026-10-21T00:50:32.110Z",
+    "class": {
+      "className": "SDN_SE20B"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 4,
+    "classCode": "MMA301",
+    "title": "Bài Tập Lập Trình: Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices",
+    "type": "Assignment",
+    "description": "Xây dựng hệ thống Backend hiệu năng cao với Node.js, xử lý I/O bất đồng bộ (Non-blocking I/O), phân quyền JWT và bảo mật API. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp MMA301. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả các ca kiểm thử tự động và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ Node.js phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua 100% các ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01 - Kiểm tra luồng dữ liệu hợp lệ cơ bản",
+        "input": "ValidPayload { id: 1, action: \"PROCESS\", priority: \"HIGH\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 3,
+        "isHidden": false
+      },
+      {
+        "name": "TC02 - Kiểm tra xử lý biên & dữ liệu trống (Edge Case)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 3,
+        "isHidden": false
+      },
+      {
+        "name": "TC03 - Kiểm tra chịu lỗi và tự hồi phục (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 4,
+        "isHidden": true
+      }
+    ],
+    "difficulty": "Easy",
+    "programmingLang": "Node.js",
+    "deadline": "2026-10-21 09:50",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot2.2_Node&Http.pptx",
+    "createdAt": "2026-10-20T02:51:27.079Z",
+    "class": {
+      "className": "MMA301"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 1,
+    "classCode": "SWP391-SE1801",
+    "title": "Assignment 3: Xây dựng Kiến trúc Microservices & Redis BullMQ Queue",
+    "description": "Yêu cầu các nhóm hoàn thiện tích hợp hàng đợi phân tán BullMQ, thiết lập worker concurrency 1-10, cấu hình Exponential Backoff retry 3 lần và giao diện giám sát 2s. Nộp link GitHub Repository nhóm.",
+    "deadline": "2026-10-30 23:59",
+    "type": "Assignment",
+    "allowedFormat": "both",
+    "difficulty": "Hard",
+    "programmingLang": "Java",
+    "createdAt": "2026-10-14T08:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "classCode": "SWP391-SE1801",
+    "title": "Final Project: Nền tảng AST Code Analytics & Đánh Giá Đóng Góp Nhóm",
+    "description": "Yêu cầu hoàn thiện toàn diện 4 giai đoạn bóc tách Git (Cloning, Parsing, Sanitizing, Scoring 40/40/20), quét mã gian lận Whitespace & Self-revert, bắt cờ Free-Rider và kiểm thử >= 80% coverage.",
+    "deadline": "2026-11-15 23:59",
+    "type": "Exam",
+    "allowedFormat": "git",
+    "difficulty": "Hard",
+    "programmingLang": "Java",
+    "createdAt": "2026-10-15T10:30:00.000Z"
+  },
+  {
+    "id": 3,
+    "classCode": "SWP391-SE1801",
+    "title": "Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms",
+    "description": "Thực hiện đánh chỉ mục (Index) trên grading_jobs và git_commits, cấu hình Redis Cache cho Telemetry và kiểm thử tải throughput.",
+    "deadline": "2026-10-25 23:59",
+    "type": "Practice",
+    "allowedFormat": "zip",
+    "difficulty": "Medium",
+    "programmingLang": "Java",
+    "createdAt": "2026-10-12T14:00:00.000Z"
+  }
+]
