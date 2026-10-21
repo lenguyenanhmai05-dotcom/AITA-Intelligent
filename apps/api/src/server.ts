@@ -6,6 +6,8 @@ import studentRoutes from './routes/studentRoutes';
 import gradingRoutes from './routes/gradingRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import gitRoutes from './routes/gitRoutes';
+import assignmentRoutes from './routes/assignmentRoutes';
+import classRoutes from './routes/classRoutes';
 
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -32,6 +34,8 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/system/settings', settingsRoutes);
 app.use('/api/git', gitRoutes);
 app.use('/api', gradingRoutes); // Also mount /api/submissions
+app.use('/api', assignmentRoutes); // Mount /api/ai/generate-assignment & /api/assignments
+app.use('/api', classRoutes); // Mount /api/classes (GET & POST)
 
 // Register Supporting Routes (Auth JWT & Excel Bulk Import with SQL Transaction)
 app.use('/api/auth', authRoutes);
