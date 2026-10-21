@@ -528,15 +528,11 @@ export const getGitReport = async (req: Request, res: Response) => {
     const mockData = {
       status: 'done',
       teamContributions: [
-        { name: 'Lê Nguyễn Anh Mai', pct: 38.5, color: '#2563EB', commits: 42, prs: 6, codeLines: '+3,420 / -850' },
-        { name: 'Trần Quốc Bảo',     pct: 31.0, color: '#0EA5E9', commits: 35, prs: 4, codeLines: '+2,850 / -420' },
-        { name: 'Phạm Hoàng Long',   pct: 26.5, color: '#10B981', commits: 24, prs: 4, codeLines: '+1,840 / -300' },
-        { name: 'Võ Minh Trí',       pct: 4.0,  color: '#EF4444', commits: 3,  prs: 0, codeLines: '+250  / -210' },
+        { name: 'Lê Nguyễn Anh Mai', pct: 45.0, color: '#2563EB', commits: 48, prs: 6, codeLines: '+3,820 / -850' },
+        { name: 'Lê Nguyễn Linh Nhi', pct: 32.5, color: '#0EA5E9', commits: 36, prs: 5, codeLines: '+2,950 / -420' },
+        { name: 'Nguyễn Tường Vy',   pct: 22.5, color: '#10B981', commits: 24, prs: 4, codeLines: '+1,840 / -300' },
       ],
-      flaggedCommits: [
-        { id: 1, name: 'Võ Minh Trí', email: 'tri.vm@fpt.edu.vn', date: '2026-09-09', behavior: 'Whitespace-only (adding spaces to farm LOC)' },
-        { id: 2, name: 'Võ Minh Trí', email: 'tri.vm@fpt.edu.vn', date: '2026-09-08', behavior: 'Self-revert (reverting own previous commit)' }
-      ]
+      flaggedCommits: []
     };
 
     res.json({ success: true, data: mockData });
