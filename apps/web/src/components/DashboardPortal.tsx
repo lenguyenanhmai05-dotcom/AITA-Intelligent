@@ -4803,114 +4803,163 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </div>
               </div>
 
-              {/* Class Selection Pills Bar (Seamless on page) */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                overflowX: 'auto',
-                paddingBottom: '4px',
-                marginBottom: '20px',
-              }}>
-                <span style={{
-                  fontSize: '0.80rem',
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginRight: '4px',
-                }}>
-                  <Building2 size={15} color="var(--color-kumquat)" />
-                  <span>{lang === 'vi' ? 'Chọn lớp học:' : 'Select class:'}</span>
-                </span>
+              {/* Class Selection Dropdown (Compact) */}
+              <div style={{ position: 'relative', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('class-dropdown-list');
+                      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '9px 18px',
+                      borderRadius: '10px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(181, 82, 58, 0.25)',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Building2 size={15} />
+                    <span>
+                      {studentSelectedClass === 'all'
+                        ? (lang === 'vi' ? 'Tất Cả Lớp' : 'All Classes')
+                        : studentSelectedClass}
+                    </span>
+                    <span style={{
+                      fontSize: '0.70rem',
+                      padding: '1px 7px',
+                      borderRadius: '999px',
+                      background: 'rgba(255,255,255,0.25)',
+                    }}>
+                      {studentSelectedClass === 'all'
+                        ? dedupAssignments(classAssignments).length
+                        : dedupAssignments(classAssignments).filter(a => a.classCode === studentSelectedClass).length}
+                    </span>
+                    <ChevronDown size={14} />
+                  </button>
 
-                {/* Pill: All classes */}
-                <button
-                  type="button"
-                  onClick={() => setStudentSelectedClass('all')}
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    {lang === 'vi'
+                      ? `Đang lọc: ${studentSelectedClass === 'all' ? dedupAssignments(classAssignments).length : dedupAssignments(classAssignments).filter(a => a.classCode === studentSelectedClass).length} bài nộp`
+                      : `Filtering: ${studentSelectedClass === 'all' ? dedupAssignments(classAssignments).length : dedupAssignments(classAssignments).filter(a => a.classCode === studentSelectedClass).length} tasks`}
+                  </span>
+                </div>
+
+                {/* Dropdown List */}
+                <div
+                  id="class-dropdown-list"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    fontSize: '0.80rem',
-                    fontWeight: studentSelectedClass === 'all' ? 800 : 600,
-                    background: studentSelectedClass === 'all'
-                      ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
-                      : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                    color: studentSelectedClass === 'all' ? '#FFFFFF' : 'var(--text-body)',
-                    border: studentSelectedClass === 'all' ? 'none' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    boxShadow: studentSelectedClass === 'all' ? '0 2px 8px rgba(238, 107, 47, 0.25)' : '0 1px 3px rgba(0,0,0,0.03)',
-                    transition: 'all 0.15s ease',
+                    display: 'none',
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: '6px',
+                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                    border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(0,0,0,0.1)',
+                    padding: '6px',
+                    zIndex: 50,
+                    minWidth: '220px',
                   }}
                 >
-                  <span>{lang === 'vi' ? 'Tất cả các lớp' : 'All Classes'}</span>
-                  <span style={{
-                    fontSize: '0.70rem',
-                    padding: '1px 6px',
-                    borderRadius: '999px',
-                    background: studentSelectedClass === 'all' ? 'rgba(255,255,255,0.25)' : (isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
-                    color: studentSelectedClass === 'all' ? '#FFFFFF' : 'var(--text-muted)',
-                  }}>
-                    {dedupAssignments(classAssignments).length}
-                  </span>
-                </button>
+                  {/* Option: All Classes */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudentSelectedClass('all');
+                      const el = document.getElementById('class-dropdown-list');
+                      if (el) el.style.display = 'none';
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: studentSelectedClass === 'all' ? 700 : 500,
+                      background: studentSelectedClass === 'all'
+                        ? (isDark ? 'rgba(181,82,58,0.15)' : '#FFF5F2')
+                        : 'transparent',
+                      color: studentSelectedClass === 'all' ? 'var(--color-kumquat)' : 'var(--text-body)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'background 0.12s ease',
+                    }}
+                  >
+                    <span>{lang === 'vi' ? 'Tất cả các lớp' : 'All Classes'}</span>
+                    <span style={{
+                      fontSize: '0.70rem',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                      color: 'var(--text-muted)',
+                      fontWeight: 600,
+                    }}>{dedupAssignments(classAssignments).length}</span>
+                  </button>
 
-                {/* Pills: Individual Classes */}
-                {Array.from(new Set([
-                  'SWP391-SE1801',
-                  'PRN231-SE1803',
-                  'PRJ301-IS1702',
-                  ...dedupAssignments(classAssignments).map(a => a.classCode),
-                  ...Object.keys(classStudents)
-                ])).map(code => {
-                  const classTasks = dedupAssignments(classAssignments).filter(a => a.classCode === code);
-                  const isSelected = studentSelectedClass === code;
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => {
-                        setStudentSelectedClass(code);
-                        setSelectedClassCode(code);
-                      }}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 16px',
-                        borderRadius: '10px',
-                        fontSize: '0.80rem',
-                        fontWeight: isSelected ? 800 : 600,
-                        background: isSelected
-                          ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
-                          : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        color: isSelected ? '#FFFFFF' : 'var(--text-body)',
-                        border: isSelected ? 'none' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        boxShadow: isSelected ? '0 2px 8px rgba(238, 107, 47, 0.25)' : '0 1px 3px rgba(0,0,0,0.03)',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <span>{code}</span>
-                      <span style={{
-                        fontSize: '0.70rem',
-                        padding: '1px 6px',
-                        borderRadius: '999px',
-                        background: isSelected ? 'rgba(255,255,255,0.25)' : (isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
-                        color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
-                      }}>
-                        {classTasks.length} {lang === 'vi' ? 'đề' : 'tasks'}
-                      </span>
-                    </button>
-                  );
-                })}
+                  {/* Options: Individual Classes */}
+                  {Array.from(new Set([
+                    'SWP391-SE1801',
+                    'PRN231-SE1803',
+                    'PRJ301-IS1702',
+                    ...dedupAssignments(classAssignments).map(a => a.classCode),
+                    ...Object.keys(classStudents)
+                  ])).map(code => {
+                    const classTasks = dedupAssignments(classAssignments).filter(a => a.classCode === code);
+                    const isSelected = studentSelectedClass === code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => {
+                          setStudentSelectedClass(code);
+                          setSelectedClassCode(code);
+                          const el = document.getElementById('class-dropdown-list');
+                          if (el) el.style.display = 'none';
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          fontWeight: isSelected ? 700 : 500,
+                          background: isSelected
+                            ? (isDark ? 'rgba(181,82,58,0.15)' : '#FFF5F2')
+                            : 'transparent',
+                          color: isSelected ? 'var(--color-kumquat)' : 'var(--text-body)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'background 0.12s ease',
+                        }}
+                      >
+                        <span>{code}</span>
+                        <span style={{
+                          fontSize: '0.70rem',
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          background: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                          color: 'var(--text-muted)',
+                          fontWeight: 600,
+                        }}>{classTasks.length} {lang === 'vi' ? 'đề' : 'tasks'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Dynamic Content based on studentSelectedClass */}
