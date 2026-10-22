@@ -24,18 +24,18 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
       <defs>
         {/* Gradients for Legs */}
         <linearGradient id="aita-orange-grad" x1="100" y1="40" x2="100" y2="160" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#EEA64B" />
-          <stop offset="100%" stopColor="#D9641F" />
+          <stop offset="0%" stopColor="#B5523A" />
+          <stop offset="100%" stopColor="#7A3E2E" />
         </linearGradient>
 
         <linearGradient id="aita-leg-left" x1="100" y1="55" x2="60" y2="150" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#EEA64B" />
-          <stop offset="100%" stopColor="#D9641F" />
+          <stop offset="0%" stopColor="#B5523A" />
+          <stop offset="100%" stopColor="#7A3E2E" />
         </linearGradient>
 
         <linearGradient id="aita-leg-right" x1="100" y1="55" x2="140" y2="150" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#EEA64B" />
-          <stop offset="100%" stopColor="#D9641F" />
+          <stop offset="0%" stopColor="#B5523A" />
+          <stop offset="100%" stopColor="#7A3E2E" />
         </linearGradient>
 
         {/* Soft shadow for joints */}
@@ -77,12 +77,12 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
         y1="72"
         x2="134"
         y2="86"
-        stroke="#EEA64B"
+        stroke="#B5523A"
         strokeWidth="2.5"
         strokeDasharray="3 3"
         strokeLinecap="round"
       />
-      <circle cx="146" cy="72" r="8" fill="#EEA64B" />
+      <circle cx="146" cy="72" r="8" fill="#B5523A" />
 
       {/* Middle Faint Horizontal Guide Bar */}
       <line
@@ -118,17 +118,17 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
       />
 
       {/* Bottom-Left Joint */}
-      <circle cx="63" cy="148" r="15" fill="#D9641F" filter="url(#soft-shadow)" />
+      <circle cx="63" cy="148" r="15" fill="#7A3E2E" filter="url(#soft-shadow)" />
       <circle cx="63" cy="148" r="8.5" fill="#FFFFFF" />
 
       {/* Bottom-Right Joint */}
-      <circle cx="137" cy="148" r="15" fill="#D9641F" filter="url(#soft-shadow)" />
+      <circle cx="137" cy="148" r="15" fill="#7A3E2E" filter="url(#soft-shadow)" />
       <circle cx="137" cy="148" r="8.5" fill="#FFFFFF" />
 
       {/* Top Joint */}
-      <circle cx="100" cy="52" r="17" fill="#D9641F" filter="url(#soft-shadow)" />
+      <circle cx="100" cy="52" r="17" fill="#7A3E2E" filter="url(#soft-shadow)" />
       <circle cx="100" cy="52" r="9" fill="#FFFFFF" />
-      <circle cx="100" cy="52" r="4.5" fill="#D9641F" />
+      <circle cx="100" cy="52" r="4.5" fill="#7A3E2E" />
 
       {/* Center Sparkle Joint (AST & AI node) */}
       <circle cx="100" cy="110" r="17" fill="#FFFFFF" filter="url(#soft-shadow)" />
