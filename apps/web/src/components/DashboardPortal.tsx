@@ -2070,8 +2070,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     return [];
   });
 
-  const [isRefreshingSubmissions, setIsRefreshingSubmissions] = useState(false);
-
   const [studentSubmitClassCode, setStudentSubmitClassCode] = useState<string>('SWP391-SE1801');
   const [studentResultClassFilter, setStudentResultClassFilter] = useState<string>('all');
   const [studentResultStatusFilter, setStudentResultStatusFilter] = useState<'all' | 'completed' | 'waiting'>('all');
@@ -2587,7 +2585,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   // Synchronize submissions from backend API (both for Lecturer & Student views)
   const fetchSubmissionsFromDb = useCallback(async () => {
-    setIsRefreshingSubmissions(true);
     try {
       const res = await fetch('/api/grading/submissions');
       const data = await res.json();
@@ -2626,7 +2623,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
         // Hợp nhất bài nộp từ local uploads của sinh viên (để giảng viên luôn nhận đầy đủ bài của Linh Nhi và các bạn)
         const combinedLecturerList = [...rawApiSubmissions];
-        const localCleaned = sanitizeAndDedupSubmissions(uploadedFiles);
+        let localCleaned: any[] = [];
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_STUDENT_UPLOADS);
+          if (raw) localCleaned = sanitizeAndDedupSubmissions(JSON.parse(raw));
+        } catch {}
         for (const loc of localCleaned) {
           const locStudent = resolveUserDisplayName(loc.studentEmail || userEmail, loc.student || loc.studentName || cleanUserFullName);
           const locTitle = loc.assignment || loc.title || '';
@@ -2753,10 +2754,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       }
     } catch (err) {
       console.warn('Could not fetch submissions from DB:', err);
-    } finally {
-      setTimeout(() => setIsRefreshingSubmissions(false), 300);
     }
-  }, [userEmail, userFullName, uploadedFiles]);
+  }, [userEmail, userFullName]);
 
   // Fetch Dead-Letter Queue from real API (/api/dlq)
   const fetchDlqJobs = useCallback(async () => {
@@ -7227,31 +7226,6 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   >
                     <UploadCloud size={14} />
                     <span>{lang === 'vi' ? '+ Nộp Bài Làm Mới' : '+ Submit New'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={fetchSubmissionsFromDb}
-                    disabled={isRefreshingSubmissions}
-                    title="Đồng bộ lại danh sách bài nộp từ Docker PostgreSQL"
-                    style={{
-                      background: isRefreshingSubmissions
-                        ? (isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6')
-                        : (isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1'),
-                      border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.25)',
-                      borderRadius: '10px',
-                      padding: '8px 12px',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      color: 'var(--color-orange-zest)',
-                      cursor: isRefreshingSubmissions ? 'wait' : 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                    }}
-                  >
-                    <RefreshCw size={13} className={isRefreshingSubmissions ? 'animate-spin' : ''} />
-                    <span>{isRefreshingSubmissions ? (lang === 'vi' ? 'Đang đồng bộ...' : 'Syncing...') : (lang === 'vi' ? 'Làm mới DB' : 'Refresh DB')}</span>
                   </button>
                 </div>
               </div>
