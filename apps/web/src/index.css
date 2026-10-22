@@ -8,8 +8,8 @@
   --color-unripe: #AAB026;        /* Fresh Lime / Olive */
   --color-mystic-melon: #F6F1BC;  /* Creamy Pale Melon */
   --color-cantaloupe: #FDCB7B;    /* Warm Cantaloupe Tint */
-  --color-kumquat: #EEA64B;       /* Vibrant Kumquat Orange */
-  --color-orange-zest: #D9641F;   /* Rich Terracotta Orange */
+  --color-kumquat: #B5523A;       /* Warm Terracotta Red (#B5523A - Terracotta Sunset) */
+  --color-orange-zest: #7A3E2E;   /* Deep Terracotta Wine Red (#7A3E2E - Terracotta Sunset) */
 
   /* Terracotta Sunset Palette Tokens (Light Mode) */
   --color-terracotta-900: #7A3E2E; /* Deep Terracotta Espresso (Headers, High-Contrast Text) */
@@ -41,11 +41,11 @@
   --border-light: #E5E8D6;
   --border-subtle: #F1F3E8;
   --border-card: rgba(120, 132, 23, 0.16);
-  --border-focus: #EEA64B;
+  --border-focus: #B5523A;
   --border-badge: rgba(170, 176, 38, 0.35);
 
-  --shadow-card: 0 20px 45px -15px rgba(217, 100, 31, 0.08), 0 8px 20px -6px rgba(120, 132, 23, 0.06), 0 0 1px rgba(0, 0, 0, 0.08);
-  --shadow-btn: 0 8px 20px -4px rgba(217, 100, 31, 0.35);
+  --shadow-card: 0 20px 45px -15px rgba(181, 82, 58, 0.08), 0 8px 20px -6px rgba(122, 62, 46, 0.06), 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-btn: 0 8px 20px -4px rgba(181, 82, 58, 0.35);
   --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.03);
 
   --radius-sm: 8px;
@@ -67,8 +67,8 @@
   --color-unripe: #C0C840;
   --color-mystic-melon: #2A321E;
   --color-cantaloupe: #ECAE52;
-  --color-kumquat: #F5A642;
-  --color-orange-zest: #E06C28;
+  --color-kumquat: #D9794E;
+  --color-orange-zest: #B5523A;
 
   /* Terracotta Sunset Palette Tokens (Dark Mode) */
   --color-terracotta-900: #FFFAF6; /* High contrast light text on dark */
@@ -100,11 +100,11 @@
   --border-light: rgba(255, 255, 255, 0.11);
   --border-subtle: rgba(255, 255, 255, 0.07);
   --border-card: rgba(170, 176, 38, 0.24);
-  --border-focus: #F5A642;
+  --border-focus: #D9794E;
   --border-badge: rgba(170, 176, 38, 0.4);
 
   --shadow-card: 0 20px 45px -15px rgba(0, 0, 0, 0.65), 0 8px 20px -6px rgba(0, 0, 0, 0.45);
-  --shadow-btn: 0 8px 20px -4px rgba(224, 108, 40, 0.45);
+  --shadow-btn: 0 8px 20px -4px rgba(181, 82, 58, 0.45);
   --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
