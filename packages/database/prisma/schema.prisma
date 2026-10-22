@@ -1,7 +1,3 @@
-// Prisma Schema for AITA-INTELLIGENT: Subsystem 5
-// Redis Queue & Teamwork Analytics Platform
-// Matches the finalized 3NF Architecture & ERD Specification
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,86 +7,71 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 1. Users (Shared core entity referenced via FK)
 model User {
-  id             Int       @id @default(autoincrement())
-  fullName       String
-  email          String    @unique
-  githubUsername String?   // Username GitHub for PR & commit matching
-  role           String    // lecturer | student | admin
-  password       String?
-  createdAt      DateTime  @default(now())
-
-  // Relations
-  gitEmails           UserGitEmail[]
-  classesTaught       Class[]               @relation("LecturerClasses")
-  teamMemberships     TeamMember[]
-  submissions         Submission[]          @relation("StudentSubmissions")
-  createdBatches      GradingBatch[]        @relation("BatchCreator")
-  createdAssignments Assignment[]          @relation("AssignmentCreator")
-  dismissedJobs       GradingJob[]          @relation("JobDismisser")
-  reviewedJobs        GradingJob[]          @relation("JobReviewer")
-  submittedRepos      GitRepo[]             @relation("RepoSubmitter")
-  commits             GitCommit[]           @relation("UserCommits")
-  contributions       MemberContribution[]
-  updatedSettings     SystemSetting[]       @relation("SettingUpdater")
+  id                 Int                  @id @default(autoincrement())
+  fullName           String
+  email              String               @unique
+  githubUsername     String?
+  role               String
+  password           String?
+  createdAt          DateTime             @default(now())
+  createdAssignments Assignment[]         @relation("AssignmentCreator")
+  classesTaught      Class[]              @relation("LecturerClasses")
+  commits            GitCommit[]          @relation("UserCommits")
+  submittedRepos     GitRepo[]            @relation("RepoSubmitter")
+  createdBatches     GradingBatch[]       @relation("BatchCreator")
+  dismissedJobs      GradingJob[]         @relation("JobDismisser")
+  reviewedJobs       GradingJob[]         @relation("JobReviewer")
+  contributions      MemberContribution[]
+  submissions        Submission[]         @relation("StudentSubmissions")
+  updatedSettings    SystemSetting[]      @relation("SettingUpdater")
+  teamMemberships    TeamMember[]
+  gitEmails          UserGitEmail[]
 
   @@map("users")
 }
 
-// 2. UserGitEmails (1NF Normalized Git Author Emails)
 model UserGitEmail {
   id        Int      @id @default(autoincrement())
   userId    Int
   gitEmail  String   @unique
   createdAt DateTime @default(now())
-
-  // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_git_emails")
 }
 
-// 3. Classes (Managed by Lecturer)
 model Class {
-  id         Int       @id @default(autoincrement())
-  className  String
-  lecturerId Int
-  createdAt  DateTime  @default(now())
-
-  // Relations
-  lecturer    User           @relation("LecturerClasses", fields: [lecturerId], references: [id], onDelete: Cascade)
-  teams       Team[]
-  submissions Submission[]
-  batches     GradingBatch[]
+  id          Int            @id @default(autoincrement())
+  className   String
+  lecturerId  Int
+  createdAt   DateTime       @default(now())
   assignments Assignment[]
+  lecturer    User           @relation("LecturerClasses", fields: [lecturerId], references: [id], onDelete: Cascade)
+  batches     GradingBatch[]
+  submissions Submission[]
+  teams       Team[]
 
   @@map("classes")
 }
 
-// 4. Teams (Student project groups within a class)
 model Team {
-  id        Int       @id @default(autoincrement())
+  id        Int          @id @default(autoincrement())
   teamName  String
   classId   Int
-  createdAt DateTime  @default(now())
-
-  // Relations
-  class     Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
-  members   TeamMember[]
+  createdAt DateTime     @default(now())
   gitRepos  GitRepo[]
+  members   TeamMember[]
+  class     Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@map("teams")
 }
 
-// 5. TeamMembers (Many-to-many relationship between Teams and Users)
 model TeamMember {
   id        Int      @id @default(autoincrement())
   teamId    Int
   userId    Int
   createdAt DateTime @default(now())
-
-  // Relations
   team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -98,25 +79,22 @@ model TeamMember {
   @@map("team_members")
 }
 
-// 5b. Assignments (Tasks, Exams, Practice problem statements & Grading Rubrics)
 model Assignment {
   id              Int          @id @default(autoincrement())
   classId         Int
   title           String
-  type            String       @default("Assignment") // Assignment | Exam | Practice
-  description     String       @db.Text
-  rubric          Json?        // Grading Rubric Matrix [{ criterion, weight, description, maxScore }]
-  testCases       Json?        // Automated & Sample test cases [{ name, input, expectedOutput, points }]
-  difficulty      String?      @default("Medium") // Easy | Medium | Hard
+  type            String       @default("Assignment")
+  description     String
+  rubric          Json?
+  testCases       Json?
+  difficulty      String?      @default("Medium")
   programmingLang String?      @default("Java")
   deadline        DateTime?
-  allowedFormat   String       @default("both") // both | git | zip
-  sourceFileName  String?      // Uploaded slide or curriculum document
+  allowedFormat   String       @default("both")
+  sourceFileName  String?
   createdById     Int
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-
-  // Relations
   class           Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
   creator         User         @relation("AssignmentCreator", fields: [createdById], references: [id])
   submissions     Submission[]
@@ -124,39 +102,33 @@ model Assignment {
   @@map("assignments")
 }
 
-// 6. Submissions (Student code submissions linked to Class & Assignment)
 model Submission {
   id               Int          @id @default(autoincrement())
   classId          Int
   studentId        Int
-  assignmentId     Int?
   title            String
   codeUrl          String
-  submissionStatus String       @default("submitted") // submitted | late
+  submissionStatus String       @default("submitted")
   submittedAt      DateTime     @default(now())
-
-  // Relations
+  assignmentId     Int?
+  gradingJobs      GradingJob[]
+  assignment       Assignment?  @relation(fields: [assignmentId], references: [id])
   class            Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
   student          User         @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
-  assignment       Assignment?  @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
-  gradingJobs      GradingJob[]
 
   @@map("submissions")
 }
 
-// 7. GradingBatches (Batch grading runs scoped to Class)
 model GradingBatch {
   id          Int          @id @default(autoincrement())
   batchName   String
   classId     Int
   createdBy   Int
-  priority    String       // Exam | Assignment | Practice
-  status      String       @default("waiting") // waiting | active | completed | failed
+  priority    String
+  status      String       @default("waiting")
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   completedAt DateTime?
-
-  // Relations
   class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
   creator     User         @relation("BatchCreator", fields: [createdBy], references: [id])
   jobs        GradingJob[]
@@ -164,25 +136,23 @@ model GradingBatch {
   @@map("grading_batches")
 }
 
-// 8. GradingJobs (Individual grading tasks in BullMQ / Redis)
 model GradingJob {
   id                  Int          @id @default(autoincrement())
   batchId             Int
   submissionId        Int
   queueJobId          String?
   priority            String       @default("Assignment")
-  studentName         String?      // Cached for display
-  submissionTitle     String?      // Cached for display
-  status              String       @default("waiting") // waiting | active | completed | failed | dead
-  retryCount          Int          @default(0) // Capped at 3
+  studentName         String?
+  submissionTitle     String?
+  status              String       @default("waiting")
+  retryCount          Int          @default(0)
   runtimeDurationMs   Int?
-  errorClassification String?      // timeout | runtime_error | syntax_error
+  errorClassification String?
   stackTrace          String?
   dismissed           Boolean      @default(false)
   dismissedBy         Int?
   dismissedAt         DateTime?
-  // Human-in-the-Loop AI Grading Review (UC-04b, BR-14, BR-15, BR-16)
-  reviewStatus        String       @default("pending") // pending | approved | rejected
+  reviewStatus        String       @default("pending")
   reviewedBy          Int?
   reviewedAt          DateTime?
   reviewComment       String?
@@ -190,64 +160,55 @@ model GradingJob {
   finishedAt          DateTime?
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
-
-  // Relations
   batch               GradingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  submission          Submission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   dismisser           User?        @relation("JobDismisser", fields: [dismissedBy], references: [id])
   reviewer            User?        @relation("JobReviewer", fields: [reviewedBy], references: [id])
+  submission          Submission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@index([batchId, status])
   @@map("grading_jobs")
 }
 
-// 9. GitRepos (Submitted Git repository for teamwork analytics)
 model GitRepo {
-  id           Int                  @id @default(autoincrement())
-  teamId       Int
-  submittedBy  Int?
-  repoUrl      String
-  branch       String               @default("main")
-  isPrivate    Boolean              @default(false)
-  cloneStatus  String               @default("pending") // pending | cloning | success | failed
-  analysisStep String?
-  errorMessage String?
-  patEncrypted String?              // AES-256 encrypted at rest
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-
-  // Relations
-  team          Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  submitter     User?                @relation("RepoSubmitter", fields: [submittedBy], references: [id])
+  id            Int                  @id @default(autoincrement())
+  teamId        Int
+  submittedBy   Int?
+  repoUrl       String
+  branch        String               @default("main")
+  isPrivate     Boolean              @default(false)
+  cloneStatus   String               @default("pending")
+  analysisStep  String?
+  errorMessage  String?
+  patEncrypted  String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
   commits       GitCommit[]
+  submitter     User?                @relation("RepoSubmitter", fields: [submittedBy], references: [id])
+  team          Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
   contributions MemberContribution[]
 
   @@map("git_repos")
 }
 
-// 10. GitCommits (Extracted commit metadata from cloned repository)
 model GitCommit {
-  id               Int       @id @default(autoincrement())
+  id               Int      @id @default(autoincrement())
   repoId           Int
-  userId           Int?      // Nullable if email unmapped
+  userId           Int?
   commitHash       String
   authorEmail      String
   authorName       String?
   commitDate       DateTime
-  linesAdded       Int       @default(0)
-  linesDeleted     Int       @default(0)
-  isSuspicious     Boolean   @default(false) // Heuristic fraud flag
-  suspiciousReason String?   // whitespace-only | self-revert
-
-  // Relations
-  repo             GitRepo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
-  user             User?     @relation("UserCommits", fields: [userId], references: [id])
+  linesAdded       Int      @default(0)
+  linesDeleted     Int      @default(0)
+  isSuspicious     Boolean  @default(false)
+  suspiciousReason String?
+  repo             GitRepo  @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  user             User?    @relation("UserCommits", fields: [userId], references: [id])
 
   @@index([repoId, authorEmail])
   @@map("git_commits")
 }
 
-// 11. MemberContributions (Contribution scores & anti-free-riding flags)
 model MemberContribution {
   id                     Int      @id @default(autoincrement())
   repoId                 Int
@@ -255,12 +216,10 @@ model MemberContribution {
   prCount                Int      @default(0)
   commitCount            Int      @default(0)
   locCount               Int      @default(0)
-  contributionPercentage Float    @default(0.0) // 40% LOC + 40% Commits + 20% PRs
-  isFreeRiding           Boolean  @default(false) // Flagged if below threshold
+  contributionPercentage Float    @default(0.0)
+  isFreeRiding           Boolean  @default(false)
   thresholdApplied       Float    @default(5.0)
   createdAt              DateTime @default(now())
-
-  // Relations
   repo                   GitRepo  @relation(fields: [repoId], references: [id], onDelete: Cascade)
   user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -268,15 +227,12 @@ model MemberContribution {
   @@map("member_contributions")
 }
 
-// 12. SystemSettings (Global system configuration)
 model SystemSetting {
   id           Int      @id @default(autoincrement())
-  settingKey   String   @unique // worker_concurrency | free_riding_threshold
+  settingKey   String   @unique
   settingValue String
   updatedBy    Int?
   updatedAt    DateTime @updatedAt
-
-  // Relations
   updater      User?    @relation("SettingUpdater", fields: [updatedBy], references: [id])
 
   @@map("system_settings")
