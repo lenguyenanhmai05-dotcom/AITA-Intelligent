@@ -12,8 +12,8 @@ echo [1/4] Đang kiểm tra Docker Desktop...
 docker info >nul 2>&1
 if %errorlevel% neq 0 (
     echo [THÔNG BÁO] Docker Desktop chưa mở, đang tự động khởi chạy Docker Desktop...
-    if exist "C:\Users\lengu\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe" (
-        start "" "C:\Users\lengu\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe"
+    if exist "%USERPROFILE%\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe" (
+        start "" "%USERPROFILE%\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe"
     ) else if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
         start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
     )
