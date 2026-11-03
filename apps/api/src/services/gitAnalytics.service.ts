@@ -113,7 +113,7 @@ export async function persistGitAnalysis(
 
   if (!repo) throw new Error(`Git repository ${repoId} was not found`);
 
-  const members = repo.team.members.map(({ user }) => user);
+  const members: any[] = ((repo as any).team?.members || []).map(({ user }: any) => user);
   const memberStats = new Map<number, { loc: number; commits: number; prs: number }>();
   for (const member of members) {
     memberStats.set(member.id, { loc: 0, commits: 0, prs: 0 });
@@ -132,12 +132,12 @@ export async function persistGitAnalysis(
 
   const membersByUsername = new Map(
     members
-      .filter((member) => member.githubUsername)
-      .map((member) => [normalizeIdentity(member.githubUsername!), member]),
+      .filter((member: any) => member.githubUsername)
+      .map((member: any) => [normalizeIdentity(member.githubUsername!), member]),
   );
   for (const pullRequest of pullRequests) {
     const member = membersByUsername.get(normalizeIdentity(pullRequest.authorLogin));
-    if (member) memberStats.get(member.id)!.prs += pullRequest.count;
+    if (member) memberStats.get((member as any).id)!.prs += pullRequest.count;
   }
 
   const thresholdSetting = await prisma.systemSetting.findUnique({

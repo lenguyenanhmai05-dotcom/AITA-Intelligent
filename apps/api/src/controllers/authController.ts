@@ -216,8 +216,8 @@ const loadRequestsFromDb = async () => {
         where: { settingKey: SETTING_KEY_REQUESTS },
       })
     );
-    if (setting?.settingValue) {
-      const parsed = JSON.parse(setting.settingValue);
+    if ((setting as any)?.settingValue) {
+      const parsed = JSON.parse((setting as any).settingValue);
       if (Array.isArray(parsed) && parsed.length > 0) {
         lecturerRequests = parsed.map((r: any) => ({
           ...r,
@@ -732,7 +732,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         where: { id: decoded.userId },
       }));
       if (dbUser) {
-        const { password: _, ...userSafe } = dbUser;
+        const { password: _, ...userSafe } = dbUser as any;
         return res.json({ success: true, data: userSafe });
       }
     } catch {

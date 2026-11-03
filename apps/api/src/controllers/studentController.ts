@@ -144,12 +144,12 @@ export const getStudents = async (_req: Request, res: Response) => {
     if (dbStudents && dbStudents.length > 0) {
       return res.json({
         success: true,
-        data: dbStudents.map((s) => ({
+        data: (dbStudents as any[]).map((s: any) => ({
           id: s.id,
           fullName: s.fullName,
           email: s.email,
           role: s.role,
-          gitEmails: s.gitEmails.map((g) => g.gitEmail),
+          gitEmails: (s.gitEmails || []).map((g: any) => g.gitEmail),
           githubUsername: s.githubUsername,
         })),
       });
