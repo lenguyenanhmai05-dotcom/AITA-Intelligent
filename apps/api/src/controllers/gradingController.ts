@@ -12,6 +12,11 @@ import {
   DLQ_REPLAY_RESET_RETRY_COUNT 
 } from '@aita/shared';
 import { evaluateSubmissionByCriteria } from '../services/criteriaGrading.service';
+import { 
+  getDeletedClassCodes, 
+  normalizeClassCodeStr, 
+  isClassCodeInDeletedSet 
+} from '../routes/classRoutes';
 
 // Mock in-memory storage fallback with realistic seed records
 /**
@@ -39,108 +44,7 @@ const DATA_DIR = path.resolve(__dirname, '../../data');
 const SUBMISSIONS_FILE = path.join(DATA_DIR, 'submissions.json');
 
 let inMemoryBatches: any[] = [];
-let inMemoryJobs: any[] = [
-  {
-    id: 118,
-    batchId: 1,
-    submissionId: 118,
-    studentName: 'Lê Nguyễn Linh Nhi',
-    submissionTitle: 'Bài Tập Lập Trình: Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices',
-    status: 'completed',
-    retryCount: 0,
-    runtimeDurationMs: 1100,
-    errorClassification: null,
-    stackTrace: null,
-    dismissed: false,
-    dismissedBy: null,
-    dismissedAt: null,
-    reviewStatus: 'pending',
-    reviewedBy: null,
-    reviewedAt: null,
-    reviewComment: null,
-    createdAt: new Date(),
-  },
-  {
-    id: 114,
-    batchId: 1,
-    submissionId: 114,
-    studentName: 'Lê Nguyễn Linh Nhi',
-    submissionTitle: 'Assignment 1: Java Servlet & JSP Web Application with MySQL Database',
-    status: 'completed',
-    retryCount: 0,
-    runtimeDurationMs: 950,
-    errorClassification: null,
-    stackTrace: null,
-    dismissed: false,
-    dismissedBy: null,
-    dismissedAt: null,
-    reviewStatus: 'pending',
-    reviewedBy: null,
-    reviewedAt: null,
-    reviewComment: null,
-    createdAt: new Date(),
-  },
-  {
-    id: 101,
-    batchId: 1,
-    submissionId: 101,
-    studentName: 'Lê Nguyễn Anh Mai',
-    submissionTitle: 'Exam: Hệ thống Kiểm thử Tự động & Quản lý Chấm điểm',
-    status: 'completed',
-    retryCount: 0,
-    runtimeDurationMs: 840,
-    errorClassification: null,
-    stackTrace: null,
-    dismissed: false,
-    dismissedBy: null,
-    dismissedAt: null,
-    reviewStatus: 'pending',
-    reviewedBy: null,
-    reviewedAt: null,
-    reviewComment: null,
-    createdAt: new Date(),
-  },
-  {
-    id: 102,
-    batchId: 1,
-    submissionId: 102,
-    studentName: 'Lê Nguyễn Anh Mai',
-    submissionTitle: 'Assignment 3 — Spring Boot REST Service',
-    status: 'completed',
-    retryCount: 0,
-    runtimeDurationMs: 920,
-    errorClassification: null,
-    stackTrace: null,
-    dismissed: false,
-    dismissedBy: 1,
-    dismissedAt: null,
-    reviewStatus: 'approved',
-    reviewedBy: 1,
-    reviewedAt: new Date(),
-    reviewComment: 'Cấu trúc controller và service rõ ràng, xử lý exception tốt.',
-    createdAt: new Date(),
-  },
-  {
-    id: 116,
-    batchId: 1,
-    submissionId: 116,
-    studentName: 'Nguyễn Tường Vy',
-    submissionTitle: 'Đồ án Microservices & Mobile Gateway (MMA301)',
-    status: 'completed',
-    retryCount: 0,
-    runtimeDurationMs: 890,
-    errorClassification: null,
-    stackTrace: null,
-    dismissed: false,
-    dismissedBy: null,
-    dismissedAt: null,
-    reviewStatus: 'pending',
-    reviewedBy: null,
-    reviewedAt: null,
-    reviewComment: null,
-    createdAt: new Date(),
-  },
-];
+let inMemoryJobs: any[] = [];
 
 let inMemorySubmissions: any[] = [];
 
@@ -198,6 +102,27 @@ export const loadSubmissionsFromDisk = () => {
           });
         if (cleaned.length > 0) {
           inMemorySubmissions = cleaned;
+          inMemoryJobs = cleaned.map((s, idx) => ({
+            id: s.jobId || (1000 + s.id) || (idx + 1),
+            batchId: 1,
+            submissionId: s.id,
+            studentName: s.studentName,
+            submissionTitle: s.title,
+            classCode: s.classCode || 'MMA301-SE19B',
+            status: s.status || 'completed',
+            retryCount: 0,
+            runtimeDurationMs: s.gradingReport?.runtimeDurationMs || 840,
+            errorClassification: null,
+            stackTrace: null,
+            dismissed: false,
+            dismissedBy: null,
+            dismissedAt: null,
+            reviewStatus: s.reviewStatus || 'pending',
+            reviewedBy: s.reviewedBy || null,
+            reviewedAt: s.reviewedAt || null,
+            reviewComment: s.reviewComment || '',
+            createdAt: new Date(s.submittedAt || Date.now()),
+          }));
           return;
         }
       }
@@ -206,42 +131,8 @@ export const loadSubmissionsFromDisk = () => {
     console.warn(`[Submissions] File load warning: ${err.message}`);
   }
 
-  // Danh sách bài nộp thật mặc định
+  // Danh sách bài nộp thật mặc định (Chỉ giữ dữ liệu thật, loại bỏ toàn bộ bài nộp giả)
   inMemorySubmissions = [
-    {
-      id: 118,
-      studentName: 'Lê Nguyễn Linh Nhi',
-      studentEmail: 'lenguyenlinhnhi2110@gmail.com',
-      title: 'Bài Tập Lập Trình: Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices',
-      classCode: 'MMA301',
-      status: 'completed',
-      reviewStatus: 'pending',
-      reviewComment: '',
-      reviewedAt: null,
-      method: 'Tệp ZIP: Demo.zip (1.62 MB)',
-      submittedAt: '2026-10-20 11:11',
-      notes: 'Bài làm môn MMA301 thiết kế Microservices & Backend Node.js hoàn chỉnh.',
-      codeUrl: 'uploads/Demo.zip',
-      score: '88 / 100',
-      testCases: '9/10 Passed',
-    },
-    {
-      id: 114,
-      studentName: 'Lê Nguyễn Linh Nhi',
-      studentEmail: 'lenguyenlinhnhi2110@gmail.com',
-      title: 'Assignment 1: Java Servlet & JSP Web Application with MySQL Database',
-      classCode: 'PRJ301-IS1702',
-      status: 'completed',
-      reviewStatus: 'pending',
-      reviewComment: '',
-      reviewedAt: null,
-      method: 'Tệp ZIP: Demo.zip (1.62 MB)',
-      submittedAt: '2026-10-20 11:11',
-      notes: 'Bài làm Assignment 1 môn PRJ301 với Java Servlet, JSP và MySQL Database.',
-      codeUrl: 'uploads/Demo.zip',
-      score: '86 / 100',
-      testCases: '8/10 Passed',
-    },
     {
       id: 101,
       studentName: 'Lê Nguyễn Anh Mai',
@@ -277,21 +168,21 @@ export const loadSubmissionsFromDisk = () => {
       testCases: '8/10 Passed',
     },
     {
-      id: 116,
-      studentName: 'Nguyễn Tường Vy',
-      studentEmail: 'tuongvy22102004@gmail.com',
-      title: 'Đồ án Microservices & Mobile Gateway (MMA301)',
-      classCode: 'MMA301',
+      id: 111,
+      studentName: 'Lê Nguyễn Linh Nhi',
+      studentEmail: 'lenguyenlinhnhi2110@gmail.com',
+      title: 'Assignment 2: Xây dựng RESTful Web API với ASP.NET Core & Entity Framework',
+      classCode: 'PRN231-SE1803',
       status: 'completed',
       reviewStatus: 'pending',
       reviewComment: '',
       reviewedAt: null,
-      method: 'Tệp ZIP: Demo.zip (4.5 MB)',
-      submittedAt: '2026-10-20 10:50',
-      notes: 'Tối ưu API phản hồi và tích hợp Redis cache.',
-      codeUrl: 'uploads/Demo.zip',
-      score: '88 / 100',
-      testCases: '9/10 Passed',
+      method: 'Tệp ZIP: SDN302_ProjectReport_Group2.zip (7.61 MB)',
+      submittedAt: '2026-11-01 14:29',
+      notes: 'Em đã hoàn thiện trọn vẹn 10/10 test cases và cấu hình Docker container.',
+      codeUrl: 'uploads/SDN302_ProjectReport_Group2.zip',
+      score: '84 / 100',
+      testCases: '8/10 Passed',
     },
   ];
   persistSubmissionsToDisk();
@@ -479,51 +370,63 @@ export const createSubmission = async (req: Request, res: Response) => {
     }).catch(() => {});
 
     // Đánh giá bài nộp thực tế theo tiêu chí chấm điểm
-    const initialReport = evaluateSubmissionByCriteria({
-      id: submissionId,
-      studentName: newSubRecord.studentName,
-      studentEmail: newSubRecord.studentEmail,
-      title: newSubRecord.title,
-      classCode: effectiveClassCode,
-      method: newSubRecord.method,
-      notes: newSubRecord.notes,
-      codeUrl,
-    });
-
-    // Mô phỏng Worker chạy chấm bài theo hàng đợi sau 4.5 giây để thấy rõ tiến trình xử lý
-    setTimeout(async () => {
+    if (req.body.gradingReport && typeof req.body.gradingReport === 'object') {
+      const realReport = req.body.gradingReport;
       newSubRecord.status = 'completed';
-      newSubRecord.score = initialReport.scoreDisplay;
-      newSubRecord.testCases = initialReport.testCasesSummary;
-      newSubRecord.gradingReport = initialReport;
+      newSubRecord.score = realReport.scoreDisplay || req.body.score || '15 / 100';
+      newSubRecord.testCases = realReport.testCasesSummary || req.body.testCases || '1/10 Passed';
+      newSubRecord.gradingReport = realReport;
       jobRecord.status = 'completed';
-      jobRecord.runtimeDurationMs = initialReport.runtimeDurationMs;
+      jobRecord.runtimeDurationMs = realReport.runtimeDurationMs || 420;
       persistSubmissionsToDisk();
+    } else {
+      const initialReport = evaluateSubmissionByCriteria({
+        id: submissionId,
+        studentName: newSubRecord.studentName,
+        studentEmail: newSubRecord.studentEmail,
+        title: newSubRecord.title,
+        classCode: effectiveClassCode,
+        method: newSubRecord.method,
+        notes: newSubRecord.notes,
+        codeUrl,
+        fileName: fileName || newSubRecord.fileName,
+      });
 
-      // Cập nhật ngầm vào PostgreSQL để lưu trữ bền vững
-      try {
-        await prisma.gradingJob.upsert({
-          where: { id: jobRecord.id },
-          update: { status: 'completed', runtimeDurationMs: initialReport.runtimeDurationMs },
-          create: {
-            id: jobRecord.id,
-            batchId: 1,
-            submissionId,
-            studentName: newSubRecord.studentName,
-            submissionTitle: newSubRecord.title,
-            priority: (title?.includes('Exam') ? 'Exam' : 'Assignment'),
-            status: 'completed',
-            runtimeDurationMs: initialReport.runtimeDurationMs,
-          },
-        });
-        await prisma.submission.update({
-          where: { id: submissionId },
-          data: { submissionStatus: 'completed' },
-        }).catch(() => {});
-      } catch {}
+      // Mô phỏng Worker chạy chấm bài theo hàng đợi sau 4.5 giây để thấy rõ tiến trình xử lý
+      setTimeout(async () => {
+        newSubRecord.status = 'completed';
+        newSubRecord.score = initialReport.scoreDisplay;
+        newSubRecord.testCases = initialReport.testCasesSummary;
+        newSubRecord.gradingReport = initialReport;
+        jobRecord.status = 'completed';
+        jobRecord.runtimeDurationMs = initialReport.runtimeDurationMs;
+        persistSubmissionsToDisk();
 
-      console.log(`[BullMQ Worker Simulation] ✅ Submission #${submissionId} ("${newSubRecord.title}") finished grading with REAL criteria score: ${initialReport.scoreDisplay} (${initialReport.testCasesSummary})!`);
-    }, 4500);
+        // Cập nhật ngầm vào PostgreSQL để lưu trữ bền vững
+        try {
+          await prisma.gradingJob.upsert({
+            where: { id: jobRecord.id },
+            update: { status: 'completed', runtimeDurationMs: initialReport.runtimeDurationMs },
+            create: {
+              id: jobRecord.id,
+              batchId: 1,
+              submissionId,
+              studentName: newSubRecord.studentName,
+              submissionTitle: newSubRecord.title,
+              priority: (title?.includes('Exam') ? 'Exam' : 'Assignment'),
+              status: 'completed',
+              runtimeDurationMs: initialReport.runtimeDurationMs,
+            },
+          });
+          await prisma.submission.update({
+            where: { id: submissionId },
+            data: { submissionStatus: 'completed' },
+          }).catch(() => {});
+        } catch {}
+
+        console.log(`[BullMQ Worker Simulation] ✅ Submission #${submissionId} ("${newSubRecord.title}") finished grading with REAL criteria score: ${initialReport.scoreDisplay} (${initialReport.testCasesSummary})!`);
+      }, 4500);
+    }
 
     res.status(201).json({
       success: true,
@@ -629,7 +532,15 @@ export const getSubmissions = async (req: Request, res: Response) => {
             studentName: s.student?.fullName || 'Sinh viên',
             studentEmail: s.student?.email,
             title: s.title,
-            classCode: s.class?.code || (s.classId === 2 ? 'PRN231-SE1803' : s.classId === 3 ? 'PRJ301-IS1702' : 'SWP391-SE1801'),
+            classCode: (
+              s.class?.code ? s.class.code :
+              (s.classId === 2 ? 'PRN231-SE1803' :
+               s.classId === 3 ? 'PRJ301-IS1702' :
+               s.classId === 4 ? 'MMA301' :
+               (s.title?.toUpperCase().includes('PRN') || s.title?.toUpperCase().includes('ASP.NET')) ? 'PRN231-SE1803' :
+               'SWP391-SE1801'
+              )
+            ),
             status: gradingStatus,
             reviewStatus,
             reviewComment,
@@ -668,8 +579,37 @@ export const getSubmissions = async (req: Request, res: Response) => {
       }
     }
 
-    // Lọc sạch toàn bộ sinh viên ảo / dữ liệu giả
+    // Lọc sạch các lớp đã bị xóa trong hệ thống (đặc biệt sau khi giảng viên bấm xóa lớp)
+    const deletedSet = getDeletedClassCodes();
     list = list.filter((s) => {
+      const cCode = String(s.classCode || s.class?.className || s.title || '');
+      const norm = normalizeClassCodeStr(cCode);
+      if (isClassCodeInDeletedSet(cCode, deletedSet) || isClassCodeInDeletedSet(norm, deletedSet)) {
+        return false;
+      }
+      return true;
+    });
+
+    // Lọc sạch sinh viên ảo / dữ liệu giả (nhưng tuyệt đối luôn giữ sinh viên thật như Linh Nhi, Anh Mai)
+    list = list.filter((s) => {
+      const studentName = String(s.studentName || s.student || '');
+      const studentEmail = String(s.studentEmail || '').toLowerCase();
+      const lowerName = studentName.toLowerCase();
+      if (
+        lowerName.includes('linh nhi') ||
+        lowerName.includes('anh mai') ||
+        lowerName.includes('tường vy') ||
+        lowerName.includes('sĩ việt anh') ||
+        studentEmail.includes('linhnhi') ||
+        studentEmail.includes('mai.student')
+      ) {
+        return true;
+      }
+
+      const id = Number(s.id);
+      if ([9, 114, 116, 118, 301, 302, 401, 402].includes(id)) return false;
+      const title = String(s.title || '').toLowerCase();
+      if (title.includes('sample dataset') || title.includes('test dummy')) return false;
       const name = s.studentName || '';
       return !name.includes('Bảo') &&
              !name.includes('Long') &&
@@ -948,33 +888,40 @@ export const getQueueStatus = async (_req: Request, res: Response) => {
     const cached = await getCached<object>(cacheKey);
     if (cached) return res.json(cached);
 
-    let queueCounts: any = {};
-    try {
-      queueCounts = await getQueueTelemetryCounts();
-    } catch {
-      queueCounts = {};
-    }
+    const deletedSet = getDeletedClassCodes();
 
     let waitingJobs = 0;
     let activeJobs = 0;
     let completedJobs = 0;
     let failedJobs = 0;
 
-    try {
-      waitingJobs = await prisma.gradingJob.count({ where: { status: 'waiting' } });
-      activeJobs = await prisma.gradingJob.count({ where: { status: 'active' } });
-      completedJobs = await prisma.gradingJob.count({ where: { status: 'completed' } });
-      failedJobs = await prisma.gradingJob.count({ where: { status: { in: ['failed', 'dead'] } } });
+    const validInMemoryJobs = inMemoryJobs.filter((j) => {
+      const cCode = j.classCode || j.submissionTitle || j.studentName || '';
+      return !isClassCodeInDeletedSet(cCode, deletedSet);
+    });
 
-      if (completedJobs === 0) {
-        const completedSubs = await prisma.submission.count({ where: { status: { in: ['completed', 'graded'] } } }).catch(() => 0);
-        completedJobs = Math.max(completedSubs, inMemoryJobs.filter((j) => j.status === 'completed').length);
+    try {
+      const allDbJobs = await prisma.gradingJob.findMany({
+        include: { submission: { include: { class: true } } },
+      });
+      const validDbJobs = allDbJobs.filter((j: any) => {
+        const cCode = j.submission?.class?.className || j.submissionTitle || j.studentName || '';
+        return !isClassCodeInDeletedSet(cCode, deletedSet);
+      });
+
+      waitingJobs = validDbJobs.filter((j) => j.status === 'waiting').length;
+      activeJobs = validDbJobs.filter((j) => j.status === 'active').length;
+      completedJobs = validDbJobs.filter((j) => j.status === 'completed').length;
+      failedJobs = validDbJobs.filter((j) => j.status === 'failed' || j.status === 'dead').length;
+
+      if (completedJobs === 0 && validInMemoryJobs.length > 0) {
+        completedJobs = validInMemoryJobs.filter((j) => j.status === 'completed').length;
       }
     } catch {
-      waitingJobs = inMemoryJobs.filter((j) => j.status === 'waiting').length;
-      activeJobs = inMemoryJobs.filter((j) => j.status === 'active').length;
-      completedJobs = inMemoryJobs.filter((j) => j.status === 'completed').length;
-      failedJobs = inMemoryJobs.filter((j) => j.status === 'failed' || j.status === 'dead').length;
+      waitingJobs = validInMemoryJobs.filter((j) => j.status === 'waiting').length;
+      activeJobs = validInMemoryJobs.filter((j) => j.status === 'active').length;
+      completedJobs = validInMemoryJobs.filter((j) => j.status === 'completed').length;
+      failedJobs = validInMemoryJobs.filter((j) => j.status === 'failed' || j.status === 'dead').length;
     }
 
     const response = {
@@ -1028,14 +975,20 @@ export const getJobDetail = async (req: Request, res: Response) => {
  */
 export const getDeadLetterQueue = async (_req: Request, res: Response) => {
   try {
+    const deletedSet = getDeletedClassCodes();
     try {
       const deadDbJobs = await prisma.gradingJob.findMany({
         where: { status: 'dead', dismissed: false },
+        include: { submission: { include: { class: true } } },
       });
       if (deadDbJobs && deadDbJobs.length > 0) {
+        const filtered = deadDbJobs.filter((j: any) => {
+          const cCode = j.submission?.class?.className || j.submissionTitle || j.studentName || '';
+          return !isClassCodeInDeletedSet(cCode, deletedSet);
+        });
         return res.json({
           success: true,
-          data: deadDbJobs.map((j) => ({
+          data: filtered.map((j) => ({
             id: j.id,
             batchId: j.batchId,
             studentName: j.studentName,
@@ -1055,7 +1008,12 @@ export const getDeadLetterQueue = async (_req: Request, res: Response) => {
     } catch {}
 
     // Fallback to in-memory DLQ jobs
-    const deadJobs = inMemoryJobs.filter((j) => (j.status === 'dead' || j.status === 'failed') && !j.dismissed);
+    const deadJobs = inMemoryJobs.filter((j) => {
+      if (j.status !== 'dead' && j.status !== 'failed') return false;
+      if (j.dismissed) return false;
+      const cCode = j.classCode || j.submissionTitle || j.studentName || '';
+      return !isClassCodeInDeletedSet(cCode, deletedSet);
+    });
 
     res.json({
       success: true,
@@ -1194,9 +1152,9 @@ export const reviewGradingJob = async (req: Request, res: Response) => {
       console.warn(`[PostgreSQL Docker] reviewGradingJob find warning: ${err.message}`);
     }
 
-    // Fallback in-memory nếu DB chưa có
+    // Fallback in-memory nếu DB chưa có (hỗ trợ cả tìm theo job.id lẫn submissionId)
     if (!job) {
-      job = inMemoryJobs.find((j) => j.id === Number(id));
+      job = inMemoryJobs.find((j) => j.id === Number(id) || j.submissionId === Number(id));
     }
 
     if (!job) {
@@ -1248,7 +1206,7 @@ export const reviewGradingJob = async (req: Request, res: Response) => {
     }
 
     // Cập nhật cả trong inMemorySubmissions nếu liên kết
-    const memSub = inMemorySubmissions.find((s) => s.id === job.submissionId);
+    const memSub = inMemorySubmissions.find((s) => s.id === (job?.submissionId || Number(id)) || s.id === Number(id));
     if (memSub) {
       memSub.reviewStatus = status;
       memSub.reviewComment = comment;
@@ -1365,3 +1323,76 @@ export const getSubmissionReport = async (req: Request, res: Response) => {
 };
 
 
+
+export const updateSubmissionGrade = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { gradingReport, score, testCases, reviewStatus, reviewComment, reviewedAt } = req.body;
+    const sub = inMemorySubmissions.find((s) => String(s.id) === String(id) || s.id === Number(id));
+    if (sub) {
+      if (gradingReport) sub.gradingReport = gradingReport;
+      if (score) sub.score = score;
+      if (testCases) sub.testCases = testCases;
+      if (reviewStatus) sub.reviewStatus = reviewStatus;
+      if (reviewComment !== undefined) sub.reviewComment = reviewComment;
+      if (reviewedAt) sub.reviewedAt = reviewedAt;
+      if (reviewStatus === 'approved' && !sub.reviewedAt) sub.reviewedAt = new Date().toISOString();
+      sub.status = 'completed';
+
+      // Cập nhật cả job tương ứng trong BullMQ telemetry/jobs
+      const job = inMemoryJobs.find((j) => j.submissionId === sub.id || j.id === Number(id));
+      if (job) {
+        if (reviewStatus) job.reviewStatus = reviewStatus;
+        if (reviewComment !== undefined) job.reviewComment = reviewComment;
+        if (reviewedAt || reviewStatus === 'approved') job.reviewedAt = reviewedAt || new Date();
+      }
+
+      persistSubmissionsToDisk();
+      return res.json({ success: true, data: sub });
+    }
+    return res.status(404).json({ success: false, message: 'Submission not found' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const purgeGradingDataByClassCode = (classCode: string) => {
+  const clean = normalizeClassCodeStr(classCode);
+  // 1. Purge from inMemoryJobs (telemetry & queue)
+  inMemoryJobs = inMemoryJobs.filter((j) => {
+    const jCode = normalizeClassCodeStr(j.classCode || '');
+    const title = `${j.classCode || ''} ${j.submissionTitle || ''} ${j.studentName || ''}`.toUpperCase();
+    return jCode !== clean && !title.includes(clean);
+  });
+  // 2. Purge from inMemorySubmissions & submissions.json
+  inMemorySubmissions = inMemorySubmissions.filter((s) => {
+    const sCode = normalizeClassCodeStr(s.classCode || s.title || '');
+    return sCode !== clean && !(s.classCode || '').toUpperCase().includes(clean);
+  });
+  // 3. Purge disk submissions.json directly
+  try {
+    if (fs.existsSync(SUBMISSIONS_FILE)) {
+      const raw = fs.readFileSync(SUBMISSIONS_FILE, 'utf-8');
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        const remaining = arr.filter((s: any) => {
+          const sCode = normalizeClassCodeStr(s.classCode || s.title || '');
+          return sCode !== clean && !(s.classCode || '').toUpperCase().includes(clean);
+        });
+        fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify(remaining, null, 2), 'utf-8');
+      }
+    }
+  } catch {}
+  persistSubmissionsToDisk();
+};
+
+export const resetAllGradingData = () => {
+  inMemoryBatches = [];
+  inMemoryJobs = [];
+  inMemorySubmissions = [];
+  try {
+    if (fs.existsSync(SUBMISSIONS_FILE)) {
+      fs.writeFileSync(SUBMISSIONS_FILE, '[]', 'utf-8');
+    }
+  } catch {}
+};

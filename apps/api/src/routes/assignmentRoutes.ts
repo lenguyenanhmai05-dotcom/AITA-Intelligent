@@ -4,6 +4,11 @@ import { prisma } from '@aita/database';
 import fs from 'fs';
 import path from 'path';
 import { generateAssignmentFromLecture } from '../services/aiAssignment.service';
+import { 
+  getDeletedClassCodes, 
+  normalizeClassCodeStr, 
+  isClassCodeInDeletedSet 
+} from './classRoutes';
 
 const router = Router();
 const upload = multer({
@@ -249,16 +254,49 @@ router.get('/assignments', async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    const deletedSet = getDeletedClassCodes();
+
+    const validAssignments = assignments
+      .filter((a: any) => {
+        const c = String(a.class?.className || a.classCode || '');
+        const norm = normalizeClassCodeStr(c);
+        return !isClassCodeInDeletedSet(c, deletedSet) && !isClassCodeInDeletedSet(norm, deletedSet);
+      })
+      .map((a: any) => {
+        const cleanCode = normalizeClassCodeStr(a.class?.className || a.classCode || '');
+        return {
+          ...a,
+          classCode: cleanCode,
+          class: a.class ? { ...a.class, className: cleanCode } : { className: cleanCode },
+        };
+      });
+
     res.json({
       success: true,
-      data: assignments,
+      data: validAssignments,
     });
   } catch (error: any) {
     console.warn('[Assignment Routes] DB listing warning, using disk fallback:', error?.message);
+    const deletedSet = getDeletedClassCodes();
+
     const stored = getStoredAssignments();
+    const validStored = stored
+      .filter((a: any) => {
+        const c = String(a.classCode || a.class?.className || '');
+        const norm = normalizeClassCodeStr(c);
+        return !isClassCodeInDeletedSet(c, deletedSet) && !isClassCodeInDeletedSet(norm, deletedSet);
+      })
+      .map((a: any) => {
+        const cleanCode = normalizeClassCodeStr(a.classCode || a.class?.className || '');
+        return {
+          ...a,
+          classCode: cleanCode,
+          class: a.class ? { ...a.class, className: cleanCode } : { className: cleanCode },
+        };
+      });
     const filtered = req.query.classCode
-      ? stored.filter(a => (a.classCode || '').trim().toUpperCase() === String(req.query.classCode).trim().toUpperCase())
-      : stored;
+      ? validStored.filter(a => normalizeClassCodeStr(a.classCode) === normalizeClassCodeStr(String(req.query.classCode)))
+      : validStored;
     res.json({ success: true, data: filtered });
   }
 });
@@ -344,6 +382,65 @@ router.post('/assignments/:id/extend', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error?.message });
+  }
+});
+
+/**
+ * DELETE /api/assignments/:id
+ * Delete assignment from DB and disk storage
+ */
+router.delete('/assignments/:id', async (req: Request, res: Response) => {
+  try {
+    const rawId = req.params.id;
+    if (!rawId) {
+      return res.status(400).json({ success: false, message: 'Assignment ID is required' });
+    }
+
+    const decodedId = decodeURIComponent(rawId).trim();
+
+    // 1. Delete from PostgreSQL database if numeric or matching title
+    const numId = Number(decodedId);
+    try {
+      let targetAsm = null;
+      if (!isNaN(numId)) {
+        targetAsm = await prisma.assignment.findUnique({ where: { id: numId } });
+      }
+      if (!targetAsm) {
+        targetAsm = await prisma.assignment.findFirst({
+          where: { title: { equals: decodedId, mode: 'insensitive' } }
+        });
+      }
+
+      if (targetAsm) {
+        // Cascade delete submissions related to this assignment
+        await prisma.submission.deleteMany({ where: { assignmentId: targetAsm.id } }).catch(() => {});
+        await prisma.assignment.delete({ where: { id: targetAsm.id } }).catch(() => {});
+        console.log(`[Assignment Routes] Deleted assignment #${targetAsm.id} (${targetAsm.title}) from PostgreSQL`);
+      }
+    } catch (dbErr: any) {
+      console.warn('[Assignment Routes] DB delete warning:', dbErr?.message);
+    }
+
+    // 2. Delete from disk stored assignments (assignments.json)
+    const stored = getStoredAssignments();
+    const updated = stored.filter(
+      s => String(s.id) !== decodedId &&
+           String(s.title).trim().toLowerCase() !== decodedId.toLowerCase()
+    );
+    saveStoredAssignments(updated);
+
+    console.log(`[Assignment Routes] 🗑️ Deleted assignment "${decodedId}" from disk storage`);
+
+    return res.json({
+      success: true,
+      message: 'Đã xóa đề bài thành công!',
+    });
+  } catch (error: any) {
+    console.error('[Assignment Routes] Error deleting assignment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xóa đề bài: ' + (error?.message || 'Internal error'),
+    });
   }
 });
 

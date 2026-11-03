@@ -3,7 +3,6 @@ import { Clock, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Language } from '../translations';
 import { Theme } from '../App';
 import { LanguageFlagToggle } from './FlagIcons';
-import { ThemeToggle } from './ThemeToggle';
 
 interface PendingApprovalCardProps {
   lang: Language;
@@ -27,13 +26,13 @@ interface PendingApprovalCardProps {
 export const PendingApprovalCard: React.FC<PendingApprovalCardProps> = ({
   lang,
   isDark,
-  theme,
+  theme: _theme,
   pendingApplicant,
   isCheckingStatus,
   statusCheckMsg,
   onCheckStatus,
   onBack,
-  onToggleTheme,
+  onToggleTheme: _onToggleTheme,
   onToggleLang,
 }) => {
   return (
@@ -62,9 +61,8 @@ export const PendingApprovalCard: React.FC<PendingApprovalCardProps> = ({
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onToggleTheme && <ThemeToggle theme={theme || (isDark ? 'dark' : 'light')} onToggle={onToggleTheme} variant="card" />}
-          {onToggleLang && <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="card" theme={theme || (isDark ? 'dark' : 'light')} />}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {onToggleLang && <LanguageFlagToggle lang={lang} onToggle={onToggleLang} variant="card" theme="light" />}
         </div>
       </div>
 
@@ -236,7 +234,7 @@ export const PendingApprovalCard: React.FC<PendingApprovalCardProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 3px 10px rgba(217, 100, 31, 0.3)',
+            boxShadow: '0 3px 10px rgba(173, 48, 41, 0.28)',
           }}
         >
           <RefreshCw size={15} />

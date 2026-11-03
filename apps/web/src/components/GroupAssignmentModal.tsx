@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Users,
@@ -74,7 +74,15 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
   isDark,
   initialTeams
 }) => {
-  const [targetClass, setTargetClass] = useState<string>(selectedClassCode || 'SWP391-SE1801');
+  const [targetClass, setTargetClass] = useState<string>(selectedClassCode || (classesList && classesList.length > 0 ? classesList[0] : ''));
+
+  useEffect(() => {
+    if (selectedClassCode && classesList.includes(selectedClassCode)) {
+      setTargetClass(selectedClassCode);
+    } else if (classesList.length > 0 && !classesList.includes(targetClass)) {
+      setTargetClass(classesList[0]);
+    }
+  }, [selectedClassCode, classesList, targetClass]);
   const [deadline, setDeadline] = useState<string>('2026-11-15 23:59');
   const [freeRiderThreshold, setFreeRiderThreshold] = useState<number>(10);
   const [minCommits, setMinCommits] = useState<number>(5);
@@ -812,7 +820,7 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
                     outline: 'none'
                   }}
                 >
-                  {Array.from(new Set([...classesList, 'SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301'])).map((code) => (
+                  {classesList.map((code) => (
                     <option key={code} value={code}>
                       {code}
                     </option>
@@ -976,13 +984,13 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
                     gap: '6px',
                     padding: '8px 16px',
                     borderRadius: '10px',
-                    background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+                    background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                     color: '#FFF',
                     fontWeight: 800,
                     fontSize: '0.82rem',
                     border: 'none',
                     cursor: isAiParsing ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 2px 8px rgba(181, 82, 58, 0.3)'
+                    boxShadow: '0 2px 8px rgba(173, 48, 41, 0.28)'
                   }}
                 >
                   {isAiParsing ? (
@@ -1007,11 +1015,11 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
                     gap: '6px',
                     padding: '8px 14px',
                     borderRadius: '10px',
-                    background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#FFFFFF',
-                    color: 'var(--color-terracotta-700, #B5523A)',
+                    background: '#FFF5F4',
+                    color: '#AD3029',
                     fontWeight: 800,
                     fontSize: '0.80rem',
-                    border: '1.5px solid var(--color-terracotta-300, #F1C2A7)',
+                    border: '1.5px solid #CC8780',
                     cursor: 'pointer'
                   }}
                 >
@@ -1803,12 +1811,12 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
                   padding: '9px 22px',
                   borderRadius: '10px',
                   border: 'none',
-                  background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+                  background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                   color: '#FFFFFF',
                   fontWeight: 800,
                   fontSize: '0.84rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)'
+                  boxShadow: '0 4px 14px rgba(173, 48, 41, 0.28)'
                 }}
               >
                 <FolderGit2 size={16} />

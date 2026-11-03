@@ -1,4 +1,4 @@
-export type Language = 'vi' | 'en';
+﻿export type Language = 'vi' | 'en';
 
 export const translations = {
   vi: {
@@ -61,7 +61,7 @@ export const translations = {
     navSubmit: 'Nộp Bài Làm',
     navSubmissionsResults: 'Xem Bài Nộp & Kết Quả Chấm',
     navTeamGit: 'Nộp Đồ Án Nhóm & Đánh Giá Git',
-    navTeamSubmit: 'Nộp Đồ Án Nhóm',
+    navTeamSubmit: 'Nhóm',
     navTeamReport: 'Xem Đóng Góp Git',
     navGrades: 'Điểm Số & Phúc Khảo',
     navClassroom: 'Lớp Học (SWP391)',
@@ -215,7 +215,7 @@ export const translations = {
     navSubmit: 'Submit Assignment',
     navSubmissionsResults: 'Submissions & Results',
     navTeamGit: 'Team Project & Git Analytics',
-    navTeamSubmit: 'Submit Team Project',
+    navTeamSubmit: 'Team',
     navTeamReport: 'Team Git Evaluation',
     navGrades: 'Grades & Appeals',
     navClassroom: 'Classroom (SWP391)',
@@ -310,3 +310,4 @@ export const translations = {
     themeDarkDesc: 'Obsidian dark theme for eye comfort',
   },
 };
+

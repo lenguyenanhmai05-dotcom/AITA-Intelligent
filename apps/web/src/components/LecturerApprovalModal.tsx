@@ -323,7 +323,7 @@ export const LecturerApprovalModal: React.FC<LecturerApprovalModalProps> = ({
                           style={{
                             padding: '7px 16px',
                             borderRadius: '8px',
-                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                             color: '#FFFFFF',
                             border: 'none',
                             fontSize: '0.76rem',
@@ -332,7 +332,7 @@ export const LecturerApprovalModal: React.FC<LecturerApprovalModalProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
-                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+                            boxShadow: '0 2px 8px rgba(173, 48, 41, 0.28)',
                           }}
                         >
                           <CheckCircle size={14} />

@@ -35,6 +35,7 @@ export interface DetailedGradingReport {
   assignmentTitle: string;
   classCode: string;
   studentName: string;
+  studentEmail?: string;
   overallScore: number; // 0 - 100
   score10: number; // 0 - 10
   scoreDisplay: string; // e.g. "86 / 100"
@@ -43,6 +44,8 @@ export interface DetailedGradingReport {
   classificationEn: string; // Excellent, Good, Fair, Poor
   passedTestCases: number;
   totalTestCases: number;
+  failedTestCases?: number;
+  testCasesSummary?: string;
   runtimeDurationMs: number;
   rubricBreakdown: RubricBreakdownItem[];
   testCaseResults: TestCaseResultItem[];

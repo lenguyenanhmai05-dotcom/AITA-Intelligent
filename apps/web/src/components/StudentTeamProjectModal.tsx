@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   Users,
@@ -27,6 +27,7 @@ interface StudentTeamProjectModalProps {
   onGoToTeamSubmission: (team?: TeamGroupItem) => void;
   lang: 'vi' | 'en';
   isDark: boolean;
+  enrolledClasses?: string[];
 }
 
 export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = ({
@@ -38,21 +39,40 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
   userEmail,
   onGoToTeamSubmission,
   lang,
-  isDark
+  isDark,
+  enrolledClasses
 }) => {
   const [copiedGit, setCopiedGit] = useState<boolean>(false);
 
-  // Available classes list
+  // Available classes list (strictly enrolled classes for this student)
   const availableClasses = useMemo(() => {
+    if (enrolledClasses !== undefined) {
+      return enrolledClasses;
+    }
     const fromMap = Object.keys(classTeamsMap);
-    const defaults = ['SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301', 'SE19B'];
-    return Array.from(new Set([...fromMap, ...defaults])).filter(Boolean);
-  }, [classTeamsMap]);
+    return Array.from(new Set(fromMap))
+      .filter(c => Boolean(c) && !c.includes('MMA') && !c.includes('PRJ301') && !c.includes('SDN') && !c.includes('—'));
+  }, [classTeamsMap, enrolledClasses]);
 
   // Selected class state
-  const [selectedClass, setSelectedClass] = useState<string>(
-    selectedClassCode && selectedClassCode !== 'all' ? selectedClassCode : 'SWP391-SE1801'
-  );
+  const initialClass = useMemo(() => {
+    if (enrolledClasses !== undefined) {
+      return enrolledClasses.includes(selectedClassCode) ? selectedClassCode : (enrolledClasses[0] || '');
+    }
+    return selectedClassCode && selectedClassCode !== 'all' ? selectedClassCode : (availableClasses[0] || '');
+  }, [enrolledClasses, selectedClassCode, availableClasses]);
+
+  const [selectedClass, setSelectedClass] = useState<string>(initialClass);
+
+  useEffect(() => {
+    if (enrolledClasses !== undefined) {
+      if (!enrolledClasses.includes(selectedClass)) {
+        setSelectedClass(enrolledClasses[0] || '');
+      }
+    } else if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
+      setSelectedClass(availableClasses[0]);
+    }
+  }, [enrolledClasses, selectedClass, availableClasses]);
 
   const teamsInClass: TeamGroupItem[] = useMemo(() => {
     try {
@@ -64,7 +84,7 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
         }
       }
     } catch {}
-    return classTeamsMap[selectedClass] || (selectedClass === 'SWP391-SE1801' ? classTeamsMap['SWP391-SE1801'] || [] : []);
+    return classTeamsMap[selectedClass] || [];
   }, [classTeamsMap, selectedClass, isOpen]);
 
   // Find strictly the student's assigned team in selectedClass (student CANNOT view other teams)
@@ -83,7 +103,7 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
       return inMembers || inMemberDetails;
     });
 
-    return found || (selectedClass === 'SWP391-SE1801' ? teamsInClass[0] : null);
+    return found || null;
   }, [teamsInClass, userFullName, userEmail, selectedClass]);
 
   if (!isOpen) return null;
@@ -149,12 +169,12 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
               width: '44px',
               height: '44px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, var(--color-kumquat, #EA6D35), var(--color-orange-zest, #D95328))',
+              background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#FFF',
-              boxShadow: '0 4px 14px rgba(217, 83, 40, 0.35)'
+              boxShadow: '0 4px 14px rgba(173, 48, 41, 0.35)'
             }}>
               <FolderGit2 size={24} />
             </div>
@@ -230,39 +250,45 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
             overflowX: 'auto',
             padding: '2px 0'
           }}>
-            {availableClasses.map((cCode) => {
-              const isSelected = selectedClass === cCode;
-              return (
-                <button
-                  key={cCode}
-                  type="button"
-                  onClick={() => setSelectedClass(cCode)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 14px',
-                    borderRadius: '10px',
-                    fontSize: '0.80rem',
-                    fontWeight: 800,
-                    lineHeight: 1.3,
-                    cursor: 'pointer',
-                    border: isSelected
-                      ? '1.5px solid var(--color-terracotta-600, #D9794E)'
-                      : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                    background: isSelected
-                      ? (isDark ? 'rgba(217, 121, 78, 0.25)' : 'var(--color-terracotta-100, #FBEEE6)')
-                      : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                    color: isSelected ? 'var(--color-terracotta-800, #7A3E2E)' : 'var(--text-muted)',
-                    whiteSpace: 'nowrap',
-                    boxShadow: isSelected ? '0 2px 8px rgba(217, 121, 78, 0.15)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <span>{cCode}</span>
-                </button>
-              );
-            })}
+            {availableClasses.length === 0 ? (
+              <span style={{ fontSize: '0.80rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 12px' }}>
+                {lang === 'vi' ? 'Chưa được thêm vào lớp nào' : 'Not enrolled in any class'}
+              </span>
+            ) : (
+              availableClasses.map((cCode) => {
+                const isSelected = selectedClass === cCode;
+                return (
+                  <button
+                    key={cCode}
+                    type="button"
+                    onClick={() => setSelectedClass(cCode)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.80rem',
+                      fontWeight: 800,
+                      lineHeight: 1.3,
+                      cursor: 'pointer',
+                      border: isSelected
+                        ? '1.5px solid var(--color-terracotta-600, #D9794E)'
+                        : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                      background: isSelected
+                        ? (isDark ? 'rgba(217, 121, 78, 0.25)' : 'var(--color-terracotta-100, #FBEEE6)')
+                        : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
+                      color: isSelected ? 'var(--color-terracotta-800, #7A3E2E)' : 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                      boxShadow: isSelected ? '0 2px 8px rgba(217, 121, 78, 0.15)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span>{cCode}</span>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -286,12 +312,18 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
             }}>
               <AlertCircle size={36} color="#D97706" style={{ margin: '0 auto 10px auto' }} />
               <div style={{ fontSize: '0.96rem', fontWeight: 800, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>
-                {lang === 'vi' ? `Bạn chưa có nhóm đồ án trong lớp ${selectedClass}` : `No team assigned for you in ${selectedClass}`}
+                {availableClasses.length === 0
+                  ? (lang === 'vi' ? 'Bạn chưa được Giảng viên thêm vào lớp học nào' : 'You are not enrolled in any class')
+                  : (lang === 'vi' ? `Bạn chưa có nhóm đồ án trong lớp ${selectedClass}` : `No team assigned for you in ${selectedClass}`)}
               </div>
               <div style={{ fontSize: '0.80rem', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '460px', marginInline: 'auto' }}>
-                {lang === 'vi'
-                  ? `Giảng viên phụ trách lớp ${selectedClass} chưa phân công nhóm cho bạn. Vui lòng chọn lớp SWP391-SE1801 để xem nhóm của mình hoặc liên hệ giảng viên.`
-                  : `Your instructor hasn't published team assignments for ${selectedClass} yet. Please switch to SWP391-SE1801 or check back later.`}
+                {availableClasses.length === 0
+                  ? (lang === 'vi'
+                      ? `Email tài khoản của bạn (${userEmail || 'chưa xác định'}) chưa được Giảng viên thêm vào danh sách lớp học nào. Vui lòng liên hệ Thầy/Cô để được thêm vào lớp học!`
+                      : `Your email (${userEmail || 'unknown'}) is not enrolled in any course roster. Please contact your instructor.`)
+                  : (lang === 'vi'
+                      ? `Giảng viên phụ trách lớp ${selectedClass} chưa phân công nhóm đồ án cho bạn hoặc chưa công bố danh sách nhóm. Vui lòng liên hệ Thầy/Cô để được hỗ trợ.`
+                      : `Your instructor hasn't published team assignments for ${selectedClass} yet. Please check back later or contact your instructor.`)}
               </div>
             </div>
           ) : (
@@ -324,7 +356,7 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
                     fontWeight: 800,
                     padding: '3px 10px',
                     borderRadius: '6px',
-                    background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+                    background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                     color: '#FFF'
                   }}>
                     {currentTeam.teamName} (Nhóm của bạn)
@@ -717,12 +749,13 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
               style={{
                 padding: '8px 16px',
                 borderRadius: '10px',
-                border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
-                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                color: 'var(--text-body)',
+                border: '1.5px solid #CC8780',
+                background: '#FFF5F4',
+                color: '#AD3029',
                 fontWeight: 700,
                 fontSize: '0.80rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(173, 48, 41, 0.08)',
               }}
             >
               {lang === 'vi' ? 'Đóng' : 'Close'}
@@ -744,12 +777,12 @@ export const StudentTeamProjectModal: React.FC<StudentTeamProjectModalProps> = (
                   padding: '9px 20px',
                   borderRadius: '10px',
                   border: 'none',
-                  background: 'linear-gradient(135deg, var(--color-kumquat, #EA6D35), var(--color-orange-zest, #D95328))',
+                  background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                   color: '#FFFFFF',
                   fontWeight: 800,
                   fontSize: '0.82rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(217, 83, 40, 0.35)'
+                  boxShadow: '0 4px 14px rgba(173, 48, 41, 0.35)',
                 }}
               >
                 <span>{lang === 'vi' ? 'Đi Tới Nộp Bài Nhóm (Git)' : 'Go To Team Submission'}</span>

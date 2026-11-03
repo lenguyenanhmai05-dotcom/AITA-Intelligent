@@ -12,6 +12,7 @@ import {
   dismissJob,
   reviewGradingJob,
   getSubmissionReport,
+  updateSubmissionGrade,
 } from '../controllers/gradingController';
 
 const router = Router();
@@ -20,6 +21,8 @@ const router = Router();
 router.get('/submissions', getSubmissions);
 router.post('/submissions', createSubmission);
 router.get('/submissions/:id/report', getSubmissionReport);
+router.patch('/submissions/:id/grade', updateSubmissionGrade);
+router.post('/submissions/:id/grade', updateSubmissionGrade);
 
 // Batch Grading Orchestration (UC-01 & BR-02)
 router.get('/batches', getBatches);

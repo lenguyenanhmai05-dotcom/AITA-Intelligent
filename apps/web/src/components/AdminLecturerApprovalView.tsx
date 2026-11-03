@@ -48,20 +48,18 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
 
   return (
     <div style={{
-      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+      background: '#FFFFFF',
       borderRadius: '20px',
-      border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(16, 185, 129, 0.25)',
-      boxShadow: 'var(--shadow-card)',
+      border: '1.5px solid rgba(173, 48, 41, 0.16)',
+      boxShadow: '0 4px 20px rgba(173, 48, 41, 0.08)',
       overflow: 'hidden',
       marginBottom: '24px',
     }}>
       {/* Header bar */}
       <div style={{
         padding: isCompact ? '18px 24px' : '24px 28px',
-        borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
-        background: isDark
-          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.05) 100%)'
-          : 'linear-gradient(135deg, #ECFDF5 0%, #FFFFFF 100%)',
+        borderBottom: '1px solid rgba(173, 48, 41, 0.12)',
+        background: 'linear-gradient(135deg, #FFF5F4 0%, #FFFFFF 100%)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -73,12 +71,12 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
             width: '44px',
             height: '44px',
             borderRadius: '12px',
-            background: 'linear-gradient(135deg, #10B981, #059669)',
+            background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#FFFFFF',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+            boxShadow: '0 4px 12px rgba(173, 48, 41, 0.35)',
             flexShrink: 0,
           }}>
             <UserCheck size={24} />
@@ -96,13 +94,13 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
               </h3>
               {pendingRequests.length > 0 && (
                 <span style={{
-                  background: '#EF4444',
+                  background: 'linear-gradient(135deg, #AD3029, #CD5252)',
                   color: '#FFFFFF',
                   fontSize: '0.70rem',
                   fontWeight: 800,
                   padding: '2px 8px',
                   borderRadius: '999px',
-                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)',
+                  boxShadow: '0 2px 6px rgba(173, 48, 41, 0.35)',
                 }}>
                   {pendingRequests.length} {lang === 'vi' ? 'chờ duyệt' : 'pending'}
                 </span>
@@ -131,13 +129,14 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
               alignItems: 'center',
               gap: '6px',
               padding: '7px 14px',
-              background: isDark ? 'var(--bg-surface-subtle)' : '#FFFFFF',
-              border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+              background: '#FFF5F4',
+              border: '1.5px solid #CC8780',
               borderRadius: '9px',
               fontSize: '0.78rem',
               fontWeight: 700,
-              color: 'var(--text-main)',
+              color: '#AD3029',
               cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(173, 48, 41, 0.08)',
               transition: 'all 0.15s ease',
             }}
             title={lang === 'vi' ? 'Tải lại danh sách mới nhất' : 'Refresh requests'}
@@ -155,17 +154,17 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
                 alignItems: 'center',
                 gap: '6px',
                 padding: '7px 14px',
-                background: 'linear-gradient(135deg, #10B981, #059669)',
+                background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                 border: 'none',
                 borderRadius: '9px',
                 fontSize: '0.78rem',
                 fontWeight: 700,
                 color: '#FFFFFF',
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+                boxShadow: '0 2px 8px rgba(173, 48, 41, 0.28)',
               }}
             >
-              <span>{lang === 'vi' ? 'Xem toàn bộ' : 'View all'}</span>
+              <span>{lang === 'vi' ? 'Xem đầy đủ' : 'Full View'}</span>
             </button>
           )}
         </div>
@@ -263,11 +262,12 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
                   fontSize: '0.74rem',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  border: 'none',
+                  border: filterStatus === st ? 'none' : '1px solid rgba(173, 48, 41, 0.18)',
                   background: filterStatus === st
-                    ? (st === 'PENDING' ? '#EF4444' : st === 'APPROVED' ? '#10B981' : 'var(--color-orange-zest)')
-                    : (isDark ? 'var(--bg-surface-subtle)' : '#F1F5F9'),
-                  color: filterStatus === st ? '#FFFFFF' : 'var(--text-body)',
+                    ? 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)'
+                    : '#FFF5F4',
+                  color: filterStatus === st ? '#FFFFFF' : '#7E4A46',
+                  boxShadow: filterStatus === st ? '0 2px 6px rgba(173, 48, 41, 0.25)' : 'none',
                   transition: 'all 0.15s ease',
                 }}
               >
@@ -443,14 +443,14 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
                             alignItems: 'center',
                             gap: '6px',
                             padding: '8px 16px',
-                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                             border: 'none',
                             borderRadius: '9px',
                             color: '#FFFFFF',
                             fontSize: '0.78rem',
                             fontWeight: 800,
                             cursor: isActionLoading ? 'not-allowed' : 'pointer',
-                            boxShadow: '0 3px 10px rgba(16, 185, 129, 0.35)',
+                            boxShadow: '0 3px 10px rgba(173, 48, 41, 0.35)',
                             transition: 'all 0.15s ease',
                           }}
                         >
@@ -506,12 +506,12 @@ export const AdminLecturerApprovalView: React.FC<AdminLecturerApprovalViewProps>
                           alignItems: 'center',
                           gap: '6px',
                           padding: '6px 12px',
-                          background: isDark ? 'var(--bg-surface-subtle)' : '#FFFFFF',
-                          border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                          background: '#FFF5F4',
+                          border: '1.5px solid #CC8780',
                           borderRadius: '8px',
-                          color: 'var(--text-main)',
+                          color: '#AD3029',
                           fontSize: '0.74rem',
-                          fontWeight: 700,
+                          fontWeight: 800,
                           cursor: 'pointer',
                         }}
                       >

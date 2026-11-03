@@ -2,50 +2,53 @@
 
 :root {
   /* ========================================================================= */
-  /* AITA-INTELLIGENT: Cantaloupe / Melon Design System Tokens (LIGHT MODE)    */
+  /* AITA-INTELLIGENT: Red Velvet Cake Design System Tokens (丝绒蛋糕)        */
+  /* Palette: #CC8780 (Rose) | #AD3029 (Crimson) | #CD5252 (Coral) | #FEEFCD (Cream) */
   /* ========================================================================= */
-  --color-exocarp: #788417;       /* Deep Olive Green */
-  --color-unripe: #AAB026;        /* Fresh Lime / Olive */
-  --color-mystic-melon: #F6F1BC;  /* Creamy Pale Melon */
-  --color-cantaloupe: #FDCB7B;    /* Warm Cantaloupe Tint */
-  --color-kumquat: #B5523A;       /* Warm Terracotta Red (#B5523A - Terracotta Sunset) */
-  --color-orange-zest: #7A3E2E;   /* Deep Terracotta Wine Red (#7A3E2E - Terracotta Sunset) */
+  --color-exocarp: #AD3029;       /* Deep Velvet Red */
+  --color-unripe: #CD5252;        /* Coral Velvet Red */
+  --color-mystic-melon: #FEEFCD;  /* Velvet Cream Custard */
+  --color-cantaloupe: #CC8780;    /* Dusty Velvet Rose */
+  --color-kumquat: #AD3029;       /* Deep Velvet Crimson (#AD3029) */
+  --color-orange-zest: #CD5252;   /* Coral Velvet Red (#CD5252) */
 
-  /* Terracotta Sunset Palette Tokens (Light Mode) */
-  --color-terracotta-900: #7A3E2E; /* Deep Terracotta Espresso (Headers, High-Contrast Text) */
-  --color-terracotta-700: #B5523A; /* Warm Terracotta (Primary CTA, Active Elements, Badges) */
-  --color-terracotta-600: #D9794E; /* Sunset Amber (Accent Highlights, Metric Values) */
-  --color-terracotta-500: #E7A27A; /* Soft Terracotta (Secondary Buttons, Progress Bar) */
-  --color-terracotta-300: #F1C2A7; /* Peach Glow (Input Focus Rings, Subtle Borders) */
-  --color-terracotta-200: #F7DBCC; /* Pale Peach (Delicate Dividers & Card Outlines) */
-  --color-terracotta-100: #FBEEE6; /* Warm Alabaster (Cards, Hover States, Pill Surfaces) */
-  --color-terracotta-50:  #FFFAF6; /* Warm Pearl (Backgrounds, Canvas Surfaces) */
+  /* Velvet Cake Palette Tokens (Light Mode) */
+  --color-terracotta-900: #3E1815; /* Deep Velvet Espresso (Headers, High-Contrast Text) */
+  --color-terracotta-800: #AD3029; /* Deep Velvet Crimson */
+  --color-terracotta-700: #AD3029; /* Deep Velvet Crimson (Primary CTA, Active Elements, Badges) */
+  --color-terracotta-600: #CD5252; /* Coral Velvet Red (Accent Highlights, Metric Values) */
+  --color-terracotta-500: #CC8780; /* Dusty Velvet Rose (Secondary Buttons, Progress Bar) */
+  --color-terracotta-400: #CC8780; /* Dusty Velvet Rose */
+  --color-terracotta-300: #E2A6A0; /* Soft Velvet Rose (Input Focus Rings, Borders) */
+  --color-terracotta-200: #F3CBC7; /* Pale Velvet Tint (Delicate Dividers & Card Outlines) */
+  --color-terracotta-100: #FEEFCD; /* Velvet Cream Custard (Cards, Hover States, Pill Surfaces) */
+  --color-terracotta-50:  #FFFBF5; /* Pure Velvet Ivory (Backgrounds, Canvas Surfaces) */
 
   /* Neutral & Functional Colors - Light */
-  --bg-page: #FAF9F3;
-  --bg-page-gradient: radial-gradient(circle at 15% 15%, #FFFFFF 0%, #FAF9F3 45%, #F1F4E4 100%);
+  --bg-page: #FAF1E4;
+  --bg-page-gradient: radial-gradient(circle at 15% 15%, #FFFDF9 0%, #FAF1E4 45%, #F5E6D2 100%);
   --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #FAF9F1;
-  --bg-surface-hover: #F3F2E8;
-  --bg-surface-accent: #FAF2E6;
-  --bg-surface-input: #FDFDFC;
+  --bg-surface-subtle: #FAF3E8;
+  --bg-surface-hover: #F6EBDB;
+  --bg-surface-accent: #FDF3E5;
+  --bg-surface-input: #FFFFFF;
   --bg-navbar: #FFFFFF;
   --bg-sidebar: #FFFFFF;
-  --bg-nav-pill: #F6F5ED;
+  --bg-nav-pill: #F7EFE2;
   
-  --text-main: #1C2009;
-  --text-body: #4A5229;
-  --text-muted: #7A855A;
-  --text-subtle: #9EA885;
+  --text-main: #2D1412;
+  --text-body: #4E2825;
+  --text-muted: #7E4A46;
+  --text-subtle: #A36B66;
   
-  --border-light: #E5E8D6;
-  --border-subtle: #F1F3E8;
-  --border-card: rgba(120, 132, 23, 0.16);
-  --border-focus: #B5523A;
-  --border-badge: rgba(170, 176, 38, 0.35);
+  --border-light: #EBD9C8;
+  --border-subtle: #F3E6D7;
+  --border-card: rgba(173, 48, 41, 0.14);
+  --border-focus: #AD3029;
+  --border-badge: rgba(205, 82, 82, 0.32);
 
-  --shadow-card: 0 20px 45px -15px rgba(181, 82, 58, 0.08), 0 8px 20px -6px rgba(122, 62, 46, 0.06), 0 0 1px rgba(0, 0, 0, 0.08);
-  --shadow-btn: 0 8px 20px -4px rgba(181, 82, 58, 0.35);
+  --shadow-card: 0 20px 45px -15px rgba(173, 48, 41, 0.09), 0 8px 20px -6px rgba(62, 24, 21, 0.06), 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-btn: 0 8px 20px -4px rgba(173, 48, 41, 0.32);
   --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.03);
 
   --radius-sm: 8px;
@@ -57,56 +60,7 @@
   --font-heading: 'Outfit', var(--font-sans);
 }
 
-/* ========================================================================= */
-/* AITA-INTELLIGENT: Obsidian Olive / Dark Cantaloupe (DARK MODE)            */
-/* ========================================================================= */
-[data-theme='dark'] {
-  color-scheme: dark;
 
-  --color-exocarp: #9EAB2B;       /* Brighter lime olive for dark contrast */
-  --color-unripe: #C0C840;
-  --color-mystic-melon: #2A321E;
-  --color-cantaloupe: #ECAE52;
-  --color-kumquat: #D9794E;
-  --color-orange-zest: #B5523A;
-
-  /* Terracotta Sunset Palette Tokens (Dark Mode) */
-  --color-terracotta-900: #FFFAF6; /* High contrast light text on dark */
-  --color-terracotta-700: #E7A27A; /* Softer terracotta for dark backgrounds */
-  --color-terracotta-600: #F1C2A7; /* Sunset glow accent */
-  --color-terracotta-500: #D9794E; /* Amber terracotta */
-  --color-terracotta-300: #B5523A; /* Deep warm accent */
-  --color-terracotta-200: #4A2B24; /* Subtle dark divider border */
-  --color-terracotta-100: #2D1A16; /* Dark surface / card background */
-  --color-terracotta-50:  #1A100E; /* Deepest canvas / background */
-
-  /* Neutral & Functional Colors - Dark */
-  --bg-page: #10140D;
-  --bg-page-gradient: radial-gradient(circle at 15% 15%, #182013 0%, #10140D 50%, #0A0D08 100%);
-  --bg-surface: #181F13;
-  --bg-surface-subtle: #202819;
-  --bg-surface-hover: #27311F;
-  --bg-surface-accent: #2A2417;   /* Warm dark amber accent */
-  --bg-surface-input: #12170E;
-  --bg-navbar: #141A10;
-  --bg-sidebar: #141A10;
-  --bg-nav-pill: #1C2415;
-  
-  --text-main: #F4F6EC;
-  --text-body: #CCD4BE;
-  --text-muted: #8E9975;
-  --text-subtle: #6D7755;
-  
-  --border-light: rgba(255, 255, 255, 0.11);
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-card: rgba(170, 176, 38, 0.24);
-  --border-focus: #D9794E;
-  --border-badge: rgba(170, 176, 38, 0.4);
-
-  --shadow-card: 0 20px 45px -15px rgba(0, 0, 0, 0.65), 0 8px 20px -6px rgba(0, 0, 0, 0.45);
-  --shadow-btn: 0 8px 20px -4px rgba(181, 82, 58, 0.45);
-  --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.35);
-}
 
 * {
   box-sizing: border-box;
@@ -141,17 +95,6 @@ body {
   background: #B6BD9B;
 }
 
-/* Custom Scrollbar - Dark */
-[data-theme='dark'] ::-webkit-scrollbar-track {
-  background: #11150E;
-}
-[data-theme='dark'] ::-webkit-scrollbar-thumb {
-  background: #2B3420;
-}
-[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
-  background: #3B472E;
-}
-
 input, button, select, textarea {
   font-family: inherit;
 }
@@ -162,104 +105,6 @@ button {
   outline: none;
 }
 
-/* ========================================================================= */
-/* COMPREHENSIVE DARK MODE OVERRIDES ACROSS ALL SCREENS                      */
-/* ========================================================================= */
-
-[data-theme='dark'] header:not(.transparent-header) {
-  background: var(--bg-navbar) !important;
-  border-bottom: 1.5px solid var(--border-light) !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35) !important;
-}
-
-.transparent-header,
-[data-theme='dark'] .transparent-header,
-header.transparent-header,
-[data-theme='dark'] header.transparent-header {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-[data-theme='dark'] aside {
-  background: var(--bg-sidebar) !important;
-  border-right: 1.5px solid var(--border-light) !important;
-}
-
-[data-theme='dark'] nav {
-  background: var(--bg-nav-pill) !important;
-}
-
-[data-theme='dark'] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-[data-theme='dark'] textarea,
-[data-theme='dark'] select {
-  background: var(--bg-surface-input) !important;
-  color: var(--text-main) !important;
-  border-color: var(--border-light) !important;
-}
-
-[data-theme='dark'] input::placeholder,
-[data-theme='dark'] textarea::placeholder {
-  color: var(--text-subtle) !important;
-}
-
-[data-theme='dark'] table {
-  border-color: var(--border-subtle) !important;
-}
-
-[data-theme='dark'] th {
-  background: var(--bg-surface-subtle) !important;
-  color: var(--text-muted) !important;
-  border-bottom: 1px solid var(--border-subtle) !important;
-}
-
-[data-theme='dark'] td {
-  border-bottom: 1px solid var(--border-subtle) !important;
-  color: var(--text-body) !important;
-}
-
-[data-theme='dark'] tr:hover td {
-  background: var(--bg-surface-hover) !important;
-}
-
-/* Surface overrides for hardcoded light values in dark mode */
-[data-theme='dark'] [style*="background: #FFFFFF"],
-[data-theme='dark'] [style*="background: #ffffff"],
-[data-theme='dark'] [style*="background:#FFFFFF"],
-[data-theme='dark'] [style*="background:#ffffff"],
-[data-theme='dark'] [style*="background: rgb(255, 255, 255)"] {
-  background: var(--bg-surface) !important;
-  border-color: var(--border-light) !important;
-}
-
-[data-theme='dark'] [style*="background: #FAF9F1"],
-[data-theme='dark'] [style*="background: #faf9f1"],
-[data-theme='dark'] [style*="background:#FAF9F1"],
-[data-theme='dark'] [style*="background: #FAF9F3"],
-[data-theme='dark'] [style*="background: #F6F5ED"],
-[data-theme='dark'] [style*="background: #f6f5ed"],
-[data-theme='dark'] [style*="background: #F4F3EB"],
-[data-theme='dark'] [style*="background: #F8FAFC"],
-[data-theme='dark'] [style*="background: #F1F5F9"] {
-  background: var(--bg-surface-subtle) !important;
-  border-color: var(--border-light) !important;
-}
-
-[data-theme='dark'] [style*="background: #FAF2E6"],
-[data-theme='dark'] [style*="background: #faf2e6"],
-[data-theme='dark'] [style*="background:#FAF2E6"] {
-  background: var(--bg-surface-accent) !important;
-  border-color: rgba(224, 108, 40, 0.4) !important;
-}
-
-/* Pre / Code blocks in Dark Mode */
-[data-theme='dark'] pre,
-[data-theme='dark'] code {
-  background: #0E130A !important;
-  color: #E2E8F0 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
 
 @keyframes spin {
   100% { transform: rotate(360deg); }
@@ -269,3 +114,102 @@ header.transparent-header,
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Red Velvet Float Animation (Hardware accelerated CSS transform, 0% CPU/GPU overhead) */
+@keyframes aitaVelvetFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(0.8deg);
+  }
+}
+
+@keyframes aitaVelvetPulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes aitaVelvetFloat1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(45px, -35px) scale(1.10);
+  }
+  100% {
+    transform: translate(-30px, 25px) scale(0.94);
+  }
+}
+
+@keyframes aitaVelvetFloat2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-40px, 40px) scale(1.12);
+  }
+  100% {
+    transform: translate(30px, -30px) scale(0.92);
+  }
+}
+
+/* Login Screen Centered White Card with Ambient Red Velvet Glow */
+.login-header {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.login-card-container {
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 25px 60px -15px rgba(173, 48, 41, 0.14), 0 8px 24px -4px rgba(62, 24, 21, 0.08) !important;
+  color: #1A0608 !important;
+}
+
+.login-card-container h2 {
+  color: #1A0608 !important;
+}
+
+.login-card-container p {
+  color: #784340 !important;
+}
+
+.login-role-selector {
+  background: #F9F4F4 !important;
+  border: 1px solid rgba(173, 48, 41, 0.12) !important;
+}
+
+.login-hint-pill {
+  background: rgba(173, 48, 41, 0.05) !important;
+  border: 1px solid rgba(173, 48, 41, 0.12) !important;
+  color: #6E3936 !important;
+}
+
+.login-google-btn {
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(173, 48, 41, 0.24) !important;
+  color: #1A0608 !important;
+}
+
+@media (max-width: 640px) {
+  .login-screen-root {
+    padding: 16px !important;
+  }
+  .login-header {
+    justify-content: center !important;
+  }
+  .login-card-container {
+    padding: 26px 20px !important;
+  }
+}
+
+
+

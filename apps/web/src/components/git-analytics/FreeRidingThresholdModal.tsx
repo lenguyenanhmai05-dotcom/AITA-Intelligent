@@ -270,14 +270,14 @@ export const FreeRidingThresholdModal: React.FC<FreeRidingThresholdModalProps> =
               padding: '10px 22px',
               borderRadius: '10px',
               background: isValid
-                ? 'linear-gradient(135deg, var(--color-terracotta-700, #B5523A), var(--color-terracotta-600, #D9794E))'
+                ? 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)'
                 : '#D1D5DB',
               color: '#FFFFFF',
               border: 'none',
               fontWeight: 800,
               fontSize: '0.84rem',
               cursor: isValid ? 'pointer' : 'not-allowed',
-              boxShadow: isValid ? '0 4px 14px rgba(181, 82, 58, 0.35)' : 'none',
+              boxShadow: isValid ? '0 4px 14px rgba(173, 48, 41, 0.28)' : 'none',
               transition: 'background 0.2s, opacity 0.2s',
             }}
           >

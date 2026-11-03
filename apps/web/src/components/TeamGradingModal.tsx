@@ -42,13 +42,15 @@ export const TeamGradingModal: React.FC<TeamGradingModalProps> = ({
   lang,
   isDark
 }) => {
-  const [targetClass, setTargetClass] = useState<string>(selectedClassCode || 'SWP391-SE1801');
+  const [targetClass, setTargetClass] = useState<string>(selectedClassCode || (classesList && classesList.length > 0 ? classesList[0] : ''));
   
   React.useEffect(() => {
-    if (selectedClassCode && selectedClassCode !== 'all') {
+    if (selectedClassCode && selectedClassCode !== 'all' && classesList.includes(selectedClassCode)) {
       setTargetClass(selectedClassCode);
+    } else if (classesList.length > 0 && !classesList.includes(targetClass)) {
+      setTargetClass(classesList[0]);
     }
-  }, [selectedClassCode, isOpen]);
+  }, [selectedClassCode, isOpen, classesList, targetClass]);
 
   // Retrieve teams for current class (respects class switch within modal)
   const currentClassTeams = React.useMemo(() => {
@@ -156,12 +158,12 @@ export const TeamGradingModal: React.FC<TeamGradingModalProps> = ({
               width: '42px',
               height: '42px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+              background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#FFF',
-              boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)'
+              boxShadow: '0 4px 14px rgba(173, 48, 41, 0.28)'
             }}>
               <FolderGit2 size={22} />
             </div>
@@ -284,12 +286,12 @@ export const TeamGradingModal: React.FC<TeamGradingModalProps> = ({
                   style={{
                     padding: '10px 22px',
                     borderRadius: '10px',
-                    background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+                    background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                     color: '#FFFFFF',
                     fontWeight: 800,
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)',
+                    boxShadow: '0 4px 14px rgba(173, 48, 41, 0.28)',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px'
@@ -306,10 +308,10 @@ export const TeamGradingModal: React.FC<TeamGradingModalProps> = ({
                     style={{
                       padding: '10px 18px',
                       borderRadius: '10px',
-                      background: 'transparent',
-                      color: 'var(--color-terracotta-700, #B5523A)',
-                      border: '1.5px solid var(--color-terracotta-400, #E7A27A)',
-                      fontWeight: 700,
+                      background: '#FFF5F4',
+                      color: '#AD3029',
+                      border: '1.5px solid #CC8780',
+                      fontWeight: 800,
                       cursor: 'pointer'
                     }}
                   >
@@ -346,7 +348,7 @@ export const TeamGradingModal: React.FC<TeamGradingModalProps> = ({
                       outline: 'none'
                     }}
                   >
-                    {Array.from(new Set([...classesList, 'SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301'])).map((code) => (
+                    {classesList.map((code) => (
                       <option key={code} value={code}>
                         {code}
                       </option>
@@ -587,12 +589,12 @@ export const TeamGradingModal: React.FC<TeamGradingModalProps> = ({
                 border: pendingTeams.length === 0 ? '1px solid rgba(16, 185, 129, 0.4)' : 'none',
                 background: selectedTeams.length === 0 || isScanning
                   ? (pendingTeams.length === 0 ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5') : '#94A3B8')
-                  : 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+                  : 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                 color: pendingTeams.length === 0 ? '#059669' : '#FFFFFF',
                 fontWeight: 800,
                 fontSize: '0.86rem',
                 cursor: selectedTeams.length === 0 || isScanning ? 'not-allowed' : 'pointer',
-                boxShadow: selectedTeams.length === 0 || isScanning ? 'none' : '0 4px 14px rgba(181, 82, 58, 0.35)'
+                boxShadow: selectedTeams.length === 0 || isScanning ? 'none' : '0 4px 14px rgba(173, 48, 41, 0.35)'
               }}
             >
               {isScanning ? (

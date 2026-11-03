@@ -63,7 +63,7 @@ export const TeamContributionReport: React.FC<TeamReportProps> = ({
                 )}
               </td>
               <td style={{ padding: '14px 18px' }}>
-                <button onClick={() => onSelectMember(member.id)} style={{ background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                <button onClick={() => onSelectMember(member.id)} style={{ background: '#FFF5F4', color: '#AD3029', border: '1.5px solid #CC8780', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>
                   Chi tiết
                 </button>
               </td>

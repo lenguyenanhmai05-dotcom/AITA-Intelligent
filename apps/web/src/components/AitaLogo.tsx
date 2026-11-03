@@ -22,29 +22,29 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
       style={{ display: 'inline-block', verticalAlign: 'middle' }}
     >
       <defs>
-        {/* Gradients for Legs */}
+        {/* Gradients for Legs (Red Velvet Sunset) */}
         <linearGradient id="aita-orange-grad" x1="100" y1="40" x2="100" y2="160" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#B5523A" />
-          <stop offset="100%" stopColor="#7A3E2E" />
+          <stop offset="0%" stopColor="#CD5252" />
+          <stop offset="100%" stopColor="#AD3029" />
         </linearGradient>
 
         <linearGradient id="aita-leg-left" x1="100" y1="55" x2="60" y2="150" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#B5523A" />
-          <stop offset="100%" stopColor="#7A3E2E" />
+          <stop offset="0%" stopColor="#CD5252" />
+          <stop offset="100%" stopColor="#AD3029" />
         </linearGradient>
 
         <linearGradient id="aita-leg-right" x1="100" y1="55" x2="140" y2="150" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#B5523A" />
-          <stop offset="100%" stopColor="#7A3E2E" />
+          <stop offset="0%" stopColor="#CD5252" />
+          <stop offset="100%" stopColor="#AD3029" />
         </linearGradient>
 
         {/* Soft shadow for joints */}
         <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="120%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.12" floodColor="#788417" />
+          <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" floodColor="#AD3029" />
         </filter>
       </defs>
 
-      {/* Optional Outer Container (Matches Image 1 squircle) */}
+      {/* Optional Outer Container (Matches Cream Squircle) */}
       {showContainer && (
         <rect
           x="4"
@@ -52,37 +52,37 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
           width="192"
           height="192"
           rx="44"
-          fill="#F7F9EE"
-          stroke="#E6EBCF"
+          fill="#FFFDF9"
+          stroke="#FEEFCD"
           strokeWidth="3.5"
         />
       )}
 
-      {/* Satellite 1: Left Green Satellite + Dotted line */}
+      {/* Satellite 1: Left Velvet Rose Satellite + Dotted line */}
       <line
         x1="54"
         y1="82"
         x2="70"
         y2="96"
-        stroke="#AAB026"
+        stroke="#CC8780"
         strokeWidth="2.5"
         strokeDasharray="3 3"
         strokeLinecap="round"
       />
-      <circle cx="54" cy="82" r="7.5" fill="#AAB026" />
+      <circle cx="54" cy="82" r="7.5" fill="#CC8780" />
 
-      {/* Satellite 2: Right Orange Satellite + Dotted line */}
+      {/* Satellite 2: Right Coral Satellite + Dotted line */}
       <line
         x1="146"
         y1="72"
         x2="134"
         y2="86"
-        stroke="#B5523A"
+        stroke="#CD5252"
         strokeWidth="2.5"
         strokeDasharray="3 3"
         strokeLinecap="round"
       />
-      <circle cx="146" cy="72" r="8" fill="#B5523A" />
+      <circle cx="146" cy="72" r="8" fill="#CD5252" />
 
       {/* Middle Faint Horizontal Guide Bar */}
       <line
@@ -90,7 +90,7 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
         y1="110"
         x2="124"
         y2="110"
-        stroke="#E6EACF"
+        stroke="#FEEFCD"
         strokeWidth="6"
         strokeLinecap="round"
       />
@@ -118,25 +118,25 @@ export const AitaLogo: React.FC<AitaLogoProps> = ({
       />
 
       {/* Bottom-Left Joint */}
-      <circle cx="63" cy="148" r="15" fill="#7A3E2E" filter="url(#soft-shadow)" />
+      <circle cx="63" cy="148" r="15" fill="#AD3029" filter="url(#soft-shadow)" />
       <circle cx="63" cy="148" r="8.5" fill="#FFFFFF" />
 
       {/* Bottom-Right Joint */}
-      <circle cx="137" cy="148" r="15" fill="#7A3E2E" filter="url(#soft-shadow)" />
+      <circle cx="137" cy="148" r="15" fill="#AD3029" filter="url(#soft-shadow)" />
       <circle cx="137" cy="148" r="8.5" fill="#FFFFFF" />
 
       {/* Top Joint */}
-      <circle cx="100" cy="52" r="17" fill="#7A3E2E" filter="url(#soft-shadow)" />
+      <circle cx="100" cy="52" r="17" fill="#AD3029" filter="url(#soft-shadow)" />
       <circle cx="100" cy="52" r="9" fill="#FFFFFF" />
-      <circle cx="100" cy="52" r="4.5" fill="#7A3E2E" />
+      <circle cx="100" cy="52" r="4.5" fill="#AD3029" />
 
       {/* Center Sparkle Joint (AST & AI node) */}
       <circle cx="100" cy="110" r="17" fill="#FFFFFF" filter="url(#soft-shadow)" />
-      <circle cx="100" cy="110" r="13" fill="#788417" />
+      <circle cx="100" cy="110" r="13" fill="#AD3029" />
       {/* 4-point star sparkle */}
       <path
         d="M100 102 C100 107 95 110 92 110 C95 110 100 113 100 118 C100 113 105 110 108 110 C105 110 100 107 100 102 Z"
-        fill="#F6F1BC"
+        fill="#FEEFCD"
       />
     </svg>
   );

@@ -44,7 +44,6 @@ import {
   Download,
   FileText,
   Archive,
-  Filter,
   FileSpreadsheet,
   Edit3,
   Lock,
@@ -67,6 +66,8 @@ import { GroupAssignmentModal, TeamGroupItem } from './GroupAssignmentModal';
 import { TeamGradingModal } from './TeamGradingModal';
 import { StudentTeamProjectModal } from './StudentTeamProjectModal';
 import { analyzeRealGitHubRepo } from '../services/realGitAnalyzer';
+import { extractZipEntries } from '../services/aiCodeGrader';
+import { evaluateCodeAgainstAssignment } from '../services/assignmentTestCases';
 import { Sun, Moon } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -587,7 +588,7 @@ export const normalizeAssignmentGroup = (title: string): string => {
   if (t === 'assignment 3' || t.startsWith('assignment 3') || t.includes('spring boot') || t.includes('bullmq') || t.includes('microservices & redis')) return 'assignment_3_swp391';
   if (t === 'assignment 1' || t.startsWith('assignment 1') || t.includes('java servlet') || t.includes('jsp')) return 'assignment_1_prj301';
   if (t === 'assignment 2' || t.startsWith('assignment 2') || t.includes('asp.net') || t.includes('entity framework')) return 'assignment_2_prn231';
-  if (t.includes('mma301') || t.includes('microservices backend')) return 'assignment_mma301';
+  if (t.includes('mma301') || (t.includes('microservices') && t.includes('backend')) || t.includes('backend node.js') || t.includes('kiến trúc microservices')) return 'assignment_mma301';
   if (t.includes('lab 2') || t.includes('docker sandbox')) return 'lab_2_docker';
   if (t.includes('lab 5') || t.includes('database indexing')) return 'lab_5_indexing';
   if (t.includes('final project') || t.includes('ast code analytics')) return 'final_project_swp391';
@@ -611,10 +612,27 @@ export const getFullAssignmentTitle = (rawTitle: string): string => {
   return rawTitle;
 };
 
-// Helper: Loại bỏ hoàn toàn các đề bài bị trùng lặp (giữ duy nhất 1 bài cho mỗi đề theo từng lớp)
+// Helper: Loại bỏ hoàn toàn các đề bài bị trùng lặp (giữ duy nhất 1 bài cho mỗi đề theo từng lớp hoặc phân lớp)
 export const dedupAssignments = (assignments: ClassAssignmentItem[]): ClassAssignmentItem[] => {
   if (!Array.isArray(assignments)) return [];
-  const seenGroups = new Set<string>();
+
+  // 1. Phân loại các lớp con/section (ví dụ: MMA301-SE19B) theo nhóm đề bài
+  // Nếu đã có đề giao cho lớp chi tiết MMA301-SE19B, thì đề mẫu chung MMA301 sẽ tự động được loại bỏ
+  const sectionCourseMap = new Map<string, Set<string>>();
+  for (const item of assignments) {
+    if (!item) continue;
+    const c = (item.classCode || '').trim().toUpperCase();
+    if (c.includes('-')) {
+      const baseCourse = c.split('-')[0].trim();
+      const groupKey = normalizeAssignmentGroup(item.title || '');
+      if (!sectionCourseMap.has(groupKey)) {
+        sectionCourseMap.set(groupKey, new Set());
+      }
+      sectionCourseMap.get(groupKey)!.add(baseCourse);
+    }
+  }
+
+  const seenKeys = new Set<string>();
   const result: ClassAssignmentItem[] = [];
 
   for (const item of assignments) {
@@ -622,10 +640,15 @@ export const dedupAssignments = (assignments: ClassAssignmentItem[]): ClassAssig
     const rawTitle = item.title || '';
     const groupKey = normalizeAssignmentGroup(rawTitle);
     const classKey = (item.classCode || '').trim().toUpperCase();
-    const compositeKey = `${classKey}:::${groupKey}`;
 
-    if (!seenGroups.has(compositeKey)) {
-      seenGroups.add(compositeKey);
+    // Bỏ qua đề bài mẫu chung nếu lớp chi tiết thuộc môn đó đã có đề
+    if (!classKey.includes('-') && sectionCourseMap.get(groupKey)?.has(classKey)) {
+      continue;
+    }
+
+    const compositeKey = `${classKey}:::${groupKey}`;
+    if (!seenKeys.has(compositeKey)) {
+      seenKeys.add(compositeKey);
       result.push({
         ...item,
         title: getFullAssignmentTitle(rawTitle),
@@ -787,43 +810,6 @@ export const TwentyFourHourDeadlinePicker: React.FC<TwentyFourHourDeadlinePicker
             ))}
           </select>
         </div>
-      </div>
-
-      {/* Quick Pick Shortcuts */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '0.70rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-          Chọn nhanh:
-        </span>
-        {[
-          { label: '🌙 23:59 (Cuối ngày)', h: '23', m: '59' },
-          { label: '🌆 21:00 (9h tối)', h: '21', m: '00' },
-          { label: '🌇 18:00 (6h chiều)', h: '18', m: '00' },
-          { label: '☀️ 12:00 (12h trưa)', h: '12', m: '00' },
-          { label: '🌅 09:00 (9h sáng)', h: '09', m: '00' },
-        ].map((btn) => (
-          <button
-            key={btn.label}
-            type="button"
-            onClick={() => handleUpdate(date, btn.h, btn.m)}
-            style={{
-              padding: '3px 8px',
-              borderRadius: '6px',
-              fontSize: '0.70rem',
-              fontWeight: 700,
-              border: hour === btn.h && minute === btn.m
-                ? '1.5px solid var(--color-kumquat)'
-                : (isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1'),
-              background: hour === btn.h && minute === btn.m
-                ? 'rgba(238, 107, 47, 0.15)'
-                : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-              color: hour === btn.h && minute === btn.m ? 'var(--color-kumquat)' : 'var(--text-main)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {btn.label}
-          </button>
-        ))}
       </div>
 
       {/* Live Preview Display */}
@@ -1063,11 +1049,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       try {
         const res = await fetch('/api/classes');
         const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const apiClassCodes = json.data.map((c: any) => c.className?.toUpperCase()).filter(Boolean);
+        if (json.success && Array.isArray(json.data)) {
+          const apiClassCodes = json.data
+            .map((c: any) => (c.className || c.code)?.toUpperCase())
+            .filter((c: string) => Boolean(c) && !isClassDeleted(c));
           setClassesList(prev => {
-            const merged = Array.from(new Set([...prev, ...apiClassCodes]));
-            localStorage.setItem('aita_custom_classes', JSON.stringify(merged));
+            const merged = Array.from(new Set([...prev.filter(c => !isClassDeleted(c)), ...apiClassCodes]));
+            try { localStorage.setItem('aita_custom_classes', JSON.stringify(merged)); } catch {}
             return merged;
           });
           setClassStudents(prev => {
@@ -1080,7 +1068,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               }
             });
             if (hasChanges) {
-              localStorage.setItem('aita_class_students', JSON.stringify(nextMap));
+              try { localStorage.setItem('aita_class_students', JSON.stringify(nextMap)); } catch {}
             }
             return nextMap;
           });
@@ -1094,54 +1082,209 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     loadRealClasses();
   }, [userFullName]);
 
+  // Robust class matching helper (matches MMA301 with MMA301-SE19B, SWP391-SE1801, etc.)
+  const doesClassMatch = useCallback((subClass?: string | null, filterClass?: string | null): boolean => {
+    if (!filterClass || filterClass === 'all') return true;
+    const s = (subClass || '').trim().toUpperCase();
+    const f = (filterClass || '').trim().toUpperCase();
+    if (!s || !f) return false;
+    if (s === f) return true;
+    if (s.startsWith(f + '-') || f.startsWith(s + '-')) return true;
+    if (s.replace(/-/g, '').includes(f.replace(/-/g, '')) || f.replace(/-/g, '').includes(s.replace(/-/g, ''))) return true;
+    return false;
+  }, []);
+
+  const isProtectedClass = useCallback((code?: string | null): boolean => {
+    if (!code) return false;
+    const c = code.trim().toLowerCase();
+    return (
+      c === 'mma301' ||
+      c === 'mma301-se19b' ||
+      c === 'swp391-se1801' ||
+      c === 'prn231-se1803' ||
+      c === 'prj301-is1702' ||
+      c === 'se19b' ||
+      c.includes('mma') ||
+      c.includes('swp391')
+    );
+  }, []);
+
+  // Persistent list of deleted class codes across browser refreshes
+  const [deletedClassCodes, setDeletedClassCodes] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('aita_deleted_classes');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const sanitized = parsed.map((c: any) => String(c).trim()).filter(c => {
+            const lc = c.toLowerCase();
+            return !lc.includes('mma') && !lc.includes('swp391') && !lc.includes('prn231') && !lc.includes('prj301') && !lc.includes('se19b');
+          });
+          try { localStorage.setItem('aita_deleted_classes', JSON.stringify(sanitized)); } catch {}
+          return sanitized;
+        }
+      }
+    } catch {}
+    return [];
+  });
+
+  const isClassDeleted = useCallback((rawCode?: string | null): boolean => {
+    if (!rawCode) return false;
+    if (isProtectedClass(rawCode)) return false;
+    const clean = rawCode.trim().toLowerCase();
+    return deletedClassCodes.some(del => {
+      const d = (del || '').trim().toLowerCase();
+      if (!d) return false;
+      return clean === d;
+    });
+  }, [deletedClassCodes, isProtectedClass]);
+
   // Persistent list of Class Codes (Database & Custom Classes)
   const [classesList, setClassesList] = useState<string[]>(() => {
-    const saved = localStorage.getItem('aita_custom_classes');
-    if (saved) {
-      try {
+    let list = ['SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301-SE19B', 'MMA301'];
+    try {
+      const saved = localStorage.getItem('aita_custom_classes');
+      if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return Array.from(new Set(['SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301', ...parsed]));
+          list = Array.from(new Set([...list, ...parsed]));
         }
-      } catch {}
-    }
-    return ['SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301'];
+      }
+      const deleted = localStorage.getItem('aita_deleted_classes');
+      if (deleted) {
+        const delArr: string[] = JSON.parse(deleted);
+        if (Array.isArray(delArr)) {
+          list = list.filter(c => {
+            const lc = c.trim().toLowerCase();
+            if (lc.includes('mma') || lc.includes('swp391') || lc.includes('prn231') || lc.includes('prj301') || lc.includes('se19b')) return true;
+            return !delArr.some(d => lc === d.trim().toLowerCase());
+          });
+        }
+      }
+    } catch {}
+    return list;
   });
 
   // Assignments & Tasks State — luôn được lọc qua dedupAssignments để không bao giờ bị nhân đôi đề bài
   const [classAssignments, setClassAssignments] = useState<ClassAssignmentItem[]>(() => {
-    const saved = localStorage.getItem('aita_class_assignments');
-    if (saved) {
-      try {
+    let baseList = DEFAULT_CLASS_ASSIGNMENTS;
+    try {
+      const saved = localStorage.getItem('aita_class_assignments');
+      if (saved) {
         const parsed: ClassAssignmentItem[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = dedupAssignments([...parsed, ...DEFAULT_CLASS_ASSIGNMENTS]);
-          try {
-            localStorage.setItem('aita_class_assignments', JSON.stringify(merged));
-          } catch {}
-          return merged;
+          baseList = [...parsed, ...DEFAULT_CLASS_ASSIGNMENTS];
         }
-      } catch {}
-    }
-    return dedupAssignments(DEFAULT_CLASS_ASSIGNMENTS);
+      }
+      const deleted = localStorage.getItem('aita_deleted_classes');
+      if (deleted) {
+        const delArr: string[] = JSON.parse(deleted);
+        if (Array.isArray(delArr)) {
+          baseList = baseList.filter(a => {
+            const lc = (a.classCode || '').trim().toLowerCase();
+            if (lc.includes('mma') || lc.includes('swp391') || lc.includes('prn231') || lc.includes('prj301') || lc.includes('se19b')) return true;
+            return !delArr.some(d => lc === d.trim().toLowerCase());
+          });
+        }
+      }
+    } catch {}
+    return dedupAssignments(baseList);
   });
 
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('ASM-SWP-01');
 
   // Class Rosters State (with add email support)
   const [classStudents, setClassStudents] = useState<Record<string, ClassStudentItem[]>>(() => {
-    const saved = localStorage.getItem('aita_class_students');
-    if (saved) {
-      try {
+    let studentsMap: Record<string, ClassStudentItem[]> = { ...CLASS_STUDENTS_MAP };
+    try {
+      const saved = localStorage.getItem('aita_class_students');
+      if (saved) {
         const parsed = JSON.parse(saved);
-        return { ...CLASS_STUDENTS_MAP, ...parsed };
-      } catch {}
-    }
-    return CLASS_STUDENTS_MAP;
+        studentsMap = { ...studentsMap, ...parsed };
+      }
+      const deleted = localStorage.getItem('aita_deleted_classes');
+      if (deleted) {
+        const delArr: string[] = JSON.parse(deleted);
+        if (Array.isArray(delArr)) {
+          for (const key of Object.keys(studentsMap)) {
+            const lc = key.trim().toLowerCase();
+            if (!lc.includes('mma') && !lc.includes('swp391') && !lc.includes('prn231') && !lc.includes('prj301') && !lc.includes('se19b')) {
+              if (delArr.some(d => lc === d.trim().toLowerCase())) {
+                delete studentsMap[key];
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+    return studentsMap;
   });
+
+  // Safe case-insensitive student roster resolver
+  const getStudentsForClass = useCallback((classCode?: string | null): ClassStudentItem[] => {
+    if (!classCode) return [];
+    const clean = classCode.trim().toUpperCase();
+    if (!clean) return [];
+    if (classStudents[classCode] && Array.isArray(classStudents[classCode]) && classStudents[classCode].length > 0) {
+      return classStudents[classCode];
+    }
+    for (const [k, v] of Object.entries(classStudents)) {
+      if (doesClassMatch(k, clean) && Array.isArray(v) && v.length > 0) {
+        return v;
+      }
+    }
+    for (const [k, v] of Object.entries(CLASS_STUDENTS_MAP)) {
+      if (doesClassMatch(k, clean) && Array.isArray(v) && v.length > 0) {
+        return v;
+      }
+    }
+    if (clean.includes('MMA') && CLASS_STUDENTS_MAP['MMA301']) {
+      return CLASS_STUDENTS_MAP['MMA301'];
+    }
+    if (clean.includes('SWP391') && CLASS_STUDENTS_MAP['SWP391-SE1801']) {
+      return CLASS_STUDENTS_MAP['SWP391-SE1801'];
+    }
+    return [];
+  }, [classStudents, doesClassMatch]);
 
   // Modal states for Lecturer: Create Assignment Modal & Create Class Modal
   const [showCreateAssignmentModal, setShowCreateAssignmentModal] = useState(false);
+
+  // Class Space Sub-tabs & Dropdown State (Modern "Không Gian Lớp Học")
+  const [classSpaceSubTab, setClassSpaceSubTab] = useState<'tasks' | 'teams' | 'students'>('tasks');
+  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+  const classDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Submissions Class Dropdown State
+  const [isSubmissionsClassDropdownOpen, setIsSubmissionsClassDropdownOpen] = useState(false);
+  const submissionsClassDropdownRef = useRef<HTMLDivElement>(null);
+
+  // DLQ Class Dropdown & View Mode State
+  const [isDlqClassDropdownOpen, setIsDlqClassDropdownOpen] = useState(false);
+  const [dlqFilterClass, setDlqFilterClass] = useState<string>('all');
+  const [dlqViewMode, setDlqViewMode] = useState<'individual' | 'team'>('individual');
+  const dlqClassDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Student Enrollment Modal & Deletion Modals
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [classToDelete, setClassToDelete] = useState<{ code: string; name: string; id?: string } | null>(null);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<ClassAssignmentItem | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (classDropdownRef.current && !classDropdownRef.current.contains(e.target as Node)) {
+        setIsClassDropdownOpen(false);
+      }
+      if (submissionsClassDropdownRef.current && !submissionsClassDropdownRef.current.contains(e.target as Node)) {
+        setIsSubmissionsClassDropdownOpen(false);
+      }
+      if (dlqClassDropdownRef.current && !dlqClassDropdownRef.current.contains(e.target as Node)) {
+        setIsDlqClassDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const [showCreateClassModal, setShowCreateClassModal] = useState(false);
 
   // Modal states for Team Projects (SWP391 Group Assignments & Team Grading)
@@ -1150,6 +1293,31 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   const [submissionViewMode, setSubmissionViewMode] = useState<'individual' | 'team'>('individual');
   const [teamProjectToastMsg, setTeamProjectToastMsg] = useState<string | null>(null);
   const [classTeamsMap, setClassTeamsMap] = useState<Record<string, TeamGroupItem[]>>(() => {
+    const defaultMmaTeams: TeamGroupItem[] = [
+      {
+        id: 'MMA-TG-1',
+        teamName: 'Nhóm 1',
+        projectTopic: 'AITA Intelligent - Hệ Thống Microservices & Kiểm Thử Tự Động',
+        topicType: 'teacher_assigned',
+        leader: 'Lê Nguyễn Anh Mai',
+        members: ['Lê Nguyễn Anh Mai', 'Lê Nguyễn Linh Nhi', 'Nguyễn Tường Vy', 'Ngô Sử Việt Anh', 'Đào Trọng Nghĩa'],
+        gitUrl: 'https://github.com/lenguyenanhmai05-dotcom/AITA-Intelligent',
+        branch: 'main',
+        status: 'approved'
+      },
+      {
+        id: 'MMA-TG-2',
+        teamName: 'Nhóm 2',
+        projectTopic: 'Smart Logistics - Hệ Thống Quản Lý Kho Vận & Vận Chuyển',
+        topicType: 'student_proposed',
+        leader: 'Trần Minh Quân',
+        members: ['Trần Minh Quân', 'Hoàng Văn Nam', 'Phạm Thị Dung', 'Đỗ Đức Anh'],
+        gitUrl: 'https://github.com/smart-lms/smart-lms-platform',
+        branch: 'main',
+        status: 'approved'
+      }
+    ];
+
     try {
       const saved = localStorage.getItem('aita_class_teams_map');
       if (saved) {
@@ -1167,10 +1335,16 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             }
             return t;
           });
-          try {
-            localStorage.setItem('aita_class_teams_map', JSON.stringify(parsed));
-          } catch {}
         }
+        if (!parsed['MMA301-SE19B'] || parsed['MMA301-SE19B'].length === 0) {
+          parsed['MMA301-SE19B'] = defaultMmaTeams;
+        }
+        if (!parsed['MMA301'] || parsed['MMA301'].length === 0) {
+          parsed['MMA301'] = defaultMmaTeams;
+        }
+        try {
+          localStorage.setItem('aita_class_teams_map', JSON.stringify(parsed));
+        } catch {}
         return parsed;
       }
     } catch {}
@@ -1209,9 +1383,28 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           branch: 'main',
           status: 'approved'
         }
-      ]
+      ],
+      'MMA301-SE19B': defaultMmaTeams,
+      'MMA301': defaultMmaTeams
     };
   });
+
+  const getTeamsForClass = useCallback((classCode?: string | null): TeamGroupItem[] => {
+    if (!classCode || classCode === 'all') return classTeamsMap['SWP391-SE1801'] || [];
+    const clean = classCode.trim();
+    if (classTeamsMap[clean] && Array.isArray(classTeamsMap[clean]) && classTeamsMap[clean].length > 0) {
+      return classTeamsMap[clean];
+    }
+    for (const [k, v] of Object.entries(classTeamsMap)) {
+      if (doesClassMatch(k, clean) && Array.isArray(v) && v.length > 0) {
+        return v;
+      }
+    }
+    if (clean.toUpperCase().includes('MMA')) {
+      return classTeamsMap['MMA301-SE19B'] || classTeamsMap['MMA301'] || [];
+    }
+    return classTeamsMap['SWP391-SE1801'] || [];
+  }, [classTeamsMap, doesClassMatch]);
 
   const [showStudentTeamProjectModal, setShowStudentTeamProjectModal] = useState(false);
   const [selectedTeamGitUrl, setSelectedTeamGitUrl] = useState<string>('https://github.com/lenguyenanhmai05-dotcom/AITA-Intelligent');
@@ -1510,36 +1703,172 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   const handleAddStudentToClass = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudentEmail.trim() || !newStudentName.trim() || !newStudentMssv.trim()) {
-      alert(lang === 'vi' ? 'Vui lòng điền đầy đủ Email, Họ tên và MSSV!' : 'Please enter Email, Full Name and Student ID!');
+    if (!newStudentEmail.trim() || !newStudentName.trim()) {
+      alert(lang === 'vi' ? 'Vui lòng điền đầy đủ Email và Họ tên sinh viên!' : 'Please enter Email and Full Name!');
       return;
     }
+    const cleanClass = (selectedClassCode || '').trim();
+    if (!cleanClass) {
+      alert(lang === 'vi' ? 'Vui lòng chọn một lớp học trước khi thêm sinh viên!' : 'Please select a class first!');
+      return;
+    }
+
+    // Auto-generate MSSV if empty
+    let autoMssv = newStudentMssv.trim().toUpperCase();
+    if (!autoMssv) {
+      const emailDigits = newStudentEmail.replace(/\D/g, '');
+      if (emailDigits.length >= 4) {
+        autoMssv = 'SE' + emailDigits.slice(-6);
+      } else {
+        autoMssv = 'SE' + Math.floor(180000 + Math.random() * 9999);
+      }
+    }
+
     const newStudent: ClassStudentItem = {
-      mssv: newStudentMssv.trim().toUpperCase(),
+      mssv: autoMssv,
       name: newStudentName.trim(),
       email: newStudentEmail.trim().toLowerCase(),
-      team: newStudentTeam,
+      team: newStudentTeam.trim() || 'Nhóm 1',
       submitStatus: 'pending',
       submitType: 'Chưa nộp',
       submittedAt: '—',
       status: 'Đang học'
     };
+
     setClassStudents(prev => {
-      const currentList = prev[selectedClassCode] || [];
-      const updated = [newStudent, ...currentList];
-      const nextState = { ...prev, [selectedClassCode]: updated };
-      localStorage.setItem('aita_class_students', JSON.stringify(nextState));
+      const upper = cleanClass.toUpperCase();
+      let targetKey = cleanClass;
+      for (const k of Object.keys(prev)) {
+        if (k.trim().toUpperCase() === upper) {
+          targetKey = k;
+          break;
+        }
+      }
+      const currentList = prev[targetKey] || [];
+      const updated = [newStudent, ...currentList.filter(s => s.email.toLowerCase() !== newStudent.email.toLowerCase() && s.mssv.toUpperCase() !== newStudent.mssv.toUpperCase())];
+      const nextState = { ...prev, [targetKey]: updated, [upper]: updated };
+      try { localStorage.setItem('aita_class_students', JSON.stringify(nextState)); } catch {}
       return nextState;
     });
+
+    // Also ensure team exists in classTeamsMap
+    if (newStudent.team) {
+      setClassTeamsMap(prevTeams => {
+        const upper = cleanClass.toUpperCase();
+        const currentTeams = [...(prevTeams[upper] || prevTeams[cleanClass] || [])];
+        const existing = currentTeams.find(t => t.teamName.toLowerCase() === newStudent.team.toLowerCase());
+        if (existing) {
+          if (!existing.members.includes(newStudent.name)) {
+            existing.members.push(newStudent.name);
+          }
+        } else {
+          currentTeams.push({
+            id: `TG-${upper}-${currentTeams.length + 1}`,
+            teamName: newStudent.team,
+            projectTopic: `Đồ án ${upper} - ${newStudent.team}`,
+            topicType: 'student_proposed',
+            leader: newStudent.name,
+            members: [newStudent.name],
+            gitUrl: 'https://github.com/aita-teams/' + newStudent.team.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            branch: 'main',
+            status: 'approved'
+          });
+        }
+        const nextTeamsMap = { ...prevTeams, [upper]: currentTeams, [cleanClass]: currentTeams };
+        try { localStorage.setItem('aita_class_teams_map', JSON.stringify(nextTeamsMap)); } catch {}
+        return nextTeamsMap;
+      });
+    }
+
     setStudentAddSuccessMsg(
       lang === 'vi'
-        ? `Đã thêm sinh viên ${newStudentName} (${newStudentEmail}) vào lớp ${selectedClassCode} thành công!`
-        : `Added student ${newStudentName} (${newStudentEmail}) to class ${selectedClassCode}!`
+        ? `Đã thêm sinh viên ${newStudentName} (${autoMssv}) vào lớp ${cleanClass} thành công!`
+        : `Added student ${newStudentName} (${autoMssv}) to class ${cleanClass}!`
     );
     setTimeout(() => setStudentAddSuccessMsg(null), 4000);
     setNewStudentEmail('');
     setNewStudentName('');
     setNewStudentMssv('');
+    setShowAddStudentModal(false);
+    setClassSpaceSubTab('students');
+  };
+
+  const handleDownloadSampleExcel = () => {
+    const targetClass = selectedClassCode || 'MMA301-SE19B';
+    const sampleRows = [
+      { 'MSSV': 'SE180001', 'Họ và Tên': 'Nguyễn Văn An', 'Email': 'annvse180001@fpt.edu.vn', 'Nhóm': 'Nhóm 1', 'Lớp': targetClass },
+      { 'MSSV': 'SE180002', 'Họ và Tên': 'Trần Thị Bình', 'Email': 'binhttse180002@fpt.edu.vn', 'Nhóm': 'Nhóm 1', 'Lớp': targetClass },
+      { 'MSSV': 'SE180003', 'Họ và Tên': 'Lê Hoàng Cường', 'Email': 'cuonglhse180003@fpt.edu.vn', 'Nhóm': 'Nhóm 1', 'Lớp': targetClass },
+      { 'MSSV': 'SE180004', 'Họ và Tên': 'Phạm Ngọc Dũng', 'Email': 'dungpnse180004@fpt.edu.vn', 'Nhóm': 'Nhóm 2', 'Lớp': targetClass },
+      { 'MSSV': 'SE180005', 'Họ và Tên': 'Võ Khánh Đăng', 'Email': 'dangvkse180005@fpt.edu.vn', 'Nhóm': 'Nhóm 2', 'Lớp': targetClass },
+    ];
+    const ws = XLSX.utils.json_to_sheet(sampleRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'DanhSachSinhVien');
+    XLSX.writeFile(wb, `Danh_Sach_Sinh_Vien_${targetClass}.xlsx`);
+  };
+
+  const handleQuickAddSampleStudents = (customClassCode?: string) => {
+    const targetClass = (customClassCode || selectedClassCode || 'MMA301-SE19B').trim();
+    const upperClass = targetClass.toUpperCase();
+    const sampleStudents: ClassStudentItem[] = [
+      { mssv: 'SE180001', name: 'Nguyễn Văn An', email: 'annvse180001@fpt.edu.vn', team: 'Nhóm 1', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-11-01 14:30', status: 'Đang học' },
+      { mssv: 'SE180002', name: 'Trần Thị Bình', email: 'binhttse180002@fpt.edu.vn', team: 'Nhóm 1', submitStatus: 'pending', submitType: 'Chưa nộp', submittedAt: '—', status: 'Đang học' },
+      { mssv: 'SE180003', name: 'Lê Hoàng Cường', email: 'cuonglhse180003@fpt.edu.vn', team: 'Nhóm 1', submitStatus: 'submitted', submitType: 'Tệp ZIP', submittedAt: '2026-11-02 09:15', status: 'Đang học' },
+      { mssv: 'SE180004', name: 'Phạm Ngọc Dũng', email: 'dungpnse180004@fpt.edu.vn', team: 'Nhóm 2', submitStatus: 'pending', submitType: 'Chưa nộp', submittedAt: '—', status: 'Đang học' },
+      { mssv: 'SE180005', name: 'Võ Khánh Đăng', email: 'dangvkse180005@fpt.edu.vn', team: 'Nhóm 2', submitStatus: 'submitted', submitType: 'GitHub Repository', submittedAt: '2026-11-03 10:20', status: 'Đang học' },
+    ];
+
+    setClassStudents(prev => {
+      const nextState = { ...prev, [targetClass]: sampleStudents, [upperClass]: sampleStudents };
+      try { localStorage.setItem('aita_class_students', JSON.stringify(nextState)); } catch {}
+      return nextState;
+    });
+
+    setClassTeamsMap(prevTeams => {
+      const teams = [
+        {
+          id: `TG-${upperClass}-1`,
+          teamName: 'Nhóm 1',
+          projectTopic: `Hệ Thống Phân Tích Dữ Liệu & API Quản Lý (${targetClass})`,
+          topicType: 'teacher_assigned' as const,
+          leader: 'Nguyễn Văn An',
+          members: ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Hoàng Cường'],
+          gitUrl: 'https://github.com/aita-teams/team1-api-service',
+          branch: 'main',
+          status: 'approved' as const
+        },
+        {
+          id: `TG-${upperClass}-2`,
+          teamName: 'Nhóm 2',
+          projectTopic: `Nền Tảng Microservices & Dashboard Telemetry (${targetClass})`,
+          topicType: 'student_proposed' as const,
+          leader: 'Phạm Ngọc Dũng',
+          members: ['Phạm Ngọc Dũng', 'Võ Khánh Đăng'],
+          gitUrl: 'https://github.com/aita-teams/team2-telemetry-app',
+          branch: 'main',
+          status: 'approved' as const
+        }
+      ];
+      const nextTeams = { ...prevTeams, [targetClass]: teams, [upperClass]: teams };
+      try { localStorage.setItem('aita_class_teams_map', JSON.stringify(nextTeams)); } catch {}
+      return nextTeams;
+    });
+
+    setClassesList(prev => {
+      const nextList = Array.from(new Set([...prev, targetClass, upperClass]));
+      try { localStorage.setItem('aita_custom_classes', JSON.stringify(nextList)); } catch {}
+      return nextList;
+    });
+
+    setStudentAddSuccessMsg(
+      lang === 'vi'
+        ? `🎉 Đã nạp thành công 5 sinh viên mẫu và 2 nhóm đồ án vào lớp ${targetClass}!`
+        : `🎉 Successfully loaded 5 sample students and 2 teams into ${targetClass}!`
+    );
+    setTimeout(() => setStudentAddSuccessMsg(null), 5000);
+    setShowAddStudentModal(false);
+    setClassSpaceSubTab('students');
   };
 
   const parseExcelFile = (file: File) => {
@@ -1595,7 +1924,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             const finalName = nameVal || (emailVal.includes('@') ? emailVal.split('@')[0] : 'Sinh Viên Mới');
             const finalEmail = emailVal || `${finalMssv.toLowerCase()}@fpt.edu.vn`;
             const finalTeam = teamVal ? (teamVal.toLowerCase().startsWith('nhóm') ? teamVal : `Nhóm ${teamVal}`) : 'Chưa phân nhóm';
-            const finalClass = classVal ? classVal.trim().toUpperCase() : selectedClassCode;
+            const finalClass = (selectedClassCode || (classVal ? classVal.trim().toUpperCase() : 'SWP391-SE1801')).trim();
 
             parsedStudents.push({
               mssv: finalMssv,
@@ -1631,63 +1960,94 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   const handleConfirmExcelImport = () => {
     if (!excelPreviewData || excelPreviewData.length === 0) return;
+    const targetClass = (selectedClassCode || 'MMA301-SE19B').trim();
+    const upperClass = targetClass.toUpperCase();
 
     setClassStudents(prev => {
       const nextState = { ...prev };
-      const classesToAdd = new Set<string>();
+      const currentList = [...(nextState[upperClass] || nextState[targetClass] || [])];
 
       excelPreviewData.forEach(item => {
-        const cls = item.targetClass || selectedClassCode;
-        classesToAdd.add(cls);
-        const currentList = [...(nextState[cls] || [])];
-
-        const existsIndex = currentList.findIndex(s => 
-          s.email.toLowerCase() === item.email.toLowerCase() || 
-          s.mssv.toUpperCase() === item.mssv.toUpperCase()
-        );
-
         const studentItem: ClassStudentItem = {
           mssv: item.mssv,
           name: item.name,
           email: item.email,
-          team: item.team,
+          team: item.team || 'Nhóm 1',
           submitStatus: 'pending',
           submitType: 'Chưa nộp',
           submittedAt: '—',
           status: 'Đang học'
         };
 
+        const existsIndex = currentList.findIndex(s => 
+          s.email.toLowerCase() === item.email.toLowerCase() || 
+          s.mssv.toUpperCase() === item.mssv.toUpperCase()
+        );
+
         if (existsIndex >= 0) {
           currentList[existsIndex] = { ...currentList[existsIndex], ...studentItem };
         } else {
-          currentList.unshift(studentItem);
+          currentList.push(studentItem);
         }
-        nextState[cls] = currentList;
       });
 
-      localStorage.setItem('aita_class_students', JSON.stringify(nextState));
+      nextState[targetClass] = currentList;
+      nextState[upperClass] = currentList;
 
-      setClassesList(currentClasses => {
-        const merged = Array.from(new Set([...currentClasses, ...classesToAdd]));
-        localStorage.setItem('aita_classes', JSON.stringify(merged));
-        return merged;
-      });
+      try {
+        localStorage.setItem('aita_class_students', JSON.stringify(nextState));
+      } catch {}
 
       return nextState;
     });
 
+    setClassesList(currentClasses => {
+      const merged = Array.from(new Set([...currentClasses, targetClass, upperClass]));
+      try {
+        localStorage.setItem('aita_custom_classes', JSON.stringify(merged));
+      } catch {}
+      return merged;
+    });
+
+    // Also populate teams into classTeamsMap
+    const teamsFound = Array.from(new Set(excelPreviewData.map(s => s.team).filter(Boolean)));
+    if (teamsFound.length > 0) {
+      setClassTeamsMap(prevTeams => {
+        const classTeams = [...(prevTeams[upperClass] || prevTeams[targetClass] || [])];
+        teamsFound.forEach((tName, tIdx) => {
+          if (!classTeams.some(t => t.teamName.toLowerCase() === tName.toLowerCase())) {
+            classTeams.push({
+              id: `TG-${upperClass}-${tIdx + 1}`,
+              teamName: tName,
+              projectTopic: `Đồ án ${upperClass} - ${tName}`,
+              topicType: 'student_proposed',
+              leader: excelPreviewData.find(s => s.team === tName)?.name || 'Trưởng nhóm',
+              members: excelPreviewData.filter(s => s.team === tName).map(s => s.name),
+              gitUrl: 'https://github.com/aita-teams/' + tName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+              branch: 'main',
+              status: 'approved'
+            });
+          }
+        });
+        const nextTeamsMap = { ...prevTeams, [upperClass]: classTeams, [targetClass]: classTeams };
+        try { localStorage.setItem('aita_class_teams_map', JSON.stringify(nextTeamsMap)); } catch {}
+        return nextTeamsMap;
+      });
+    }
+
     const totalCount = excelPreviewData.length;
-    const groupsCount = new Set(excelPreviewData.map(s => `${s.targetClass}-${s.team}`)).size;
-    const classesCount = new Set(excelPreviewData.map(s => s.targetClass)).size;
+    const groupsCount = teamsFound.length || 1;
 
     setStudentAddSuccessMsg(
       lang === 'vi'
-        ? `🎉 Đã import thành công ${totalCount} sinh viên vào ${classesCount} lớp học và tự động phân vào ${groupsCount} nhóm!`
-        : `🎉 Successfully imported ${totalCount} students into ${classesCount} classes and ${groupsCount} teams!`
+        ? `🎉 Đã import thành công ${totalCount} sinh viên vào lớp ${targetClass} và phân vào ${groupsCount} nhóm đồ án!`
+        : `🎉 Successfully imported ${totalCount} students into class ${targetClass} and ${groupsCount} teams!`
     );
     setTimeout(() => setStudentAddSuccessMsg(null), 5000);
 
     setShowExcelPreviewModal(false);
+    setShowAddStudentModal(false);
+    setClassSpaceSubTab('students');
     setExcelPreviewData([]);
     setExcelFileName('');
     if (excelFileInputRef.current) excelFileInputRef.current.value = '';
@@ -1825,8 +2185,18 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       };
 
       setClassAssignments(prev => {
-        const nextList = [newAsm, ...prev.filter(p => p.id !== newAsm.id)];
-        localStorage.setItem('aita_class_assignments', JSON.stringify(nextList));
+        const baseCourse = newAsmClass.includes('-') ? newAsmClass.split('-')[0].trim().toUpperCase() : '';
+        const normGroup = normalizeAssignmentGroup(newAsmTitle);
+        const filtered = prev.filter(p => {
+          if (p.id === newAsm.id) return false;
+          // Purge generic base course assignment when a section-specific assignment is added
+          if (baseCourse && (p.classCode || '').trim().toUpperCase() === baseCourse) {
+            if (normalizeAssignmentGroup(p.title) === normGroup) return false;
+          }
+          return true;
+        });
+        const nextList = dedupAssignments([newAsm, ...filtered]);
+        try { localStorage.setItem('aita_class_assignments', JSON.stringify(nextList)); } catch {}
         return nextList;
       });
 
@@ -1862,16 +2232,23 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     const courseTitle = newClassNameInput.trim();
     const dept = newClassDeptInput.trim();
 
+    // 0. Remove from deleted classes list if it was previously deleted
+    setDeletedClassCodes(prev => {
+      const next = prev.filter(c => c.trim().toLowerCase() !== code.toLowerCase());
+      try { localStorage.setItem('aita_deleted_classes', JSON.stringify(next)); } catch {}
+      return next;
+    });
+
     // 1. Update local states immediately
     setClassesList(prev => {
-      const nextList = Array.from(new Set([...prev, code]));
-      localStorage.setItem('aita_custom_classes', JSON.stringify(nextList));
+      const nextList = Array.from(new Set([...prev.filter(c => c.trim().toLowerCase() !== code.toLowerCase()), code]));
+      try { localStorage.setItem('aita_custom_classes', JSON.stringify(nextList)); } catch {}
       return nextList;
     });
 
     setClassStudents(prev => {
       const nextState = { ...prev, [code]: prev[code] || [] };
-      localStorage.setItem('aita_class_students', JSON.stringify(nextState));
+      try { localStorage.setItem('aita_class_students', JSON.stringify(nextState)); } catch {}
       return nextState;
     });
 
@@ -1939,11 +2316,57 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   // Submissions selection state (Lecturer view)
   const [selectedSubmissions, setSelectedSubmissions] = useState<number[]>([]);
 
-  // Shared Submissions list (both Student & Lecturer view)
-  const [allSubmissions, setAllSubmissions] = useState<any[]>(() => getSavedTeamJobs());
-
-  // LocalStorage key for student submissions persistence across reloads
+  // LocalStorage keys for student submissions & all submissions persistence across reloads
   const STORAGE_KEY_STUDENT_UPLOADS = 'aita_student_uploaded_files_v1';
+  const STORAGE_KEY_ALL_SUBMISSIONS = 'aita_all_submissions_v1';
+
+  // Shared Submissions list (both Student & Lecturer view) - Khởi tạo từ Storage để không bao giờ mất dữ liệu khi F5
+  const [allSubmissions, setAllSubmissions] = useState<any[]>(() => {
+    const teamJobs = getSavedTeamJobs();
+    let localSaved: any[] = [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_ALL_SUBMISSIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) localSaved = parsed;
+      }
+    } catch {}
+
+    let studentUploads: any[] = [];
+    try {
+      const rawUploads = localStorage.getItem(STORAGE_KEY_STUDENT_UPLOADS);
+      if (rawUploads) {
+        const parsed = JSON.parse(rawUploads);
+        if (Array.isArray(parsed)) {
+          studentUploads = parsed.map((item: any) => ({
+            id: typeof item.id === 'string' ? (parseInt(item.id.replace(/\D/g, ''), 10) || 101) : item.id,
+            jobId: item.jobId || item.id,
+            student: item.student || item.studentName || 'Lê Nguyễn Linh Nhi',
+            studentName: item.student || item.studentName || 'Lê Nguyễn Linh Nhi',
+            studentEmail: item.studentEmail || 'lenguyenlinhnhi2110@gmail.com',
+            title: item.assignment || item.title || 'Assignment',
+            classCode: item.classCode || 'MMA301-SE19B',
+            status: item.status === 'completed' || item.status === 'graded' ? 'completed' : (item.status === 'grading' ? 'grading' : 'not graded'),
+            score: item.score || 'Chờ chấm...',
+            testCases: item.testCases || 'Đang xếp hàng (BullMQ)',
+            gradingReport: item.gradingReport,
+            reviewStatus: item.reviewStatus || 'pending',
+            reviewComment: item.reviewComment || '',
+            reviewedAt: item.reviewedAt || null,
+            time: item.submittedAt || item.time || new Date().toISOString().slice(0, 16).replace('T', ' '),
+          }));
+        }
+      }
+    } catch {}
+
+    const merged = [...teamJobs];
+    for (const item of [...localSaved, ...studentUploads]) {
+      if (!merged.some(m => m.id === item.id || (m.student === item.student && m.title === item.title && m.classCode === item.classCode))) {
+        merged.push(item);
+      }
+    }
+    return merged;
+  });
 
   // Danh sách tên sinh viên ảo / dữ liệu giả cần loại bỏ hoàn toàn
   const FAKE_STUDENT_NAMES = [
@@ -1967,22 +2390,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     if (!Array.isArray(subs)) return [];
     const valid = subs.filter((m: any) => {
       if (!m || !m.id) return false;
-      const str = JSON.stringify(m);
-      if (str.includes('L?')) return false;
-      // Loại bỏ hoàn toàn các mã bài nộp mẫu / bản ghi thử nghiệm giả
-      if (
-        m.id === 'SUB-04' ||
-        m.id === 'SUB-06' ||
-        m.id === 'SUB-4' ||
-        m.id === 'SUB-6' ||
-        m.id === 4 ||
-        m.id === 6
-      ) {
-        return false;
+      const student = m.student || m.studentName || '';
+      const email = (m.studentEmail || '').toLowerCase();
+      // Luôn bảo toàn bài nộp của tài khoản thật của hệ thống (Linh Nhi, Anh Mai, Tường Vy...)
+      if (email.includes('linhnhi') || email.includes('anhmai') || student.includes('Linh Nhi') || student.includes('Anh Mai')) {
+        return true;
       }
       const title = (m.assignment || m.title || '').toLowerCase();
-      if (title.includes('sample') || title.includes('bullmq queue')) return false;
-      const student = m.student || m.studentName || '';
+      if (title.includes('sample test') || title.includes('bullmq queue test')) return false;
       if (FAKE_STUDENT_NAMES.some((fake) => student.includes(fake))) return false;
       return true;
     });
@@ -2034,7 +2449,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         testCases = (best.assignment || best.title)?.includes('Exam') ? '9/10 Passed' : '8/10 Passed';
       }
       const reviewStatus = best.reviewStatus || 'pending';
-      const isApprovedWithProof = reviewStatus === 'approved' && (best.reviewedAt || best.id === 'SUB-0102' || best.id === 102);
+      const isApprovedWithProof = reviewStatus === 'approved';
 
       const fullTitle = getFullAssignmentTitle(best.assignment || best.title || '');
 
@@ -2081,7 +2496,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   // Real native file upload and drag-and-drop state
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [_selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [selectedFileSize, setSelectedFileSize] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -2106,15 +2521,25 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   // Helper to determine exact classCode for any submission
   const getSubmissionClassCode = useCallback((sub: any): string => {
-    if (sub.classCode) return sub.classCode;
-    const title = (sub.assignment || sub.title || '').toUpperCase();
-    if (title.includes('MMA301') || title.includes('MMA')) return 'MMA301';
-    if (title.includes('PRN231') || title.includes('.NET') || title.includes('C#')) return 'PRN231-SE1803';
+    if (sub?.classCode) {
+      const c = String(sub.classCode).trim();
+      if (c.toUpperCase() === 'MMA301' || c.toUpperCase() === 'MMA301-SE19B' || c.toUpperCase().includes('MMA')) {
+        return 'MMA301-SE19B';
+      }
+      return c;
+    }
+    const title = (sub?.assignment || sub?.title || '').toUpperCase();
+    if (title.includes('MMA301') || title.includes('MMA') || title.includes('NODE') || title.includes('MICROSERVICES')) return 'MMA301-SE19B';
+    if (title.includes('PRN231') || title.includes('.NET') || title.includes('C#') || title.includes('ASP.NET')) return 'PRN231-SE1803';
     if (title.includes('PRJ301') || title.includes('JAVA') || title.includes('SERVLET')) return 'PRJ301-IS1702';
     if (title.includes('SWP391')) return 'SWP391-SE1801';
-    const found = classAssignments.find(a => a.id === sub.assignmentId || a.title === sub.assignment);
-    if (found?.classCode) return found.classCode;
-    return 'SWP391-SE1801';
+    const found = classAssignments.find(a => a.id === sub?.assignmentId || a.title === sub?.assignment || a.title === sub?.title);
+    if (found?.classCode) {
+      const fc = found.classCode.trim();
+      if (fc.toUpperCase() === 'MMA301' || fc.toUpperCase().includes('MMA')) return 'MMA301-SE19B';
+      return fc;
+    }
+    return 'MMA301-SE19B';
   }, [classAssignments]);
 
   // Real Criteria Grading Engine for Client UI (Bảng Tiêu Chí Chấm Điểm & Test Cases Thực Tế)
@@ -2133,17 +2558,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     const subId = String(sub?.id || 'SUB-01');
     const isFailed = sub?.status === 'failed' || sub?.status === 'dead' || title.toLowerCase().includes('fail') || title.toLowerCase().includes('lỗi');
 
-    // Hash string to deterministic seed
-    let hash = 0;
-    const str = `${subId}_${title}_${sub?.student || sub?.studentName || ''}`;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    const seed = Math.abs(hash);
-
     // Extract existing score if available and not 100
-    let parsedExistingScore: number | null = null;
+    let parsedExistingScore: number | undefined = undefined;
     if (sub?.score && typeof sub.score === 'string') {
       const match = sub.score.match(/(\d+)\s*\/\s*100/);
       if (match) {
@@ -2154,277 +2570,73 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       }
     }
 
-    const overallScore = isFailed
-      ? 28
-      : (parsedExistingScore !== null ? parsedExistingScore : (82 + (seed % 12))); // e.g. 82 to 93
-    const score10 = Number((overallScore / 10).toFixed(1));
+    // Match assignment for description and custom test cases
+    const matchedTask = classAssignments.find(
+      (a) => a.title === title || a.id === sub?.assignmentId
+    );
 
-    // Calculate individual criteria scores to exactly match overallScore
-    const earnedCrit1 = Number((Math.min(38, Math.max(24, Math.round(overallScore * 0.40)))).toFixed(1));
-    const earnedCrit2 = Number((Math.min(19, Math.max(13, Math.round(overallScore * 0.20)))).toFixed(1));
-    const earnedCrit3 = Number((Math.min(19, Math.max(12, Math.round(overallScore * 0.20)))).toFixed(1));
-    const earnedCrit4 = Number((overallScore - earnedCrit1 - earnedCrit2 - earnedCrit3).toFixed(1));
+    // Call assignment-specific evaluator with dedicated test cases
+    const effectiveCode = sub?.codeSnippet || sub?.notes || sub?.method || '';
+    const studentDisplayName = resolveUserDisplayName(sub?.studentEmail || userEmail, sub?.student || sub?.studentName || cleanUserFullName);
+    const report = evaluateCodeAgainstAssignment({
+      codeText: effectiveCode,
+      assignmentTitle: title,
+      assignmentDesc: matchedTask?.description || '',
+      classCode: sub?.classCode || getSubmissionClassCode(sub),
+      customTestCases: matchedTask?.testCases,
+      isExplicitFail: isFailed,
+      studentName: studentDisplayName,
+      studentEmail: sub?.studentEmail || userEmail || 'lenguyenlinhnhi2110@gmail.com',
+      subId,
+      existingScore: parsedExistingScore,
+    });
 
-    const totalTestCases = 10;
-    const passedTestCases = isFailed ? 2 : (overallScore >= 90 ? 9 : 8);
-    const failedTestCases = totalTestCases - passedTestCases;
-
-    const testCaseResults = [
-      {
-        id: 'TC01',
-        name: 'TC01: Luồng xử lý dữ liệu chuẩn (Happy Path - Standard Payload)',
-        category: 'functional' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 140,
-        input: 'POST /api/orders { "items": [ { "id": 101, "qty": 2 } ], "payment": "VNPAY" }',
-        expectedOutput: 'HTTP 201 Created — { "orderId": "ORD-9281", "status": "CONFIRMED" }',
-        actualOutput: 'HTTP 201 Created — { "orderId": "ORD-9281", "status": "CONFIRMED" }',
-      },
-      {
-        id: 'TC02',
-        name: 'TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)',
-        category: 'boundary' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 95,
-        input: 'POST /api/orders { "items": [] } (Payload rỗng không có sản phẩm)',
-        expectedOutput: 'HTTP 400 Bad Request — { "code": "VALIDATION_FAILED", "field": "items" }',
-        actualOutput: 'HTTP 400 Bad Request — { "code": "VALIDATION_FAILED", "field": "items" }',
-      },
-      {
-        id: 'TC03',
-        name: 'TC03: Xác thực JWT Bearer Token & Phân quyền người dùng (RBAC Auth)',
-        category: 'security' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 110,
-        input: 'Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        expectedOutput: 'HTTP 200 OK — Trích xuất UserPrincipal { id: 14, role: "STUDENT" }',
-        actualOutput: 'HTTP 200 OK — Trích xuất UserPrincipal { id: 14, role: "STUDENT" }',
-      },
-      {
-        id: 'TC04',
-        name: 'TC04: Token không hợp lệ hoặc đã hết hạn (Expired Security Token)',
-        category: 'security' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 85,
-        input: 'Header: Authorization: Bearer expired_or_malformed_token_string',
-        expectedOutput: 'HTTP 401 Unauthorized — { "message": "Token has expired or is invalid" }',
-        actualOutput: 'HTTP 401 Unauthorized — { "message": "Token has expired or is invalid" }',
-      },
-      {
-        id: 'TC05',
-        name: 'TC05: Truy vấn phân trang & Tìm kiếm dữ liệu (Pagination & Search Filter)',
-        category: 'functional' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 180,
-        input: 'GET /api/submissions?page=1&limit=10&status=completed',
-        expectedOutput: 'HTTP 200 OK — Metadata { page: 1, limit: 10, total: 32, items: [...] }',
-        actualOutput: 'HTTP 200 OK — Metadata { page: 1, limit: 10, total: 32, items: [...] }',
-      },
-      {
-        id: 'TC06',
-        name: 'TC06: Ràng buộc trùng lặp dữ liệu (Unique Constraint & Duplicate Key)',
-        category: 'boundary' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 125,
-        input: 'Đăng ký tài khoản với email đã tồn tại trong database PostgreSQL',
-        expectedOutput: 'HTTP 409 Conflict — { "code": "DUPLICATE_ENTRY", "field": "email" }',
-        actualOutput: 'HTTP 409 Conflict — { "code": "DUPLICATE_ENTRY", "field": "email" }',
-      },
-      {
-        id: 'TC07',
-        name: 'TC07: Ghi nhật ký kiểm toán giao dịch (Audit Trail & Logging Transaction)',
-        category: 'functional' as const,
-        status: 'passed' as const,
-        points: 4.0,
-        maxPoints: 4.0,
-        durationMs: 160,
-        input: 'Thực hiện thao tác cập nhật điểm số bài nộp',
-        expectedOutput: 'Tự động chèn bản ghi vào bảng audit_logs kèm timestamp và actorId',
-        actualOutput: 'Bản ghi audit_logs đã được lưu thành công kèm execution duration',
-      },
-      {
-        id: 'TC08',
-        name: 'TC08: Kiểm thử tải trọng lớn & Timeout (Stress Payload > 5MB)',
-        category: 'performance' as const,
-        status: isFailed ? 'timeout' as const : (passedTestCases >= 9 ? 'passed' as const : 'failed' as const),
-        points: (passedTestCases >= 9 && !isFailed) ? 4.0 : 1.0,
-        maxPoints: 4.0,
-        durationMs: isFailed ? 30124 : 1120,
-        input: 'POST Payload dung lượng 5.2 MB gồm 1200 items dữ liệu lớn đồng thời',
-        expectedOutput: 'Hoàn tất xử lý trong < 800ms mà không gây tràn heap bộ nhớ',
-        actualOutput: (passedTestCases >= 9 && !isFailed)
-          ? 'Hoàn tất trong 720ms, bộ nhớ ổn định'
-          : 'HTTP 413 Payload Too Large / Thời gian phản hồi 1,120ms (vượt ngưỡng 800ms)',
-      },
-      {
-        id: 'TC09',
-        name: 'TC09: Khôi phục lỗi ngoại lệ mạng (Graceful DB Circuit Breaker Recovery)',
-        category: 'exception' as const,
-        status: isFailed ? 'failed' as const : 'passed' as const,
-        points: isFailed ? 0.0 : 4.0,
-        maxPoints: 4.0,
-        durationMs: isFailed ? 2500 : 210,
-        input: 'Mô phỏng ngắt kết nối cơ sở dữ liệu đột ngột trong 2000ms',
-        expectedOutput: 'Trả về HTTP 503 Dịch vụ tạm gián đoạn, ứng dụng không bị crash tiến trình',
-        actualOutput: isFailed
-          ? 'Unhandled Database Connection Exception (crash server process)'
-          : 'Bắt lỗi thành công, fallback handler kích hoạt đúng đặc tả',
-      },
-      {
-        id: 'TC10',
-        name: 'TC10: Kiểm soát xung đột đa luồng đồng thời (Concurrency Race Condition)',
-        category: 'performance' as const,
-        status: (passedTestCases >= 10 && !isFailed) ? 'passed' as const : 'failed' as const,
-        points: (passedTestCases >= 10 && !isFailed) ? 4.0 : 1.0,
-        maxPoints: 4.0,
-        durationMs: 340,
-        input: '20 client cùng gửi lệnh cập nhật một bản ghi cùng lúc millisecond',
-        expectedOutput: 'Khóa lạc quan (Optimistic Lock) hoặc Redis Distributed Lock bảo toàn dữ liệu',
-        actualOutput: (passedTestCases >= 10 && !isFailed)
-          ? 'Bảo toàn số dư chính xác với Distributed Lock'
-          : 'Sai lệch dữ liệu nhẹ do thiếu Transaction Lock đồng thời',
-      },
-    ];
-
-    const rubricBreakdown = [
-      {
-        id: 'crit-1',
-        name: 'Tính đúng đắn chức năng & Test Cases (Functional Correctness)',
-        weight: 40,
-        maxScore: 40,
-        earnedScore: earnedCrit1,
-        scoreScale10: Number((earnedCrit1 / 4).toFixed(1)),
-        status: earnedCrit1 >= 34 ? 'excellent' : earnedCrit1 >= 28 ? 'good' : 'average',
-        feedbackVi: `Vượt qua ${passedTestCases}/10 ca kiểm thử tự động trên Docker Sandbox Runner. ${failedTestCases > 0 ? `Cần tối ưu thêm các ca kiểm thử tải trọng biên (${testCaseResults.filter(t => t.status !== 'passed').map(t => t.id).join(', ')}).` : 'Vượt qua toàn bộ bộ kiểm thử.'}`,
-        feedbackEn: `Passed ${passedTestCases}/10 automated tests in Docker sandbox. ${failedTestCases > 0 ? 'Boundary load test cases need optimization.' : 'All tests passed.'}`,
-      },
-      {
-        id: 'crit-2',
-        name: 'Kiến trúc mã nguồn & Clean Code (Code Architecture & Design)',
-        weight: 20,
-        maxScore: 20,
-        earnedScore: earnedCrit2,
-        scoreScale10: Number((earnedCrit2 / 2).toFixed(1)),
-        status: earnedCrit2 >= 17 ? 'excellent' : 'good',
-        feedbackVi: 'Kiến trúc phân tầng Controller - Service - Repository rõ ràng. Tuân thủ nguyên lý Single Responsibility (SRP) và đặt tên chuẩn convention.',
-        feedbackEn: 'Clean Controller-Service-Repository architecture. Adheres to Single Responsibility Principle with standard naming conventions.',
-      },
-      {
-        id: 'crit-3',
-        name: 'Xử lý ngoại lệ, Dữ liệu biên & Độ tin cậy (Error & Edge Case Handling)',
-        weight: 20,
-        maxScore: 20,
-        earnedScore: earnedCrit3,
-        scoreScale10: Number((earnedCrit3 / 2).toFixed(1)),
-        status: earnedCrit3 >= 17 ? 'excellent' : earnedCrit3 >= 14 ? 'good' : 'average',
-        feedbackVi: 'Đã triển khai GlobalExceptionHandler. Cần bổ sung thêm cơ chế giới hạn kích thước payload (TC08) để tránh lỗi tràn bộ nhớ.',
-        feedbackEn: 'GlobalExceptionHandler implemented. Needs payload size limiting to prevent buffer overruns.',
-      },
-      {
-        id: 'crit-4',
-        name: 'Chất lượng mã AST & Chuẩn Git (AST Code Quality & Git Commits)',
-        weight: 20,
-        maxScore: 20,
-        earnedScore: earnedCrit4,
-        scoreScale10: Number((earnedCrit4 / 2).toFixed(1)),
-        status: earnedCrit4 >= 17 ? 'excellent' : 'good',
-        feedbackVi: 'Tỷ lệ trùng lặp mã AST là 3.8% (đạt chuẩn an toàn < 15%). Lịch sử commit tuân thủ Conventional Commits, 0 cờ gian lận LOC.',
-        feedbackEn: 'AST code duplication rate is 3.8% (safe < 15%). Commit log follows Conventional Commits with 0 LOC fraud flags.',
-      },
-    ];
-
-    let gradeLetter: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'F' = 'B';
-    let classificationVi = 'Khá';
-    let classificationEn = 'Good';
-    if (overallScore >= 90) {
-      gradeLetter = overallScore >= 95 ? 'A+' : 'A';
-      classificationVi = overallScore >= 95 ? 'Xuất sắc' : 'Giỏi';
-      classificationEn = overallScore >= 95 ? 'Excellent' : 'Very Good';
-    } else if (overallScore >= 80) {
-      gradeLetter = 'B+';
-      classificationVi = 'Khá - Giỏi';
-      classificationEn = 'Good';
-    } else if (overallScore >= 70) {
-      gradeLetter = 'B';
-      classificationVi = 'Khá';
-      classificationEn = 'Above Average';
-    } else if (overallScore >= 60) {
-      gradeLetter = 'C+';
-      classificationVi = 'Trung bình khá';
-      classificationEn = 'Average';
-    } else {
-      gradeLetter = 'F';
-      classificationVi = 'Chưa đạt yêu cầu';
-      classificationEn = 'Failed';
+    const subMail = (sub?.studentEmail || report.studentEmail || '').toLowerCase().trim();
+    if (subMail === 'lenguyenlinhnhi2110@gmail.com' || subMail.includes('linhnhi')) {
+      report.studentName = 'Lê Nguyễn Linh Nhi';
+      report.studentEmail = 'lenguyenlinhnhi2110@gmail.com';
     }
 
-    return {
-      submissionId: subId,
-      assignmentTitle: title,
-      classCode: sub?.classCode || 'SWP391-SE1801',
-      studentName: resolveUserDisplayName(sub?.studentEmail || userEmail, sub?.student || sub?.studentName || cleanUserFullName),
-      studentEmail: sub?.studentEmail || userEmail || 'lenguyenlinhnhi2110@gmail.com',
-      overallScore,
-      score10,
-      scoreDisplay: `${overallScore} / 100`,
-      gradeLetter,
-      classificationVi,
-      classificationEn,
-      totalTestCases,
-      passedTestCases,
-      failedTestCases,
-      testCasesSummary: `${passedTestCases}/${totalTestCases} Passed`,
-      runtimeDurationMs: isFailed ? 30124 : 840 + (seed % 450),
-      rubricBreakdown,
-      testCaseResults,
-      astAnalysis: {
-        astDuplicationRate: 3.8,
-        cyclomaticComplexity: 13,
-        cleanCodeScore: Math.round(earnedCrit2 * 5),
-        solidCompliance: 'Tuân thủ 4/5 nguyên tắc SOLID (SRP, OCP, LSP, ISP)',
-        detectedCodeSmells: [
-          'Khuyến nghị: Tách nhỏ phương thức xử lý transaction',
-          'Lưu ý: Xóa 2 câu lệnh console.log debug trước khi deploy',
-        ],
-      },
-      overallFeedbackVi: `Bài làm đạt chất lượng ${classificationVi} (${overallScore}/100 — ${score10}/10). Vượt qua ${passedTestCases}/${totalTestCases} test cases. Đáp ứng tốt tiêu chuẩn kiến trúc và clean code của môn học.`,
-      overallFeedbackEn: `Submission evaluated as ${classificationEn} (${overallScore}/100 — ${score10}/10). Passed ${passedTestCases}/${totalTestCases} test cases. Meets course architecture standards.`,
-    };
-  }, [userFullName]);
+    return report;
+  }, [userFullName, userEmail, cleanUserFullName, classAssignments, getSubmissionClassCode]);
 
   // Dynamic merged classes list for Admin, Lecturer and Student views
   const allSystemClasses: SystemClassItem[] = useMemo(() => {
     const allDiscoveredCodes = new Set<string>();
-    SYSTEM_CLASSES.forEach(c => allDiscoveredCodes.add(c.code));
-    classesList.forEach(code => allDiscoveredCodes.add(code));
-    classAssignments.forEach(asm => { if (asm.classCode) allDiscoveredCodes.add(asm.classCode); });
+    SYSTEM_CLASSES.forEach(c => {
+      if (!isClassDeleted(c.code) && !isClassDeleted(c.id)) {
+        allDiscoveredCodes.add(c.code);
+      }
+    });
+    classesList.forEach(code => {
+      if (!isClassDeleted(code)) allDiscoveredCodes.add(code);
+    });
+    classAssignments.forEach(asm => {
+      if (asm.classCode && !isClassDeleted(asm.classCode)) allDiscoveredCodes.add(asm.classCode);
+    });
     uploadedFiles.forEach(sub => {
       const code = getSubmissionClassCode(sub);
-      if (code) allDiscoveredCodes.add(code);
+      if (code && !isClassDeleted(code)) allDiscoveredCodes.add(code);
     });
     allSubmissions.forEach(sub => {
       const code = sub.classCode || getSubmissionClassCode(sub);
-      if (code) allDiscoveredCodes.add(code);
+      if (code && !isClassDeleted(code)) allDiscoveredCodes.add(code);
     });
-    Object.keys(classStudents).forEach(code => allDiscoveredCodes.add(code));
+    Object.keys(classStudents).forEach(code => {
+      if (!isClassDeleted(code)) allDiscoveredCodes.add(code);
+    });
 
     const existingMap = new Map<string, SystemClassItem>();
-    SYSTEM_CLASSES.forEach(c => existingMap.set(c.code, c));
+    const filteredSystemClasses = SYSTEM_CLASSES
+      .filter(c => !isClassDeleted(c.code) && !isClassDeleted(c.id))
+      .map(c => ({
+        ...c,
+        studentCount: getStudentsForClass(c.code).length || c.studentCount || 0,
+      }));
+    filteredSystemClasses.forEach(c => existingMap.set(c.code, c));
 
     const extraClasses: SystemClassItem[] = Array.from(allDiscoveredCodes)
-      .filter(code => !existingMap.has(code))
+      .filter(code => !existingMap.has(code) && !isClassDeleted(code))
       .map((code, idx) => {
         const foundAsm = classAssignments.find(a => a.classCode === code);
         return {
@@ -2436,14 +2648,132 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           lecturer: userFullName || 'TS. Nguyễn Văn Giảng',
           lecturerEmail: userEmail || 'giangnv@fpt.edu.vn',
           department: 'Kỹ thuật Phần mềm (SE)',
-          studentCount: (classStudents[code] || []).length || 5,
+          studentCount: getStudentsForClass(code).length || 0,
           submittedCount: uploadedFiles.filter(s => getSubmissionClassCode(s) === code).length,
           teams: 1,
         };
       });
 
-    return [...SYSTEM_CLASSES, ...extraClasses];
-  }, [classesList, classStudents, userFullName, userEmail, classAssignments, uploadedFiles, allSubmissions, getSubmissionClassCode]);
+    return [...filteredSystemClasses, ...extraClasses].filter(c => !isClassDeleted(c.code));
+  }, [classesList, classStudents, getStudentsForClass, userFullName, userEmail, classAssignments, uploadedFiles, allSubmissions, getSubmissionClassCode, isClassDeleted]);
+
+  // Auto-switch selectedClassCode if current selection is marked deleted
+  useEffect(() => {
+    if (isClassDeleted(selectedClassCode) && allSystemClasses.length > 0) {
+      const firstValid = allSystemClasses.find(c => !isClassDeleted(c.code));
+      if (firstValid) {
+        setSelectedClassCode(firstValid.code);
+      }
+    }
+  }, [allSystemClasses, isClassDeleted, selectedClassCode]);
+
+  // Robust class deletion callback
+  const handleDeleteClass = useCallback((codeToDelete: string, _nameToDelete?: string, idToDelete?: string) => {
+    const isVietnamese = lang === 'vi';
+    const cleanCode = (codeToDelete || '').trim();
+    if (!cleanCode) return;
+
+    // 1. Call backend API delete (cascade on server)
+    try {
+      fetch(`/api/classes/${encodeURIComponent(cleanCode)}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    // 2. Persist deleted class code to localStorage
+    setDeletedClassCodes((prev) => {
+      const additions = [cleanCode, cleanCode.toUpperCase(), cleanCode.toLowerCase()];
+      if (idToDelete) additions.push(idToDelete);
+      const next = Array.from(new Set([...prev, ...additions]));
+      try {
+        localStorage.setItem('aita_deleted_classes', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    // 3. Remove from classesList state & storage
+    setClassesList((prev) => {
+      const next = prev.filter(c => c.trim().toLowerCase() !== cleanCode.toLowerCase());
+      try { localStorage.setItem('aita_custom_classes', JSON.stringify(next)); } catch {}
+      return next;
+    });
+
+    // 4. Clean up classAssignments
+    setClassAssignments((prev) => {
+      const next = prev.filter(a => (a.classCode || '').trim().toLowerCase() !== cleanCode.toLowerCase());
+      try { localStorage.setItem('aita_class_assignments', JSON.stringify(next)); } catch {}
+      return next;
+    });
+
+    // 5. Clean up classStudents
+    setClassStudents((prev) => {
+      const next = { ...prev };
+      delete next[cleanCode];
+      delete next[cleanCode.toUpperCase()];
+      delete next[cleanCode.toLowerCase()];
+      Object.keys(next).forEach((k) => {
+        if (k.trim().toLowerCase() === cleanCode.toLowerCase()) {
+          delete next[k];
+        }
+      });
+      try { localStorage.setItem('aita_class_students', JSON.stringify(next)); } catch {}
+      return next;
+    });
+
+    // 6. Clean up submissions for this class
+    setAllSubmissions(prev => prev.filter((s: any) => {
+      const c = (s.classCode || '').trim().toLowerCase();
+      return c !== cleanCode.toLowerCase();
+    }));
+    setUploadedFiles(prev => prev.filter((s: any) => {
+      const c = (getSubmissionClassCode(s) || '').trim().toLowerCase();
+      return c !== cleanCode.toLowerCase();
+    }));
+
+    // 7. Clean up team jobs and student uploads in localStorage
+    try {
+      const savedJobs = localStorage.getItem(STORAGE_KEY_TEAM_JOBS);
+      if (savedJobs) {
+        const parsed = JSON.parse(savedJobs);
+        if (Array.isArray(parsed)) {
+          const rem = parsed.filter((j: any) => (j.classCode || '').trim().toLowerCase() !== cleanCode.toLowerCase());
+          localStorage.setItem(STORAGE_KEY_TEAM_JOBS, JSON.stringify(rem));
+        }
+      }
+    } catch {}
+
+    // 8. Switch selectedClassCode to another available class if current was deleted
+    setSelectedClassCode((curr) => {
+      if (curr.toLowerCase() === cleanCode.toLowerCase()) {
+        const remaining = allSystemClasses.filter(c => c.code.toLowerCase() !== cleanCode.toLowerCase() && !isClassDeleted(c.code));
+        return remaining.length > 0 ? remaining[0].code : '';
+      }
+      return curr;
+    });
+
+    // 9. Instant feedback toast
+    setReviewToast({
+      message: isVietnamese ? `Đã xóa lớp "${cleanCode}" và các dữ liệu liên quan thành công!` : `Class "${cleanCode}" deleted successfully!`,
+      type: 'success',
+    });
+  }, [lang, allSystemClasses, isClassDeleted, getSubmissionClassCode]);
+
+  // Delete Assignment Handler (Cascade remove from state and localStorage)
+  const handleDeleteAssignment = useCallback((target: ClassAssignmentItem) => {
+    const isVietnamese = lang === 'vi';
+    setClassAssignments((prev) => {
+      const next = prev.filter((a) => {
+        if (target.id && a.id) return a.id !== target.id;
+        return a.title !== target.title || (a.classCode || '').trim().toUpperCase() !== (target.classCode || '').trim().toUpperCase();
+      });
+      try {
+        localStorage.setItem('aita_class_assignments', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setReviewToast({
+      message: isVietnamese ? `Đã xóa đề bài "${target.title}" thành công!` : `Assignment "${target.title}" deleted successfully!`,
+      type: 'success',
+    });
+  }, [lang]);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -2477,29 +2807,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   });
   const [heartbeat, setHeartbeat] = useState(false);
 
-  // Dead-Letter Queue (DLQ) state fetched from real API (supports both individual and team Git jobs)
-  const [dlqJobs, setDlqJobs] = useState<any[]>([
-    {
-      id: 99,
-      studentName: 'Trần Văn Nam (SE170123)',
-      errorClassification: 'timeout: sandbox execution exceeded 30s',
-      runtimeDurationMs: 30124,
-      retryCount: 3,
-      status: 'dead',
-      details: 'Vòng lặp vô hạn trong thuật toán Dijkstra làm quá thời gian thực thi của Docker Sandbox (timeout 30s). Worker đã thử lại 3 lần thất bại.',
-      time: '21:15'
-    },
-    {
-      id: 104,
-      studentName: '[Đồ Án Nhóm] Nhóm 3 (SWP391-SE1801)',
-      errorClassification: 'git_error: repository 404 not found or private (3/3 retries)',
-      runtimeDurationMs: 45200,
-      retryCount: 3,
-      status: 'dead',
-      details: 'GitHub API trả về 404 Not Found đối với link repository https://github.com/ecommerce-ai/platform. Worker đã retry 3 lần thất bại do không thể clone mã nguồn.',
-      time: '23:45'
-    }
-  ]);
+  // Dead-Letter Queue (DLQ) state initialized clean (no hardcoded mock jobs)
+  const [dlqJobs, setDlqJobs] = useState<any[]>([]);
 
   // Batch Grading dispatch state
   const [batchName, setBatchName] = useState('Assignment 3 — Spring Boot REST');
@@ -2582,6 +2891,42 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       console.warn('Could not save uploaded files to localStorage:', e);
     }
   }, [uploadedFiles]);
+
+  // Auto-sync allSubmissions to localStorage whenever it changes (giảng viên & bài nộp cả lớp)
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_ALL_SUBMISSIONS, JSON.stringify(allSubmissions));
+    } catch (e) {
+      console.warn('Could not save allSubmissions to localStorage:', e);
+    }
+  }, [allSubmissions]);
+
+  // Auto-sync classStudents to localStorage whenever it changes (danh sách sinh viên các lớp)
+  useEffect(() => {
+    try {
+      localStorage.setItem('aita_class_students', JSON.stringify(classStudents));
+    } catch (e) {
+      console.warn('Could not save classStudents to localStorage:', e);
+    }
+  }, [classStudents]);
+
+  // Auto-sync classAssignments to localStorage whenever it changes (đề bài các lớp)
+  useEffect(() => {
+    try {
+      localStorage.setItem('aita_class_assignments', JSON.stringify(classAssignments));
+    } catch (e) {
+      console.warn('Could not save classAssignments to localStorage:', e);
+    }
+  }, [classAssignments]);
+
+  // Auto-sync classTeamsMap to localStorage whenever it changes (danh sách nhóm)
+  useEffect(() => {
+    try {
+      localStorage.setItem('aita_class_teams_map', JSON.stringify(classTeamsMap));
+    } catch (e) {
+      console.warn('Could not save classTeamsMap to localStorage:', e);
+    }
+  }, [classTeamsMap]);
 
   // Synchronize submissions from backend API (both for Lecturer & Student views)
   const fetchSubmissionsFromDb = useCallback(async () => {
@@ -2687,7 +3032,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             const isSelf =
               (userEmail && item.studentEmail && item.studentEmail.toLowerCase() === userEmail.toLowerCase()) ||
               (cleanUserFullName && item.studentName && item.studentName.toLowerCase().includes(cleanUserFullName.toLowerCase())) ||
-              (cleanUserFullName && item.student && item.student.toLowerCase().includes(cleanUserFullName.toLowerCase()));
+              (cleanUserFullName && item.student && item.student.toLowerCase().includes(cleanUserFullName.toLowerCase())) ||
+              ((item.studentName || item.student || '').toLowerCase().includes('linh nhi'));
 
             if (!isSelf) continue;
 
@@ -2713,11 +3059,22 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             const method = item.method || (item.codeUrl ? (item.codeUrl.startsWith('http') ? `GitHub: ${item.codeUrl}` : `Tệp ZIP: ${item.codeUrl.replace('uploads/', '')}`) : 'Tệp mã nguồn');
 
             const itemReviewStatus = item.reviewStatus || 'pending';
+            const subClassCode = item.classCode || getSubmissionClassCode(item);
+            const subStudentName = item.studentName || item.student || cleanUserFullName;
+            const subStudentEmail = item.studentEmail || userEmail;
+            const subTitle = item.title || item.assignment || 'Assignment';
             const subRecord = {
               id: codeId,
-              assignment: item.title || 'Assignment',
+              jobId: item.jobId || item.id,
+              assignment: subTitle,
+              title: subTitle,
+              student: subStudentName,
+              studentName: subStudentName,
+              studentEmail: subStudentEmail,
+              classCode: subClassCode,
               method,
               submittedAt: formatTimeDisplay(item.submittedAt),
+              time: formatTimeDisplay(item.submittedAt),
               status,
               score,
               testCases,
@@ -2730,11 +3087,18 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             if (existingIdx >= 0) {
               merged[existingIdx] = {
                 ...merged[existingIdx],
+                student: subRecord.student,
+                studentName: subRecord.studentName,
+                studentEmail: subRecord.studentEmail,
+                classCode: subRecord.classCode || merged[existingIdx].classCode,
+                assignment: subRecord.assignment,
+                title: subRecord.title,
                 status: subRecord.status,
                 score: subRecord.score,
                 testCases: subRecord.testCases,
                 gradingReport: subRecord.gradingReport,
                 submittedAt: subRecord.submittedAt,
+                time: subRecord.time,
                 reviewStatus: item.reviewStatus !== undefined ? item.reviewStatus : (merged[existingIdx].reviewStatus || 'pending'),
                 reviewComment: item.reviewComment !== undefined ? item.reviewComment : (merged[existingIdx].reviewComment || ''),
                 reviewedAt: item.reviewedAt !== undefined ? item.reviewedAt : merged[existingIdx].reviewedAt,
@@ -2762,7 +3126,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     try {
       const res = await fetch('/api/dlq');
       const data = await res.json();
-      if (data?.success && Array.isArray(data.data) && data.data.length > 0) {
+      if (data?.success && Array.isArray(data.data)) {
         setDlqJobs(data.data);
       }
     } catch (err) {
@@ -2895,6 +3259,19 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         }),
       });
       await res.json();
+
+      try {
+        await fetch(`/api/grading/submissions/${jobId}/grade`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reviewStatus: status,
+            reviewComment: effectiveComment,
+            reviewedAt: reviewedTime,
+          }),
+        });
+      } catch {}
+
       applyReviewUpdate();
       setReviewToast({
         type: 'success',
@@ -3247,6 +3624,35 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       'MMA301': 4,
     };
 
+    // Extract real submitted code for accurate semantic grading against assignment test cases
+    let submittedCodeText = '';
+    if (submitMethod === 'file' && selectedFile) {
+      const fName = (selectedFile.name || '').toLowerCase();
+      if (fName.endsWith('.zip')) {
+        try {
+          const buffer = await selectedFile.arrayBuffer();
+          const entries = await extractZipEntries(buffer);
+          if (entries.length > 0) {
+            submittedCodeText = entries.map(e => `// File: ${e.name}\n${e.content}`).join('\n\n');
+          } else {
+            submittedCodeText = `// [Tệp ZIP không chứa file mã nguồn hợp lệ: ${selectedFile.name}]`;
+          }
+        } catch (e) {
+          console.warn('Error reading zip archive:', e);
+          submittedCodeText = `// [Lỗi giải nén ZIP: ${selectedFile.name}]`;
+        }
+      } else {
+        try {
+          submittedCodeText = await selectedFile.text();
+        } catch (e) {
+          console.warn('Error reading file text:', e);
+          submittedCodeText = `// [Không thể đọc text: ${selectedFile.name}]`;
+        }
+      }
+    } else if (submitMethod === 'git' && gitRepoUrl.trim()) {
+      submittedCodeText = `// GitHub Repo: ${gitRepoUrl.trim()} (${gitBranch.trim() || 'main'})\n${submissionNotes || ''}`;
+    }
+
     const payload = {
       classId: classIdMap[studentSubmitClassCode] || 1,
       classCode: studentSubmitClassCode,
@@ -3259,6 +3665,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       gitRepoUrl: gitRepoUrl.trim(),
       gitBranch: gitBranch.trim() || 'main',
       notes: submissionNotes,
+      codeSnippet: submittedCodeText,
     };
 
     try {
@@ -3282,6 +3689,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         attempt: currentAttemptNumber,
         isResubmission,
         isRetry: isResubmission,
+        codeSnippet: submittedCodeText,
         method: submitMethod === 'file'
           ? `Tệp ZIP: ${selectedFileName} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
@@ -3318,26 +3726,82 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       });
 
       // Prepend to class submissions list for lecturer view (ghi đè bài cũ của cùng sinh viên)
+      const lecturerSubRecord = {
+        id: newDbId,
+        jobId: newDbId,
+        student: cleanUserFullName,
+        studentName: cleanUserFullName,
+        studentEmail: userEmail || 'lenguyenlinhnhi2110@gmail.com',
+        title: submitAssignmentTitle,
+        classCode: studentSubmitClassCode,
+        status: 'not graded',
+        reviewStatus: 'pending',
+        reviewComment: '',
+        method: newSubmissionRecord.method,
+        time: timeStr,
+        submittedAt: timeStr,
+        score: 'Chờ chấm...',
+        testCases: 'Đang xếp hàng (BullMQ)',
+      };
+
       setAllSubmissions((prev) => {
         const filtered = prev.filter((p) => {
-          const isSameAssignment = p.title === submitAssignmentTitle;
+          const isSameAssignment = (p.title || p.assignment) === submitAssignmentTitle;
           const isSameStudent =
-            cleanUserFullName && p.student && p.student.toLowerCase() === cleanUserFullName.toLowerCase();
+            cleanUserFullName && (p.student || p.studentName) && (p.student || p.studentName).toLowerCase() === cleanUserFullName.toLowerCase();
           return !(isSameAssignment && isSameStudent);
         });
-        return [
-          {
-            id: newDbId,
-            student: cleanUserFullName,
-            title: submitAssignmentTitle,
-            classCode: studentSubmitClassCode,
-            status: 'not graded',
-            reviewStatus: 'pending',
-            reviewComment: '',
-            time: timeStr,
-          },
-          ...filtered,
-        ];
+        const next = [lecturerSubRecord, ...filtered];
+        try {
+          localStorage.setItem(STORAGE_KEY_ALL_SUBMISSIONS, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      // Cập nhật ngay trạng thái nộp bài cho sinh viên trong Danh Sách Lớp Học (classStudents)
+      setClassStudents((prev) => {
+        const targetClass = studentSubmitClassCode;
+        const upperClass = (targetClass || '').toUpperCase();
+        const currentList = prev[targetClass] || prev[upperClass] || [];
+        
+        let found = false;
+        const updatedList = currentList.map((std) => {
+          const matchesEmail = userEmail && std.email && std.email.toLowerCase() === userEmail.toLowerCase();
+          const matchesName = cleanUserFullName && std.name && std.name.toLowerCase() === cleanUserFullName.toLowerCase();
+          if (matchesEmail || matchesName) {
+            found = true;
+            return {
+              ...std,
+              submitStatus: 'submitted' as const,
+              submitType: submitMethod === 'file' ? `Tệp ZIP (${selectedFileName || 'submission.zip'})` : `GitHub Repository (${gitBranch})`,
+              submittedAt: timeStr,
+            };
+          }
+          return std;
+        });
+
+        if (!found && cleanUserFullName) {
+          updatedList.unshift({
+            mssv: 'QE180012',
+            name: cleanUserFullName,
+            email: userEmail || 'lenguyenlinhnhi2110@gmail.com',
+            team: 'Chưa phân nhóm',
+            submitStatus: 'submitted' as const,
+            submitType: submitMethod === 'file' ? `Tệp ZIP (${selectedFileName || 'submission.zip'})` : `GitHub Repository (${gitBranch})`,
+            submittedAt: timeStr,
+            status: 'Đang học',
+          });
+        }
+
+        const nextState = {
+          ...prev,
+          [targetClass]: updatedList,
+          [upperClass]: updatedList,
+        };
+        try {
+          localStorage.setItem('aita_class_students', JSON.stringify(nextState));
+        } catch {}
+        return nextState;
       });
 
       setLastSubmissionDetails({
@@ -3361,15 +3825,18 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
       // Mô phỏng Worker chạy tiến trình chấm sau 4.5 giây
       setTimeout(() => {
-        const computedReport = getSubmissionGradingReport({
-          id: submissionCode,
-          assignment: submitAssignmentTitle,
+        const computedReport = evaluateCodeAgainstAssignment({
+          codeText: submittedCodeText,
+          assignmentTitle: submitAssignmentTitle,
+          assignmentDesc: targetTask?.description || '',
           classCode: studentSubmitClassCode,
-          student: cleanUserFullName,
+          customTestCases: targetTask?.testCases,
+          studentName: cleanUserFullName,
           studentEmail: userEmail || 'lenguyenlinhnhi2110@gmail.com',
+          subId: submissionCode,
         });
-        setUploadedFiles((prev) =>
-          prev.map((p) =>
+        setUploadedFiles((prev) => {
+          const updated = prev.map((p) =>
             p.id === submissionCode
               ? {
                   ...p,
@@ -3381,11 +3848,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   reviewComment: '',
                 }
               : p
-          )
-        );
-        setAllSubmissions((prev) =>
-          prev.map((p) =>
-            p.id === newDbId
+          );
+          try { localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(updated)); } catch {}
+          return updated;
+        });
+        setAllSubmissions((prev) => {
+          const updated = prev.map((p) =>
+            (p.id === newDbId || String(p.id) === String(newDbId) || ((p.student || p.studentName) === cleanUserFullName && (p.title || p.assignment) === submitAssignmentTitle))
               ? {
                   ...p,
                   status: 'completed',
@@ -3396,8 +3865,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   reviewComment: '',
                 }
               : p
-          )
-        );
+          );
+          try { localStorage.setItem(STORAGE_KEY_ALL_SUBMISSIONS, JSON.stringify(updated)); } catch {}
+          return updated;
+        });
         setSubmitSuccessMsg(
           lang === 'vi'
             ? `⚡ Hệ thống Sandbox đã chấm xong bài nộp #${submissionCode}! Trạng thái hiện tại: Chờ Giảng viên duyệt. Điểm chính thức sẽ hiển thị ngay khi Thầy/Cô phê duyệt.`
@@ -3407,12 +3878,15 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
     } catch (err: any) {
       console.warn('API submission error fallback:', err);
       const fallbackId = `SUB-0${uploadedFiles.length + 1}`;
-      const computedReport = getSubmissionGradingReport({
-        id: fallbackId,
-        assignment: submitAssignmentTitle,
+      const computedReport = evaluateCodeAgainstAssignment({
+        codeText: submittedCodeText,
+        assignmentTitle: submitAssignmentTitle,
+        assignmentDesc: targetTask?.description || '',
         classCode: studentSubmitClassCode,
-        student: cleanUserFullName,
+        customTestCases: targetTask?.testCases,
+        studentName: cleanUserFullName,
         studentEmail: userEmail || 'lenguyenlinhnhi2110@gmail.com',
+        subId: fallbackId,
       });
       const newSubmissionRecord = {
         id: fallbackId,
@@ -3420,6 +3894,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         classCode: studentSubmitClassCode,
         student: cleanUserFullName,
         studentEmail: userEmail || 'lenguyenlinhnhi2110@gmail.com',
+        codeSnippet: submittedCodeText,
         method: submitMethod === 'file'
           ? `Tệp ZIP: ${selectedFileName || 'submission_code.zip'} (${selectedFileSize || '2.4 MB'})`
           : `GitHub: ${gitRepoUrl} (${gitBranch})`,
@@ -3448,14 +3923,17 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       });
       setAllSubmissions((prev) => {
         const filtered = prev.filter((p) => {
-          const isSameAssignment = (p.title || '').toLowerCase() === submitAssignmentTitle.toLowerCase();
-          const isSameStudent = !p.student || (userFullName && p.student.toLowerCase() === userFullName.toLowerCase());
+          const isSameAssignment = (p.title || p.assignment || '').toLowerCase() === submitAssignmentTitle.toLowerCase();
+          const isSameStudent = !p.student || (cleanUserFullName && (p.student || p.studentName).toLowerCase() === cleanUserFullName.toLowerCase());
           return !(isSameAssignment && isSameStudent);
         });
-        return [
+        const next = [
           {
             id: 100 + prev.length + 1,
-            student: userFullName || 'Lê Nguyễn Linh Nhi',
+            jobId: 100 + prev.length + 1,
+            student: cleanUserFullName || 'Lê Nguyễn Linh Nhi',
+            studentName: cleanUserFullName || 'Lê Nguyễn Linh Nhi',
+            studentEmail: userEmail || 'lenguyenlinhnhi2110@gmail.com',
             title: submitAssignmentTitle,
             classCode: studentSubmitClassCode,
             status: 'completed',
@@ -3464,10 +3942,58 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             gradingReport: computedReport,
             reviewStatus: 'pending',
             reviewComment: '',
+            method: newSubmissionRecord.method,
             time: timeStr,
+            submittedAt: timeStr,
           },
           ...filtered,
         ];
+        try { localStorage.setItem(STORAGE_KEY_ALL_SUBMISSIONS, JSON.stringify(next)); } catch {}
+        return next;
+      });
+
+      // Đồng bộ trạng thái nộp bài trong Danh Sách Sinh Viên
+      setClassStudents((prev) => {
+        const targetClass = studentSubmitClassCode;
+        const upperClass = (targetClass || '').toUpperCase();
+        const currentList = prev[targetClass] || prev[upperClass] || [];
+        
+        let found = false;
+        const updatedList = currentList.map((std) => {
+          const matchesEmail = userEmail && std.email && std.email.toLowerCase() === userEmail.toLowerCase();
+          const matchesName = cleanUserFullName && std.name && std.name.toLowerCase() === cleanUserFullName.toLowerCase();
+          if (matchesEmail || matchesName) {
+            found = true;
+            return {
+              ...std,
+              submitStatus: 'submitted' as const,
+              submitType: submitMethod === 'file' ? `Tệp ZIP (${selectedFileName || 'submission.zip'})` : `GitHub Repository (${gitBranch})`,
+              submittedAt: timeStr,
+            };
+          }
+          return std;
+        });
+
+        if (!found && cleanUserFullName) {
+          updatedList.unshift({
+            mssv: 'QE180012',
+            name: cleanUserFullName,
+            email: userEmail || 'lenguyenlinhnhi2110@gmail.com',
+            team: 'Chưa phân nhóm',
+            submitStatus: 'submitted' as const,
+            submitType: submitMethod === 'file' ? `Tệp ZIP (${selectedFileName || 'submission.zip'})` : `GitHub Repository (${gitBranch})`,
+            submittedAt: timeStr,
+            status: 'Đang học',
+          });
+        }
+
+        const nextState = {
+          ...prev,
+          [targetClass]: updatedList,
+          [upperClass]: updatedList,
+        };
+        try { localStorage.setItem('aita_class_students', JSON.stringify(nextState)); } catch {}
+        return nextState;
       });
       setSubmitSuccessMsg(`🎉 Nộp bài thành công! Bài làm "${submitAssignmentTitle}" (${studentSubmitClassCode}) đã được ghi nhận trên giao diện và sẵn sàng cho đợt chấm.`);
     } finally {
@@ -3582,16 +4108,25 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   
 
-  // Dynamic Real Metrics computed from live database submissions & models
-  const totalRealClasses = SYSTEM_CLASSES.length;
-  const totalRealStudents = Object.values(CLASS_STUDENTS_MAP).reduce((sum, list) => sum + list.length, 0);
+  // Dynamic Real Metrics computed from live active classes & submissions
+  const totalRealClasses = allSystemClasses.length;
+  const activeClassCodes = new Set(allSystemClasses.map(c => c.code.toLowerCase()));
+  const totalRealStudents = allSystemClasses.reduce(
+    (sum, c) => sum + (c.studentCount || getStudentsForClass(c.code).length || 0),
+    0
+  );
   const totalRealLecturers = BASE_SYSTEM_LECTURERS.length;
-  const totalRealSubmissions = allSubmissions.length;
-  const realZipSubmissions = allSubmissions.filter((s) => s.codeUrl?.includes('.zip') || s.method?.includes('ZIP')).length;
-  const realGitSubmissions = allSubmissions.filter((s) => s.codeUrl?.startsWith('http') || s.method?.includes('GitHub') || s.method?.includes('Git')).length;
-  const realCompletedSubmissions = allSubmissions.filter((s) => s.status === 'completed' || s.status === 'graded').length;
+  const activeSubmissions = allSubmissions.filter(s => {
+    if (allSystemClasses.length === 0) return false;
+    const c = (s.classCode || getSubmissionClassCode(s) || '').toLowerCase();
+    return !c || activeClassCodes.has(c);
+  });
+  const totalRealSubmissions = allSystemClasses.length === 0 ? 0 : activeSubmissions.length;
+  const realZipSubmissions = allSystemClasses.length === 0 ? 0 : activeSubmissions.filter((s) => s.codeUrl?.includes('.zip') || s.method?.includes('ZIP')).length;
+  const realGitSubmissions = allSystemClasses.length === 0 ? 0 : activeSubmissions.filter((s) => s.codeUrl?.startsWith('http') || s.method?.includes('GitHub') || s.method?.includes('Git')).length;
+  const realCompletedSubmissions = allSystemClasses.length === 0 ? 0 : activeSubmissions.filter((s) => s.status === 'completed' || s.status === 'graded').length;
   const realWaitingSubmissions = Math.max(0, totalRealSubmissions - realCompletedSubmissions);
-  const realSubmissionPct = totalRealStudents > 0 ? Math.round((Math.min(totalRealSubmissions, totalRealStudents) / totalRealStudents) * 100) : 100;
+  const realSubmissionPct = totalRealStudents > 0 ? Math.round((Math.min(totalRealSubmissions, totalRealStudents) / totalRealStudents) * 100) : 0;
 
   return (
     <div style={{
@@ -4803,171 +5338,160 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </div>
               </div>
 
-              {/* Class Selection Dropdown (Compact) */}
-              <div style={{ position: 'relative', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('class-dropdown-list');
-                      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '9px 18px',
-                      borderRadius: '10px',
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(181, 82, 58, 0.25)',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <Building2 size={15} />
-                    <span>
-                      {studentSelectedClass === 'all'
-                        ? (lang === 'vi' ? 'Tất Cả Lớp' : 'All Classes')
-                        : studentSelectedClass}
-                    </span>
-                    <span style={{
-                      fontSize: '0.70rem',
-                      padding: '1px 7px',
-                      borderRadius: '999px',
-                      background: 'rgba(255,255,255,0.25)',
-                    }}>
-                      {studentSelectedClass === 'all'
-                        ? dedupAssignments(classAssignments).length
-                        : dedupAssignments(classAssignments).filter(a => a.classCode === studentSelectedClass).length}
-                    </span>
-                    <ChevronDown size={14} />
-                  </button>
+              {/* Class Selection Pills Bar (Seamless on page) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                overflowX: 'auto',
+                paddingBottom: '4px',
+                marginBottom: '20px',
+              }}>
+                <span style={{
+                  fontSize: '0.80rem',
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginRight: '4px',
+                }}>
+                  <Building2 size={15} color="var(--color-kumquat)" />
+                  <span>{lang === 'vi' ? 'Chọn lớp học:' : 'Select class:'}</span>
+                </span>
 
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {lang === 'vi'
-                      ? `Đang lọc: ${studentSelectedClass === 'all' ? dedupAssignments(classAssignments).length : dedupAssignments(classAssignments).filter(a => a.classCode === studentSelectedClass).length} bài nộp`
-                      : `Filtering: ${studentSelectedClass === 'all' ? dedupAssignments(classAssignments).length : dedupAssignments(classAssignments).filter(a => a.classCode === studentSelectedClass).length} tasks`}
-                  </span>
-                </div>
-
-                {/* Dropdown List */}
-                <div
-                  id="class-dropdown-list"
+                {/* Pill: All classes */}
+                <button
+                  type="button"
+                  onClick={() => setStudentSelectedClass('all')}
                   style={{
-                    display: 'none',
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    marginTop: '6px',
-                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                    border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
-                    borderRadius: '12px',
-                    boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(0,0,0,0.1)',
-                    padding: '6px',
-                    zIndex: 50,
-                    minWidth: '220px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '0.80rem',
+                    fontWeight: studentSelectedClass === 'all' ? 800 : 600,
+                    background: studentSelectedClass === 'all'
+                      ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
+                      : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
+                    color: studentSelectedClass === 'all' ? '#FFFFFF' : 'var(--text-body)',
+                    border: studentSelectedClass === 'all' ? 'none' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: studentSelectedClass === 'all' ? '0 2px 8px rgba(238, 107, 47, 0.25)' : '0 1px 3px rgba(0,0,0,0.03)',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  {/* Option: All Classes */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStudentSelectedClass('all');
-                      const el = document.getElementById('class-dropdown-list');
-                      if (el) el.style.display = 'none';
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      fontSize: '0.82rem',
-                      fontWeight: studentSelectedClass === 'all' ? 700 : 500,
-                      background: studentSelectedClass === 'all'
-                        ? (isDark ? 'rgba(181,82,58,0.15)' : '#FFF5F2')
-                        : 'transparent',
-                      color: studentSelectedClass === 'all' ? 'var(--color-kumquat)' : 'var(--text-body)',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'background 0.12s ease',
-                    }}
-                  >
-                    <span>{lang === 'vi' ? 'Tất cả các lớp' : 'All Classes'}</span>
-                    <span style={{
-                      fontSize: '0.70rem',
-                      padding: '2px 8px',
-                      borderRadius: '999px',
-                      background: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
-                      color: 'var(--text-muted)',
-                      fontWeight: 600,
-                    }}>{dedupAssignments(classAssignments).length}</span>
-                  </button>
+                  <span>{lang === 'vi' ? 'Tất cả các lớp' : 'All Classes'}</span>
+                  <span style={{
+                    fontSize: '0.70rem',
+                    padding: '1px 6px',
+                    borderRadius: '999px',
+                    background: studentSelectedClass === 'all' ? 'rgba(255,255,255,0.25)' : (isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
+                    color: studentSelectedClass === 'all' ? '#FFFFFF' : 'var(--text-muted)',
+                  }}>
+                    {allSystemClasses.length === 0 ? 0 : (() => {
+                      const valid = dedupAssignments(classAssignments).filter(a => {
+                        if (!a || !a.classCode) return false;
+                        if (isClassDeleted(a.classCode)) return false;
+                        if (allSystemClasses.length > 0 && !allSystemClasses.some(c => doesClassMatch(c.code, a.classCode))) {
+                          return false;
+                        }
+                        return true;
+                      });
+                      const seen = new Set<string>();
+                      return valid.filter(a => {
+                        const k = normalizeAssignmentGroup(a.title);
+                        if (seen.has(k)) return false;
+                        seen.add(k);
+                        return true;
+                      }).length;
+                    })()}
+                  </span>
+                </button>
 
-                  {/* Options: Individual Classes */}
-                  {Array.from(new Set([
-                    'SWP391-SE1801',
-                    'PRN231-SE1803',
-                    'PRJ301-IS1702',
-                    ...dedupAssignments(classAssignments).map(a => a.classCode),
-                    ...Object.keys(classStudents)
-                  ])).map(code => {
-                    const classTasks = dedupAssignments(classAssignments).filter(a => a.classCode === code);
-                    const isSelected = studentSelectedClass === code;
-                    return (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => {
-                          setStudentSelectedClass(code);
-                          setSelectedClassCode(code);
-                          const el = document.getElementById('class-dropdown-list');
-                          if (el) el.style.display = 'none';
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
-                          padding: '10px 14px',
-                          borderRadius: '8px',
-                          fontSize: '0.82rem',
-                          fontWeight: isSelected ? 700 : 500,
-                          background: isSelected
-                            ? (isDark ? 'rgba(181,82,58,0.15)' : '#FFF5F2')
-                            : 'transparent',
-                          color: isSelected ? 'var(--color-kumquat)' : 'var(--text-body)',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'background 0.12s ease',
-                        }}
-                      >
-                        <span>{code}</span>
-                        <span style={{
-                          fontSize: '0.70rem',
-                          padding: '2px 8px',
-                          borderRadius: '999px',
-                          background: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
-                          color: 'var(--text-muted)',
-                          fontWeight: 600,
-                        }}>{classTasks.length} {lang === 'vi' ? 'đề' : 'tasks'}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Pills: Individual Classes */}
+                {Array.from(new Set([
+                  ...allSystemClasses.map(c => c.code),
+                  ...classesList,
+                  ...dedupAssignments(classAssignments).map(a => a.classCode),
+                  ...Object.keys(classStudents)
+                ]))
+                  .filter(code => !isClassDeleted(code) && (allSystemClasses.length === 0 || allSystemClasses.some(c => doesClassMatch(c.code, code))))
+                  .map(code => {
+                  const classTasks = dedupAssignments(classAssignments).filter(a => doesClassMatch(a.classCode, code) && !isClassDeleted(a.classCode));
+                  const isSelected = studentSelectedClass === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => {
+                        setStudentSelectedClass(code);
+                        setSelectedClassCode(code);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        fontSize: '0.80rem',
+                        fontWeight: isSelected ? 800 : 600,
+                        background: isSelected
+                          ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
+                          : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
+                        color: isSelected ? '#FFFFFF' : 'var(--text-body)',
+                        border: isSelected ? 'none' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        boxShadow: isSelected ? '0 2px 8px rgba(238, 107, 47, 0.25)' : '0 1px 3px rgba(0,0,0,0.03)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span>{code}</span>
+                      <span style={{
+                        fontSize: '0.70rem',
+                        padding: '1px 6px',
+                        borderRadius: '999px',
+                        background: isSelected ? 'rgba(255,255,255,0.25)' : (isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
+                        color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
+                      }}>
+                        {classTasks.length} {lang === 'vi' ? 'đề' : 'tasks'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Dynamic Content based on studentSelectedClass */}
               {(() => {
-                const uniqueAssignments = dedupAssignments(classAssignments);
-                const tasksInClass = studentSelectedClass === 'all'
-                  ? uniqueAssignments
-                  : uniqueAssignments.filter(a => a.classCode === studentSelectedClass);
+                const validStudentAssignments = dedupAssignments(classAssignments).filter(a => {
+                  if (!a || !a.classCode) return false;
+                  if (isClassDeleted(a.classCode)) return false;
+                  if (allSystemClasses.length > 0 && !allSystemClasses.some(c => doesClassMatch(c.code, a.classCode))) {
+                    return false;
+                  }
+                  return true;
+                });
+
+                const tasksInClass = (() => {
+                  const targetList = studentSelectedClass === 'all'
+                    ? validStudentAssignments
+                    : validStudentAssignments.filter(a => doesClassMatch(a.classCode, studentSelectedClass));
+
+                  const seenTitles = new Set<string>();
+                  const deduped: ClassAssignmentItem[] = [];
+                  for (const a of targetList) {
+                    const groupKey = normalizeAssignmentGroup(a.title);
+                    if (!seenTitles.has(groupKey)) {
+                      seenTitles.add(groupKey);
+                      deduped.push(a);
+                    }
+                  }
+                  return deduped;
+                })();
                 const submittedTasks = tasksInClass.filter(asm =>
                   (selectedAssignmentId === asm.id && uploadedFiles.length > 0) || asm.id === 'ASM-SWP-01'
                 );
@@ -6737,7 +7261,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         onChange={(e) => {
                           const newClass = e.target.value;
                           setStudentSubmitClassCode(newClass);
-                          const matching = dedupAssignments(classAssignments).filter(a => a.classCode === newClass);
+                          const matching = dedupAssignments(classAssignments).filter(a => doesClassMatch(a.classCode, newClass));
                           if (matching.length > 0) {
                             setSelectedAssignmentId(matching[0].id);
                             setSubmitAssignmentTitle(matching[0].title);
@@ -6776,13 +7300,15 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                         onBlur={(e) => { e.target.style.borderColor = isDark ? 'var(--border-light)' : '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
                       >
                         {(() => {
-                          const forThisClass = dedupAssignments(classAssignments).filter(a => a.classCode === studentSubmitClassCode);
-                          const listToRender = forThisClass.length > 0 ? forThisClass : [
-                            { id: 'ASM-FALLBACK-1', title: 'Assignment 2: Git Analytics & Free-Rider Detection', type: 'Assignment', deadline: '2026-10-30 23:59' },
-                            { id: 'ASM-FALLBACK-2', title: 'Exam: Đồ Án Cuối Kỳ SWP391', type: 'Exam', deadline: '2026-11-15 23:59' },
-                            { id: 'ASM-FALLBACK-3', title: 'Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching', type: 'Practice', deadline: '2026-10-25 23:59' },
-                          ];
-                          return listToRender.map((asm: any) => (
+                          const forThisClass = dedupAssignments(classAssignments).filter(a => doesClassMatch(a.classCode, studentSubmitClassCode));
+                          if (forThisClass.length === 0) {
+                            return (
+                              <option value="">
+                                {lang === 'vi' ? '-- Lớp này hiện chưa có bài tập nào --' : '-- No assignments for this class --'}
+                              </option>
+                            );
+                          }
+                          return forThisClass.map((asm: any) => (
                             <option key={asm.id} value={asm.title}>
                               [{asm.type?.toUpperCase() || 'ASSIGNMENT'}] {asm.title} (Hạn: {asm.deadline?.split(' ')[0] || '2026-10-30'})
                             </option>
@@ -7279,135 +7805,70 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </div>
               </div>
 
-              {/* CLASS SELECTOR & FILTER BAR */}
-              <div style={{
-                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                borderRadius: '18px',
-                padding: '20px 22px',
-                border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
-                boxShadow: 'var(--shadow-card)',
-                marginBottom: '20px',
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <BookOpen size={16} color="var(--color-kumquat)" />
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {lang === 'vi' ? 'Chọn Lớp Môn Học Cần Xem Bài Nộp:' : 'Select Course & Class to View:'}
-                      </span>
-                    </div>
-
-                    {/* Class Selector Dropdown for quick select */}
-                    <select
-                      value={studentResultClassFilter}
-                      onChange={(e) => setStudentResultClassFilter(e.target.value)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
-                        background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC',
-                        color: 'var(--text-main)',
-                        fontSize: '0.80rem',
-                        fontWeight: 700,
-                        outline: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <option value="all">
-                        {lang === 'vi' ? 'Tất Cả Các Lớp Môn Học' : 'All Courses & Classes'} ({uploadedFiles.length})
-                      </option>
-                      {allSystemClasses.map((cls) => {
-                        const count = uploadedFiles.filter(s => getSubmissionClassCode(s) === cls.code).length;
-                        return (
-                          <option key={cls.code} value={cls.code}>
-                            {cls.code} — {cls.name} ({count} bài nộp)
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  {/* Class Pills for 1-Click Fast Switching */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setStudentResultClassFilter('all')}
-                      style={{
-                        padding: '7px 14px',
-                        borderRadius: '10px',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        border: studentResultClassFilter === 'all' ? '1.5px solid var(--color-kumquat)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                        background: studentResultClassFilter === 'all' ? (isDark ? 'rgba(238, 107, 47, 0.2)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC'),
-                        color: studentResultClassFilter === 'all' ? 'var(--color-kumquat)' : 'var(--text-body)',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <span>{lang === 'vi' ? '🌐 Tất cả các lớp' : '🌐 All Classes'}</span>
-                      <span style={{
-                        fontSize: '0.68rem',
-                        padding: '1px 6px',
-                        borderRadius: '999px',
-                        background: studentResultClassFilter === 'all' ? 'var(--color-kumquat)' : 'rgba(100,116,139,0.2)',
-                        color: studentResultClassFilter === 'all' ? '#FFFFFF' : 'var(--text-muted)',
-                        fontWeight: 800,
-                      }}>
-                        {uploadedFiles.length}
-                      </span>
-                    </button>
-
-                    {allSystemClasses.map((cls) => {
-                      const count = uploadedFiles.filter(s => getSubmissionClassCode(s) === cls.code).length;
-                      const isSelected = studentResultClassFilter === cls.code;
-                      return (
-                        <button
-                          key={cls.code}
-                          type="button"
-                          onClick={() => setStudentResultClassFilter(cls.code)}
-                          style={{
-                            padding: '7px 14px',
-                            borderRadius: '10px',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            border: isSelected ? '1.5px solid var(--color-kumquat)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                            background: isSelected ? (isDark ? 'rgba(238, 107, 47, 0.2)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC'),
-                            color: isSelected ? 'var(--color-kumquat)' : 'var(--text-body)',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <span>{cls.code}</span>
-                          <span style={{
-                            fontSize: '0.68rem',
-                            padding: '1px 6px',
-                            borderRadius: '999px',
-                            background: isSelected ? 'var(--color-kumquat)' : (count > 0 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100,116,139,0.2)'),
-                            color: isSelected ? '#FFFFFF' : (count > 0 ? '#16A34A' : 'var(--text-muted)'),
-                            fontWeight: 800,
-                          }}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* DYNAMIC COMPUTED SUBMISSIONS LIST */}
+              {/* DYNAMIC UNIFIED STUDENT SUBMISSIONS COMPUTATION */}
               {(() => {
-                const getSubClassCode = getSubmissionClassCode;
+                // Unified list of all submissions for current student, merging uploadedFiles and allSubmissions
+                const myMergedList = [...uploadedFiles];
+                for (const s of allSubmissions) {
+                  if (s.isTeamJob) continue;
+                  const isSelf =
+                    (userEmail && s.studentEmail && s.studentEmail.toLowerCase() === userEmail.toLowerCase()) ||
+                    (cleanUserFullName && (s.student || s.studentName) && (s.student || s.studentName).toLowerCase().includes(cleanUserFullName.toLowerCase())) ||
+                    ((s.student || s.studentName || '').toLowerCase().includes('linh nhi'));
+                  if (isSelf) {
+                    const normTitle = normalizeAssignmentGroup(s.title || s.assignment || '');
+                    const existingIdx = myMergedList.findIndex(m =>
+                      m.id === s.id ||
+                      m.id === `SUB-0${s.id}` ||
+                      normalizeAssignmentGroup(m.assignment || m.title || '') === normTitle
+                    );
+                    const codeId = typeof s.id === 'string' && s.id.startsWith('SUB-') ? s.id : `SUB-0${s.id}`;
+                    if (existingIdx === -1) {
+                      myMergedList.push({
+                        id: codeId,
+                        jobId: s.jobId || s.id,
+                        assignment: s.title || s.assignment || 'Assignment',
+                        title: s.title || s.assignment || 'Assignment',
+                        student: s.student || s.studentName || cleanUserFullName,
+                        studentName: s.student || s.studentName || cleanUserFullName,
+                        studentEmail: s.studentEmail || userEmail,
+                        classCode: s.classCode || getSubmissionClassCode(s),
+                        method: s.method || 'Tệp mã nguồn',
+                        submittedAt: s.time || s.submittedAt || 'Vừa xong',
+                        time: s.time || s.submittedAt || 'Vừa xong',
+                        status: s.status === 'completed' || s.status === 'graded' ? 'completed' : (s.status === 'grading' ? 'grading' : 'waiting'),
+                        score: s.score || 'Chờ chấm...',
+                        testCases: s.testCases || 'Đang xếp hàng (BullMQ)',
+                        gradingReport: s.gradingReport,
+                        reviewStatus: s.reviewStatus || 'pending',
+                        reviewComment: s.reviewComment || '',
+                        reviewedAt: s.reviewedAt || null,
+                      });
+                    } else {
+                      myMergedList[existingIdx] = {
+                        ...myMergedList[existingIdx],
+                        classCode: myMergedList[existingIdx].classCode || s.classCode || getSubmissionClassCode(s),
+                        status: s.status || myMergedList[existingIdx].status,
+                        score: (s.score && s.score !== 'Chờ chấm...') ? s.score : myMergedList[existingIdx].score,
+                        testCases: (s.testCases && !s.testCases.includes('xếp hàng')) ? s.testCases : myMergedList[existingIdx].testCases,
+                        gradingReport: s.gradingReport || myMergedList[existingIdx].gradingReport,
+                        reviewStatus: s.reviewStatus || myMergedList[existingIdx].reviewStatus,
+                        reviewComment: s.reviewComment !== undefined ? s.reviewComment : myMergedList[existingIdx].reviewComment,
+                        reviewedAt: s.reviewedAt || myMergedList[existingIdx].reviewedAt,
+                      };
+                    }
+                  }
+                }
+
+                const getSubClassCode = (sub: any) => sub.classCode || getSubmissionClassCode(sub);
+
+                const doesMatch = (subClass: string, filterClass: string) => {
+                  return doesClassMatch(subClass, filterClass);
+                };
 
                 const classFiltered = studentResultClassFilter === 'all'
-                  ? uploadedFiles
-                  : uploadedFiles.filter(s => getSubClassCode(s) === studentResultClassFilter);
+                  ? myMergedList
+                  : myMergedList.filter(s => doesMatch(getSubClassCode(s), studentResultClassFilter));
 
                 const statusFiltered = classFiltered.filter(s => {
                   const isApproved = s.reviewStatus === 'approved';
@@ -7435,6 +7896,128 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
                 return (
                   <div>
+                    {/* CLASS SELECTOR & FILTER BAR */}
+                    <div style={{
+                      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                      borderRadius: '18px',
+                      padding: '20px 22px',
+                      border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
+                      boxShadow: 'var(--shadow-card)',
+                      marginBottom: '20px',
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BookOpen size={16} color="var(--color-kumquat)" />
+                            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              {lang === 'vi' ? 'Chọn Lớp Môn Học Cần Xem Bài Nộp:' : 'Select Course & Class to View:'}
+                            </span>
+                          </div>
+
+                          {/* Class Selector Dropdown for quick select */}
+                          <select
+                            value={studentResultClassFilter}
+                            onChange={(e) => setStudentResultClassFilter(e.target.value)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                              background: isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC',
+                              color: 'var(--text-main)',
+                              fontSize: '0.80rem',
+                              fontWeight: 700,
+                              outline: 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value="all">
+                              {lang === 'vi' ? 'Tất Cả Các Lớp Môn Học' : 'All Courses & Classes'} ({myMergedList.length})
+                            </option>
+                            {allSystemClasses.map((cls) => {
+                              const count = myMergedList.filter(s => doesMatch(getSubClassCode(s), cls.code)).length;
+                              return (
+                                <option key={cls.code} value={cls.code}>
+                                  {cls.code} — {cls.name} ({count} bài nộp)
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+
+                        {/* Class Pills for 1-Click Fast Switching */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setStudentResultClassFilter('all')}
+                            style={{
+                              padding: '7px 14px',
+                              borderRadius: '10px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              border: studentResultClassFilter === 'all' ? '1.5px solid var(--color-kumquat)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                              background: studentResultClassFilter === 'all' ? (isDark ? 'rgba(238, 107, 47, 0.2)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC'),
+                              color: studentResultClassFilter === 'all' ? 'var(--color-kumquat)' : 'var(--text-body)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <span>{lang === 'vi' ? '🌐 Tất cả các lớp' : '🌐 All Classes'}</span>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              padding: '1px 6px',
+                              borderRadius: '999px',
+                              background: studentResultClassFilter === 'all' ? 'var(--color-kumquat)' : 'rgba(100,116,139,0.2)',
+                              color: studentResultClassFilter === 'all' ? '#FFFFFF' : 'var(--text-muted)',
+                              fontWeight: 800,
+                            }}>
+                              {myMergedList.length}
+                            </span>
+                          </button>
+
+                          {allSystemClasses.map((cls) => {
+                            const count = myMergedList.filter(s => doesMatch(getSubClassCode(s), cls.code)).length;
+                            const isSelected = studentResultClassFilter === cls.code;
+                            return (
+                              <button
+                                key={cls.code}
+                                type="button"
+                                onClick={() => setStudentResultClassFilter(cls.code)}
+                                style={{
+                                  padding: '7px 14px',
+                                  borderRadius: '10px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  border: isSelected ? '1.5px solid var(--color-kumquat)' : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
+                                  background: isSelected ? (isDark ? 'rgba(238, 107, 47, 0.2)' : '#FAF2E6') : (isDark ? 'var(--bg-surface-subtle)' : '#F8FAFC'),
+                                  color: isSelected ? 'var(--color-kumquat)' : 'var(--text-body)',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <span>{cls.code}</span>
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  padding: '1px 6px',
+                                  borderRadius: '999px',
+                                  background: isSelected ? 'var(--color-kumquat)' : (count > 0 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100,116,139,0.2)'),
+                                  color: isSelected ? '#FFFFFF' : (count > 0 ? '#16A34A' : 'var(--text-muted)'),
+                                  fontWeight: 800,
+                                }}>
+                                  {count}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
                     {/* 3 STATS KPI CARDS FOR SELECTED CLASS */}
                     <div style={{
                       display: 'grid',
@@ -8150,6 +8733,15 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                             (r) => r.email?.toLowerCase() === lec.email.toLowerCase() && r.status === 'APPROVED'
                           );
                           const effectiveStatus = isApprovedNow ? 'active' : lec.status;
+                          const activeLecClasses = (lec.classes || []).filter(
+                            (c) => !isClassDeleted(c) && allSystemClasses.some(sc => sc.code.toLowerCase() === c.toLowerCase())
+                          );
+                          const activeLecStudents = activeLecClasses.length === 0 ? 0 : activeLecClasses.reduce(
+                            (sum, c) => sum + getStudentsForClass(c).length,
+                            0
+                          );
+                          const lecSubsCount = activeLecClasses.reduce((sum, c) => sum + allSubmissions.filter(s => (s.classCode || '').toLowerCase() === c.toLowerCase() && !isClassDeleted(s.classCode)).length, 0);
+                          const activeLecProgress = activeLecStudents > 0 ? Math.min(100, Math.round((lecSubsCount / activeLecStudents) * 100)) : 0;
 
                           return (
                             <tr key={lec.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
@@ -8163,10 +8755,10 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               <td style={{ padding: '13px 16px' }}>
                                 <span
                                   onClick={() => {
-                                    if (lec.classes.length > 0) setSelectedClassCode(lec.classes[0]);
+                                    if (activeLecClasses.length > 0) setSelectedClassCode(activeLecClasses[0]);
                                     setActiveTab('subsystem1');
                                   }}
-                                  title={lang === 'vi' ? `Các lớp: ${lec.classes.join(', ')} (Bấm để xem danh sách)` : `Classes: ${lec.classes.join(', ')}`}
+                                  title={lang === 'vi' ? `Các lớp: ${activeLecClasses.join(', ')} (Bấm để xem danh sách)` : `Classes: ${activeLecClasses.join(', ')}`}
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
@@ -8183,24 +8775,24 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                                   }}
                                 >
                                   <BookOpen size={13} />
-                                  <span>{lec.classes.length} Lớp</span>
+                                  <span>{activeLecClasses.length} Lớp</span>
                                 </span>
                               </td>
                               <td style={{ padding: '13px 16px', fontWeight: 700 }}>
-                                {lec.totalStudents} Sinh viên
+                                {activeLecStudents} Sinh viên
                               </td>
                               <td style={{ padding: '13px 16px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <div style={{ flex: 1, background: isDark ? 'var(--bg-nav-pill)' : '#E2E8F0', height: '6px', borderRadius: '999px', overflow: 'hidden', minWidth: '80px' }}>
                                     <div style={{
-                                      width: lec.id === 'GV-002' ? '100%' : lec.id === 'GV-001' ? '94%' : lec.id === 'GV-004' ? '100%' : '96%',
+                                      width: `${activeLecProgress}%`,
                                       height: '100%',
                                       background: 'linear-gradient(90deg, #10B981, #059669)',
                                       borderRadius: '999px',
                                     }} />
                                   </div>
                                   <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#10B981' }}>
-                                    {lec.id === 'GV-002' ? '100%' : lec.id === 'GV-001' ? '94%' : lec.id === 'GV-004' ? '100%' : '96%'}
+                                    {activeLecProgress}%
                                   </span>
                                 </div>
                               </td>
@@ -8661,13 +9253,13 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           )}
 
           {/* =============================================================== */}
-          {/* TAB: CLASS MANAGEMENT & ASSIGN TASKS (GIẢNG VIÊN TẠO LỚP & GIAO TASK) */}
+          {/* TAB: CLASS MANAGEMENT & ASSIGN TASKS (KHÔNG GIAN LỚP HỌC) */}
           {/* =============================================================== */}
           {activeTab === 'class_management' && (
             <div>
-              {/* Clean Open Page Header (No unnecessary card box / bo viền) */}
+              {/* TOP HEADER BAR: Title on Left, Class Dropdown & Create Class on Right */}
               <div style={{
-                marginBottom: '22px',
+                marginBottom: '20px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -8675,7 +9267,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 gap: '16px',
               }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
                     <div style={{
                       width: '42px',
                       height: '42px',
@@ -8688,573 +9280,705 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       boxShadow: '0 4px 12px rgba(238, 107, 47, 0.28)',
                       flexShrink: 0,
                     }}>
-                      <UserPlus size={22} />
+                      <Building2 size={22} />
                     </div>
                     <div>
                       <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', margin: 0, lineHeight: 1.2 }}>
-                        {lang === 'vi' ? 'Quản Lý Lớp Học, Thêm Mail Sinh Viên & Giao Task' : 'Class Management & Task Assignments'}
+                        {lang === 'vi' ? 'Không Gian Lớp Học' : 'Class Workspace'}
                       </h1>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         <span>{lang === 'vi' ? 'Giảng viên:' : 'Instructor:'} <strong style={{ color: 'var(--color-kumquat)' }}>{userFullName}</strong></span>
                         <span>•</span>
-                        <span>{lang === 'vi' ? 'Lớp đang chọn:' : 'Selected class:'} <strong>{selectedClassCode}</strong></span>
+                        <span>{lang === 'vi' ? 'Lớp đang xem:' : 'Active Class:'} <strong style={{ color: 'var(--text-main)' }}>{selectedClassCode}</strong></span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {/* Right: Dropdown Chọn Lớp + Nút Tạo Lớp Mới */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative' }}>
+                  {/* Nút Tạo Lớp Mới */}
                   <button
                     type="button"
                     onClick={() => setShowCreateClassModal(true)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 18px',
+                      gap: '6px',
+                      padding: '9px 16px',
                       borderRadius: '10px',
                       background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
                       border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E7EB',
                       color: 'var(--text-main)',
                       fontWeight: 700,
-                      fontSize: '0.84rem',
+                      fontSize: '0.82rem',
                       cursor: 'pointer',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-kumquat)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = isDark ? 'var(--border-light)' : '#E5E7EB'; }}
                   >
                     <Plus size={16} color="var(--color-kumquat)" />
                     <span>{lang === 'vi' ? 'Tạo Lớp Mới' : 'Create Class'}</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewAsmClass(selectedClassCode);
-                      setShowCreateAssignmentModal(true);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 20px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      fontWeight: 800,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 14px rgba(238, 107, 47, 0.35)',
-                    }}
-                  >
-                    <Sparkles size={16} />
-                    <span>{lang === 'vi' ? 'Giao Đề Bài Mới' : 'Assign New Task'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowGroupAssignmentModal(true)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 20px',
-                      borderRadius: '10px',
-                      background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      fontWeight: 800,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)',
-                      transition: 'transform 0.15s, box-shadow 0.15s'
-                    }}
-                  >
-                    <FolderGit2 size={16} />
-                    <span>{lang === 'vi' ? 'Giao Đề Bài Nhóm (Đồ Án)' : 'Assign Team Project'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Class Selector Pills (Seamless on page, no unnecessary enclosing card) */}
-              <div style={{
-                marginBottom: '22px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                overflowX: 'auto',
-                paddingBottom: '4px',
-              }}>
-                <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', marginRight: '4px' }}>
-                  <Building2 size={16} color="var(--color-kumquat)" />
-                  <span>{lang === 'vi' ? 'Chọn lớp học:' : 'Select class:'}</span>
-                </span>
-
-                {Array.from(new Set([...classesList, ...Object.keys(classStudents)])).map(code => {
-                  const studentCount = (classStudents[code] || []).length;
-                  const isSelected = selectedClassCode === code;
-                  return (
+                  {/* Nút Dropdown Chọn Lớp Học */}
+                  <div style={{ position: 'relative' }} ref={classDropdownRef}>
                     <button
-                      key={code}
                       type="button"
-                      onClick={() => setSelectedClassCode(code)}
+                      onClick={() => setIsClassDropdownOpen(!isClassDropdownOpen)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                        padding: '8px 16px',
+                        padding: '9px 16px',
                         borderRadius: '10px',
-                        fontSize: '0.80rem',
-                        fontWeight: isSelected ? 800 : 600,
-                        background: isSelected
-                          ? 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))'
-                          : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        color: isSelected ? '#FFFFFF' : 'var(--text-body)',
-                        border: isSelected ? 'none' : (isDark ? '1px solid var(--border-light)' : '1px solid #E5E7EB'),
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        boxShadow: isSelected ? '0 2px 8px rgba(238, 107, 47, 0.25)' : '0 1px 3px rgba(0,0,0,0.03)',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <span>{code}</span>
-                      <span style={{
-                        fontSize: '0.70rem',
-                        padding: '1px 6px',
-                        borderRadius: '999px',
-                        background: isSelected ? 'rgba(255,255,255,0.25)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
-                        color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
-                      }}>
-                        {studentCount} {lang === 'vi' ? 'SV' : 'std'}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => setShowCreateClassModal(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '8px 14px',
-                    borderRadius: '10px',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                    border: '1.5px dashed var(--color-kumquat)',
-                    color: 'var(--color-kumquat)',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <Plus size={14} />
-                  <span>{lang === 'vi' ? 'Thêm Lớp' : 'Add Class'}</span>
-                </button>
-              </div>
-
-              {/* Two Column Grid: (1) Add Student Email Form, (2) Active Tasks for this Class */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
-                gap: '24px',
-                marginBottom: '24px',
-              }}>
-                {/* CARD 1: FORM ADD STUDENT EMAIL */}
-                <div style={{
-                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '24px',
-                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(238, 166, 75, 0.25)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                    <div style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '10px',
-                      background: 'rgba(238, 107, 47, 0.12)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--color-kumquat)',
-                    }}>
-                      <UserPlus size={18} />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                        {lang === 'vi' ? `Thêm Email Sinh Viên Vào Lớp ${selectedClassCode}` : `Enroll Student to ${selectedClassCode}`}
-                      </h2>
-                    </div>
-                  </div>
-
-                  {studentAddSuccessMsg && (
-                    <div style={{
-                      background: '#EDF6E8',
-                      border: '1px solid #AAB026',
-                      borderRadius: '12px',
-                      padding: '12px 16px',
-                      marginBottom: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: '0.82rem',
-                      color: 'var(--color-exocarp)',
-                      fontWeight: 700,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <CheckCircle size={18} />
-                        <span>{studentAddSuccessMsg}</span>
-                      </div>
-                      <button
-                        onClick={() => setStudentAddSuccessMsg(null)}
-                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-exocarp)' }}
-                      >
-                        <X size={15} />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* EXCEL / CSV BULK IMPORT ROW */}
-                  <div style={{
-                    background: isDark ? 'rgba(238, 107, 47, 0.08)' : '#FFFBF8',
-                    border: isDark ? '1px dashed rgba(238, 107, 47, 0.45)' : '1px dashed rgba(238, 107, 47, 0.4)',
-                    borderRadius: '14px',
-                    padding: '14px 16px',
-                    marginBottom: '16px',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                      <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '8px',
-                        background: 'rgba(16, 185, 129, 0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#10B981',
-                      }}>
-                        <FileSpreadsheet size={16} />
-                      </div>
-                      <span style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        {lang === 'vi' ? 'Import Bằng File Excel / CSV (.xlsx, .csv)' : 'Bulk Import Excel / CSV Roster'}
-                      </span>
-                      <span style={{
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        background: 'rgba(16, 185, 129, 0.12)',
-                        color: '#10B981',
-                      }}>
-                        Tự động phân nhóm & lớp
-                      </span>
-                    </div>
-
-                    {/* Drag and Drop Zone */}
-                    <div
-                      onDragOver={(e) => { e.preventDefault(); setIsExcelDragging(true); }}
-                      onDragLeave={() => setIsExcelDragging(false)}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        setIsExcelDragging(false);
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) parseExcelFile(file);
-                      }}
-                      onClick={() => excelFileInputRef.current?.click()}
-                      style={{
-                        border: isExcelDragging ? '2px dashed var(--color-kumquat)' : '1px dashed var(--border-light)',
-                        background: isExcelDragging ? 'rgba(238, 107, 47, 0.14)' : (isDark ? 'var(--bg-surface)' : '#FFFFFF'),
-                        borderRadius: '10px',
-                        padding: '14px 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <UploadCloud size={20} color="var(--color-kumquat)" />
-                      <span style={{ fontSize: '0.80rem', color: 'var(--text-body)', fontWeight: 600 }}>
-                        {lang === 'vi'
-                          ? 'Kéo thả file Excel vào đây hoặc bấm để chọn tệp từ máy tính'
-                          : 'Drag & drop Excel file here or click to browse'}
-                      </span>
-                      <input
-                        ref={excelFileInputRef}
-                        type="file"
-                        accept=".xlsx, .xls, .csv"
-                        style={{ display: 'none' }}
-                        onChange={handleExcelFileSelect}
-                      />
-                    </div>
-
-                    <div style={{ fontSize: '0.71rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <span>💡</span>
-                      <span>
-                        {lang === 'vi'
-                          ? 'File Excel chứa các cột MSSV, Họ Tên, Email, Nhóm & Lớp sẽ được tự động xếp vào đúng nhóm và lớp tương ứng.'
-                          : 'Excel columns for Student ID, Full Name, Email, Team & Class are automatically enrolled and grouped.'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* DIVIDER */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    margin: '8px 0 16px 0',
-                  }}>
-                    <div style={{ flex: 1, height: '1px', background: isDark ? 'var(--border-light)' : '#E5E7EB' }} />
-                    <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {lang === 'vi' ? 'Hoặc Thêm Thủ Công 1 Sinh Viên' : 'Or Add Single Student Manually'}
-                    </span>
-                    <div style={{ flex: 1, height: '1px', background: isDark ? 'var(--border-light)' : '#E5E7EB' }} />
-                  </div>
-
-                  <form onSubmit={handleAddStudentToClass} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
-                        {lang === 'vi' ? 'Email Sinh Viên (@fpt.edu.vn / @gmail.com) *' : 'Student Email Address *'}
-                      </label>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
-                        border: '1px solid var(--border-light)',
-                        borderRadius: '10px',
-                        padding: '9px 12px',
-                      }}>
-                        <Mail size={16} color="var(--text-muted)" />
-                        <input
-                          type="email"
-                          required
-                          value={newStudentEmail}
-                          onChange={(e) => setNewStudentEmail(e.target.value)}
-                          placeholder="nguyenvanan.se@fpt.edu.vn"
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            outline: 'none',
-                            width: '100%',
-                            fontSize: '0.84rem',
-                            color: 'var(--text-main)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
-                          {lang === 'vi' ? 'Họ và Tên *' : 'Full Name *'}
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={newStudentName}
-                          onChange={(e) => setNewStudentName(e.target.value)}
-                          placeholder={lang === 'vi' ? 'Nguyễn Văn An' : 'John Doe'}
-                          style={{
-                            width: '100%',
-                            padding: '9px 12px',
-                            borderRadius: '10px',
-                            background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
-                            border: '1px solid var(--border-light)',
-                            outline: 'none',
-                            fontSize: '0.84rem',
-                            color: 'var(--text-main)',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
-                          {lang === 'vi' ? 'Mã Số SV (MSSV) *' : 'Student ID (MSSV) *'}
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={newStudentMssv}
-                          onChange={(e) => setNewStudentMssv(e.target.value)}
-                          placeholder="SE180999"
-                          style={{
-                            width: '100%',
-                            padding: '9px 12px',
-                            borderRadius: '10px',
-                            background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
-                            border: '1px solid var(--border-light)',
-                            outline: 'none',
-                            fontSize: '0.84rem',
-                            color: 'var(--text-main)',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '5px' }}>
-                        {lang === 'vi' ? 'Phân Nhóm Đồ Án (Team Assignment)' : 'Group / Team'}
-                      </label>
-                      <select
-                        value={newStudentTeam}
-                        onChange={(e) => setNewStudentTeam(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '9px 12px',
-                          borderRadius: '10px',
-                          background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
-                          border: '1px solid var(--border-light)',
-                          outline: 'none',
-                          fontSize: '0.84rem',
-                          color: 'var(--text-main)',
-                        }}
-                      >
-                        {['Nhóm 1', 'Nhóm 2', 'Nhóm 3', 'Nhóm 4', 'Nhóm 5', 'Nhóm 6', 'Chưa phân nhóm'].map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      style={{
-                        marginTop: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        padding: '11px',
-                        borderRadius: '11px',
                         background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
                         color: '#FFFFFF',
                         border: 'none',
                         fontWeight: 800,
                         fontSize: '0.84rem',
                         cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(238, 107, 47, 0.3)',
+                        boxShadow: '0 3px 10px rgba(238, 107, 47, 0.28)',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <UserPlus size={16} />
-                      <span>{lang === 'vi' ? '➕ Thêm Sinh Viên Vào Lớp' : '➕ Enroll Student to Class'}</span>
+                      <Building2 size={16} />
+                      <span>{selectedClassCode}</span>
+                      <span style={{
+                        fontSize: '0.70rem',
+                        padding: '1px 7px',
+                        borderRadius: '999px',
+                        background: 'rgba(255, 255, 255, 0.25)',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                      }}>
+                        {getStudentsForClass(selectedClassCode).length} SV
+                      </span>
+                      <ChevronDown size={14} style={{ transform: isClassDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                     </button>
-                  </form>
+
+                    {/* Dropdown Menu */}
+                    {isClassDropdownOpen && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 8px)',
+                        right: 0,
+                        width: '320px',
+                        maxHeight: '380px',
+                        overflowY: 'auto',
+                        background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                        borderRadius: '14px',
+                        border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.08)',
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
+                        zIndex: 100,
+                        padding: '8px',
+                      }}>
+                        <div style={{
+                          padding: '8px 10px',
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          color: 'var(--text-muted)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid #F3F4F6',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}>
+                          <span>{lang === 'vi' ? 'Chọn Lớp Học' : 'Select Class'}</span>
+                          <span>{allSystemClasses.length} {lang === 'vi' ? 'lớp' : 'classes'}</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                          {allSystemClasses.map((cls) => {
+                            const isSelected = selectedClassCode === cls.code;
+                            const stdCount = getStudentsForClass(cls.code).length;
+                            const taskCount = dedupAssignments(classAssignments).filter(a => doesClassMatch(a.classCode, cls.code)).length;
+
+                            return (
+                              <div
+                                key={cls.code}
+                                onClick={() => {
+                                  setSelectedClassCode(cls.code);
+                                  setIsClassDropdownOpen(false);
+                                }}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderRadius: '10px',
+                                  cursor: 'pointer',
+                                  background: isSelected
+                                    ? (isDark ? 'rgba(238, 107, 47, 0.15)' : '#FFF7ED')
+                                    : 'transparent',
+                                  border: isSelected
+                                    ? '1px solid rgba(238, 107, 47, 0.3)'
+                                    : '1px solid transparent',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  transition: 'background 0.12s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) e.currentTarget.style.background = isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB';
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                                  <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '8px',
+                                    background: isSelected ? 'var(--color-kumquat)' : (isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6'),
+                                    color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 800,
+                                    fontSize: '0.75rem',
+                                    flexShrink: 0,
+                                  }}>
+                                    {cls.code.slice(0, 3)}
+                                  </div>
+                                  <div style={{ minWidth: 0, flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ fontWeight: 800, fontSize: '0.84rem', color: isSelected ? 'var(--color-kumquat)' : 'var(--text-main)' }}>
+                                        {cls.code}
+                                      </span>
+                                      {isSelected && <span style={{ fontSize: '0.70rem', color: 'var(--color-kumquat)', fontWeight: 800 }}>✓</span>}
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {stdCount} SV • {taskCount} đề
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsClassDropdownOpen(false);
+                                    setClassToDelete({ code: cls.code, name: cls.name, id: cls.id });
+                                  }}
+                                  title={lang === 'vi' ? `Xóa lớp ${cls.code}` : `Delete class ${cls.code}`}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#DC2626',
+                                    cursor: 'pointer',
+                                    padding: '6px',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#FEE2E2'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div style={{
+                          marginTop: '8px',
+                          paddingTop: '8px',
+                          borderTop: isDark ? '1px solid var(--border-light)' : '1px solid #F3F4F6',
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsClassDropdownOpen(false);
+                              setShowCreateClassModal(true);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px',
+                              borderRadius: '8px',
+                              background: 'transparent',
+                              border: '1px dashed var(--color-kumquat)',
+                              color: 'var(--color-kumquat)',
+                              fontWeight: 700,
+                              fontSize: '0.78rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <Plus size={14} />
+                            <span>{lang === 'vi' ? 'Thêm Lớp Học Mới' : 'Create New Class'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification Banner when students are added */}
+              {studentAddSuccessMsg && (
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1.5px solid #10B981',
+                  color: '#059669',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}>
+                  <CheckCircle size={18} color="#059669" />
+                  <span>{studentAddSuccessMsg}</span>
+                </div>
+              )}
+
+              {/* CLASS HERO BANNER */}
+              {(() => {
+                const currentSelectedClassItem = allSystemClasses.find(c => c.code === selectedClassCode) || {
+                  code: selectedClassCode,
+                  name: `Lớp ${selectedClassCode}`,
+                  lecturer: userFullName,
+                };
+                const classTasksForSelected = dedupAssignments(classAssignments).filter(
+                  a => doesClassMatch(a.classCode, selectedClassCode)
+                );
+                const classStudentCount = getStudentsForClass(selectedClassCode).length;
+                const classTeams = getTeamsForClass(selectedClassCode);
+
+                return (
+                  <div style={{
+                    background: isDark
+                      ? 'linear-gradient(135deg, rgba(45, 26, 22, 0.8) 0%, rgba(30, 16, 13, 0.9) 100%)'
+                      : 'linear-gradient(135deg, #FFF9F5 0%, #FEEFCD 50%, #FFF5F4 100%)',
+                    borderRadius: '18px',
+                    padding: '20px 24px',
+                    border: isDark ? '1.5px solid #683B2E' : '1.5px solid #F1C2A7',
+                    boxShadow: '0 6px 18px rgba(173, 48, 41, 0.08)',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
+                      <div style={{
+                        width: '46px',
+                        height: '46px',
+                        borderRadius: '14px',
+                        background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#FFFFFF',
+                        boxShadow: '0 4px 12px rgba(173, 48, 41, 0.3)',
+                        flexShrink: 0,
+                      }}>
+                        <Building2 size={24} />
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.74rem',
+                            fontWeight: 800,
+                            padding: '2px 9px',
+                            borderRadius: '6px',
+                            background: '#AD3029',
+                            color: '#FFFFFF',
+                            letterSpacing: '0.4px',
+                          }}>
+                            {selectedClassCode}
+                          </span>
+                          <span style={{ fontSize: '0.76rem', color: '#7A3E2E', fontWeight: 700 }}>
+                            Kỹ thuật phần mềm (SE)
+                          </span>
+                        </div>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2D1A16', margin: '4px 0 0 0' }}>
+                          {currentSelectedClassItem.name || `Lớp học phần: ${selectedClassCode}`}
+                        </h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', fontSize: '0.78rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                          <span>👥 {lang === 'vi' ? 'Sĩ số:' : 'Enrolled:'} <strong style={{ color: 'var(--text-main)' }}>{classStudentCount} sinh viên</strong></span>
+                          <span>•</span>
+                          <span>📋 {lang === 'vi' ? 'Đề bài cá nhân:' : 'Individual Tasks:'} <strong style={{ color: '#AD3029' }}>{classTasksForSelected.length} đề</strong></span>
+                          <span>•</span>
+                          <span>🏷️ {lang === 'vi' ? 'Nhóm đồ án:' : 'Teams:'} <strong style={{ color: '#2563EB' }}>{classTeams.length} nhóm</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setClassToDelete({
+                          code: selectedClassCode,
+                          name: currentSelectedClassItem.name || selectedClassCode,
+                          id: (currentSelectedClassItem as any).id
+                        })}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          background: '#FFF5F4',
+                          border: '1.5px solid #FCA5A5',
+                          color: '#DC2626',
+                          fontSize: '0.80rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#FEE2E2'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#FFF5F4'; }}
+                        title={lang === 'vi' ? `Xóa lớp ${selectedClassCode}` : `Delete class ${selectedClassCode}`}
+                      >
+                        <Trash2 size={14} color="#DC2626" />
+                        <span>{lang === 'vi' ? 'Xóa Lớp Này' : 'Delete Class'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* SUB-TABS NAVIGATION: 3 TABS (BÀI TẬP CÁ NHÂN / BÀI TẬP NHÓM / DANH SÁCH SINH VIÊN) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: isDark ? '2px solid var(--border-light)' : '2px solid #E5E7EB',
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* Tab 1: Bài tập cá nhân */}
+                  <button
+                    type="button"
+                    onClick={() => setClassSpaceSubTab('tasks')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '11px 18px',
+                      border: 'none',
+                      borderBottom: classSpaceSubTab === 'tasks' ? '3px solid var(--color-kumquat)' : '3px solid transparent',
+                      background: 'transparent',
+                      color: classSpaceSubTab === 'tasks' ? 'var(--color-kumquat)' : 'var(--text-muted)',
+                      fontWeight: classSpaceSubTab === 'tasks' ? 800 : 600,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      marginBottom: '-2px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <ClipboardList size={17} />
+                    <span>{lang === 'vi' ? 'Đề Bài & Bài Tập Cá Nhân' : 'Assignments & Tasks'}</span>
+                    <span style={{
+                      fontSize: '0.70rem',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: classSpaceSubTab === 'tasks' ? 'rgba(238, 107, 47, 0.15)' : 'rgba(0,0,0,0.06)',
+                      color: classSpaceSubTab === 'tasks' ? 'var(--color-kumquat)' : 'var(--text-muted)',
+                      fontWeight: 800,
+                    }}>
+                      {dedupAssignments(classAssignments).filter(a => doesClassMatch(a.classCode, selectedClassCode)).length}
+                    </span>
+                  </button>
+
+                  {/* Tab 2: Bài tập nhóm (Đồ án) */}
+                  <button
+                    type="button"
+                    onClick={() => setClassSpaceSubTab('teams')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '11px 18px',
+                      border: 'none',
+                      borderBottom: classSpaceSubTab === 'teams' ? '3px solid #AD3029' : '3px solid transparent',
+                      background: 'transparent',
+                      color: classSpaceSubTab === 'teams' ? '#AD3029' : 'var(--text-muted)',
+                      fontWeight: classSpaceSubTab === 'teams' ? 800 : 600,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      marginBottom: '-2px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <FolderGit2 size={17} />
+                    <span>{lang === 'vi' ? 'Bài Tập Nhóm (Đồ Án)' : 'Team Projects'}</span>
+                    <span style={{
+                      fontSize: '0.70rem',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: classSpaceSubTab === 'teams' ? 'rgba(173, 48, 41, 0.15)' : 'rgba(0,0,0,0.06)',
+                      color: classSpaceSubTab === 'teams' ? '#AD3029' : 'var(--text-muted)',
+                      fontWeight: 800,
+                    }}>
+                      {getTeamsForClass(selectedClassCode).length}
+                    </span>
+                  </button>
+
+                  {/* Tab 3: Danh sách sinh viên */}
+                  <button
+                    type="button"
+                    onClick={() => setClassSpaceSubTab('students')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '11px 18px',
+                      border: 'none',
+                      borderBottom: classSpaceSubTab === 'students' ? '3px solid #2563EB' : '3px solid transparent',
+                      background: 'transparent',
+                      color: classSpaceSubTab === 'students' ? '#2563EB' : 'var(--text-muted)',
+                      fontWeight: classSpaceSubTab === 'students' ? 800 : 600,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      marginBottom: '-2px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Users size={17} />
+                    <span>{lang === 'vi' ? 'Danh Sách Sinh Viên' : 'Student Roster'}</span>
+                    <span style={{
+                      fontSize: '0.70rem',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: classSpaceSubTab === 'students' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(0,0,0,0.06)',
+                      color: classSpaceSubTab === 'students' ? '#2563EB' : 'var(--text-muted)',
+                      fontWeight: 800,
+                    }}>
+                      {getStudentsForClass(selectedClassCode).length}
+                    </span>
+                  </button>
                 </div>
 
-                {/* CARD 2: ACTIVE TASKS & ASSIGNMENTS FOR THIS CLASS */}
+                {/* Primary Action Button corresponding to active Sub-tab */}
+                <div>
+                  {classSpaceSubTab === 'tasks' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewAsmClass(selectedClassCode);
+                        setShowCreateAssignmentModal(true);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '9px 18px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 3px 10px rgba(238, 107, 47, 0.28)',
+                      }}
+                    >
+                      <Plus size={15} />
+                      <span>{lang === 'vi' ? 'Giao Đề Bài Mới' : 'Assign New Task'}</span>
+                    </button>
+                  )}
+
+                  {classSpaceSubTab === 'teams' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupAssignmentModal(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '9px 18px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 3px 10px rgba(173, 48, 41, 0.28)',
+                      }}
+                    >
+                      <FolderGit2 size={15} />
+                      <span>{lang === 'vi' ? 'Giao Đề Bài Nhóm (Đồ Án)' : 'Assign Team Project'}</span>
+                    </button>
+                  )}
+
+                  {classSpaceSubTab === 'students' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddStudentModal(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '9px 18px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 3px 10px rgba(37, 99, 235, 0.28)',
+                      }}
+                    >
+                      <UserPlus size={15} />
+                      <span>{lang === 'vi' ? '➕ Thêm Sinh Viên / Import Excel' : '➕ Enroll Student / Excel'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* TAB 1 CONTENT: BÀI TẬP & ĐỀ THI CÁ NHÂN */}
+              {classSpaceSubTab === 'tasks' && (
                 <div style={{
                   background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
                   borderRadius: '18px',
                   padding: '24px',
                   border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(238, 166, 75, 0.25)',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
                 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '10px',
-                          background: 'rgba(59, 130, 246, 0.12)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#2563EB',
-                        }}>
-                          <ClipboardList size={18} />
-                        </div>
-                        <div>
-                          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                            {lang === 'vi' ? `Đề Bài Đã Giao Cho ${selectedClassCode}` : `Assigned Tasks for ${selectedClassCode}`}
-                          </h2>
-                        </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: 'rgba(59, 130, 246, 0.12)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#2563EB',
+                      }}>
+                        <ClipboardList size={20} />
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewAsmClass(selectedClassCode);
-                          setShowCreateAssignmentModal(true);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          background: isDark ? 'var(--bg-surface-subtle)' : '#EFF6FF',
-                          border: '1px solid rgba(59, 130, 246, 0.25)',
-                          color: '#2563EB',
-                          fontSize: '0.76rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Plus size={14} />
-                        <span>{lang === 'vi' ? 'Giao thêm' : 'Add Task'}</span>
-                      </button>
+                      <div>
+                        <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                          {lang === 'vi' ? `Đề Bài Đã Giao Cho Lớp ${selectedClassCode}` : `Assigned Tasks for ${selectedClassCode}`}
+                        </h2>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          {lang === 'vi' ? 'Quản lý các đề thi, bài tập và tiêu chí rubric của lớp học này' : 'Manage individual tasks and rubrics for this class'}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Task cards list */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '270px', overflowY: 'auto', paddingRight: '4px' }}>
-                      {(() => {
-                        const classTasks = dedupAssignments(classAssignments).filter(
-                          a => (a.classCode || '').trim().toUpperCase() === (selectedClassCode || '').trim().toUpperCase()
-                        );
-                        if (classTasks.length === 0) {
-                          return (
-                            <div style={{
-                              padding: '28px 16px',
-                              textAlign: 'center',
-                              color: 'var(--text-muted)',
-                              background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
-                              borderRadius: '12px',
-                              border: isDark ? '1px dashed var(--border-light)' : '1px dashed #E5E7EB',
-                            }}>
-                              <div style={{ fontSize: '1.6rem', marginBottom: '6px' }}>📋</div>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                                {lang === 'vi' ? `Chưa có đề bài nào được giao cho ${selectedClassCode}` : `No tasks assigned yet for ${selectedClassCode}`}
-                              </div>
-                              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                {lang === 'vi' ? 'Nhấn "+ Giao thêm" hoặc "Giao Đề Bài Mới" để tạo đề cho lớp này.' : 'Click "+ Add Task" to create assignments for this class.'}
-                              </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBatchFilterClass(selectedClassCode);
+                        setActiveTab('submissions');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        background: isDark ? 'var(--bg-surface-subtle)' : '#EFF6FF',
+                        border: '1px solid rgba(59, 130, 246, 0.25)',
+                        color: '#2563EB',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <CheckSquare size={14} />
+                      <span>{lang === 'vi' ? 'Bảng Bài Nộp Của Lớp' : 'Submissions'}</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+
+                  {/* Task cards list in a responsive grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
+                    {(() => {
+                      const classTasks = dedupAssignments(classAssignments).filter(
+                        a => doesClassMatch(a.classCode, selectedClassCode)
+                      );
+                      if (classTasks.length === 0) {
+                        return (
+                          <div style={{
+                            gridColumn: '1 / -1',
+                            padding: '40px 20px',
+                            textAlign: 'center',
+                            color: 'var(--text-muted)',
+                            background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
+                            borderRadius: '14px',
+                            border: isDark ? '1px dashed var(--border-light)' : '1px dashed #E5E7EB',
+                          }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
+                            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                              {lang === 'vi' ? `Chưa có đề bài nào được giao cho lớp ${selectedClassCode}` : `No tasks assigned yet for ${selectedClassCode}`}
                             </div>
-                          );
-                        }
-                        return classTasks.map(task => (
-                          <div
-                            key={task.id}
-                            onClick={() => setViewingRubricModal(task)}
-                            style={{
-                              background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
-                              border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.06)',
-                              borderRadius: '12px',
-                              padding: '13px 15px',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = 'var(--color-kumquat)';
-                              e.currentTarget.style.boxShadow = '0 4px 14px rgba(238, 107, 47, 0.12)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = isDark ? 'var(--border-light)' : 'rgba(0,0,0,0.06)';
-                              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.02)';
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '16px' }}>
+                              {lang === 'vi' ? 'Bấm nút "Giao Đề Bài Mới" ở góc phải để tạo bài tập hoặc đề thi cho lớp này.' : 'Click "Assign New Task" above to add assignments.'}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewAsmClass(selectedClassCode);
+                                setShowCreateAssignmentModal(true);
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 18px',
+                                borderRadius: '8px',
+                                background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                fontSize: '0.80rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <Plus size={14} />
+                              <span>{lang === 'vi' ? 'Giao Đề Bài Đầu Tiên' : 'Assign First Task'}</span>
+                            </button>
+                          </div>
+                        );
+                      }
+                      return classTasks.map(task => (
+                        <div
+                          key={task.id}
+                          onClick={() => setViewingRubricModal(task)}
+                          style={{
+                            background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
+                            border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.06)',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--color-kumquat)';
+                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(238, 107, 47, 0.12)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = isDark ? 'var(--border-light)' : 'rgba(0,0,0,0.06)';
+                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.02)';
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                               <span style={{
                                 fontSize: '0.68rem',
                                 fontWeight: 800,
@@ -9272,21 +9996,23 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               </span>
                             </div>
 
-                            <div style={{ fontSize: '0.90rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>
+                            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '6px', lineHeight: 1.3 }}>
                               {task.title}
                             </div>
-                            <div style={{ fontSize: '0.76rem', color: 'var(--text-body)', marginBottom: '10px', lineHeight: 1.4 }}>
+                            <div style={{ fontSize: '0.76rem', color: 'var(--text-body)', marginBottom: '14px', lineHeight: 1.4 }}>
                               {task.description && task.description.length > 95 ? task.description.slice(0, 95) + '...' : (task.description || 'Hoàn thành theo yêu cầu của giảng viên và nộp đúng hạn.')}
                             </div>
+                          </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '8px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span>{lang === 'vi' ? 'Hình thức nộp:' : 'Submission mode:'}</span>
-                                <span style={{ color: 'var(--color-kumquat)', fontWeight: 700 }}>
-                                  {task.allowedSubmissionType === 'git' ? 'GitHub Repo' : task.allowedSubmissionType === 'zip' ? 'File ZIP' : 'Git & ZIP'}
-                                </span>
-                              </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', flexWrap: 'wrap', gap: '8px', paddingTop: '10px', borderTop: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span>{lang === 'vi' ? 'Hình thức:' : 'Format:'}</span>
+                              <span style={{ color: 'var(--color-kumquat)', fontWeight: 700 }}>
+                                {task.allowedSubmissionType === 'git' ? 'GitHub' : task.allowedSubmissionType === 'zip' ? 'ZIP' : 'Git/ZIP'}
+                              </span>
+                            </div>
 
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -9296,7 +10022,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                                 style={{
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '5px',
+                                  gap: '4px',
                                   padding: '4px 10px',
                                   borderRadius: '7px',
                                   background: isDark ? 'rgba(238, 107, 47, 0.15)' : 'rgba(238, 107, 47, 0.10)',
@@ -9308,273 +10034,534 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                                   transition: 'all 0.15s ease',
                                 }}
                               >
-                                <Eye size={13} />
-                                <span>{lang === 'vi' ? 'Xem Chi Tiết & Rubric' : 'View Task & Rubric'}</span>
+                                <Eye size={12} />
+                                <span>{lang === 'vi' ? 'Chi Tiết' : 'Details'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAssignmentToDelete(task);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '4px 10px',
+                                  borderRadius: '7px',
+                                  background: '#FFF5F4',
+                                  border: '1.5px solid #FCA5A5',
+                                  color: '#DC2626',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.borderColor = '#DC2626'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#FFF5F4'; e.currentTarget.style.borderColor = '#FCA5A5'; }}
+                                title={lang === 'vi' ? `Xóa đề bài "${task.title}"` : `Delete task "${task.title}"`}
+                              >
+                                <Trash2 size={12} color="#DC2626" />
+                                <span>{lang === 'vi' ? 'Xóa' : 'Delete'}</span>
                               </button>
                             </div>
                           </div>
-                        ));
-                      })()}
-                    </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
+                </div>
+              )}
 
-                  <div style={{
-                    marginTop: '16px',
-                    paddingTop: '12px',
-                    borderTop: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.06)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}>
-                    <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                      {lang === 'vi' ? 'Chuyển sang chấm bài:' : 'Grade this class:'}
-                    </span>
+              {/* TAB 2 CONTENT: BÀI TẬP NHÓM (ĐỒ ÁN) */}
+              {classSpaceSubTab === 'teams' && (
+                <div style={{
+                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                  borderRadius: '18px',
+                  padding: '24px',
+                  border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(173, 48, 41, 0.2)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: 'rgba(173, 48, 41, 0.12)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#AD3029',
+                      }}>
+                        <FolderGit2 size={20} />
+                      </div>
+                      <div>
+                        <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                          {lang === 'vi' ? `Danh Sách Nhóm Đồ Án Lớp ${selectedClassCode}` : `Team Projects for ${selectedClassCode}`}
+                        </h2>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          {lang === 'vi' ? 'Theo dõi tiến độ GitHub, phân tích Git AST & phát hiện Free-Rider' : 'Track GitHub repos, Git AST metrics and free-rider detection'}
+                        </p>
+                      </div>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setActiveTab('submissions')}
+                      onClick={() => setShowGroupAssignmentModal(true)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
-                        padding: '7px 14px',
-                        borderRadius: '8px',
-                        background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                        padding: '8px 16px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
                         color: '#FFFFFF',
                         border: 'none',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
+                        fontSize: '0.80rem',
+                        fontWeight: 800,
                         cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(173, 48, 41, 0.25)',
                       }}
                     >
-                      <CheckSquare size={13} />
-                      <span>{lang === 'vi' ? 'Đi Đến Bảng Bài Nộp Của Lớp' : 'Go to Submissions'}</span>
-                      <ChevronRight size={13} />
+                      <Plus size={15} />
+                      <span>{lang === 'vi' ? 'Phân Công Nhóm Mới' : 'Assign New Team Project'}</span>
                     </button>
                   </div>
-                </div>
-              </div>
 
-              {/* SECTION: FULL CLASS ROSTER TABLE */}
-              <div style={{
-                background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                borderRadius: '18px',
-                padding: '24px',
-                border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.08)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
-              }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '18px',
-                  flexWrap: 'wrap',
-                  gap: '12px',
-                }}>
-                  <div>
-                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Users size={18} color="var(--color-kumquat)" />
-                      <span>{lang === 'vi' ? `Danh Sách Sinh Viên Trong Lớp ${selectedClassCode}` : `Enrolled Students in ${selectedClassCode}`}</span>
-                      <span style={{
-                        fontSize: '0.74rem',
-                        padding: '2px 9px',
-                        borderRadius: '999px',
-                        background: 'rgba(238, 107, 47, 0.15)',
-                        color: 'var(--color-kumquat)',
-                        fontWeight: 800,
-                      }}>
-                        {(classStudents[selectedClassCode] || []).length} {lang === 'vi' ? 'sinh viên' : 'students'}
-                      </span>
-                    </h2>
+                  {/* Teams Table */}
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{
+                          borderBottom: isDark ? '1px solid var(--border-light)' : '2px solid rgba(0,0,0,0.06)',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}>
+                          <th style={{ padding: '12px 14px' }}>NHÓM & ĐỀ TÀI</th>
+                          <th style={{ padding: '12px 14px' }}>THÀNH VIÊN</th>
+                          <th style={{ padding: '12px 14px' }}>GITHUB REPO</th>
+                          <th style={{ padding: '12px 14px' }}>KẾT QUẢ GIT (AST)</th>
+                          <th style={{ padding: '12px 14px' }}>FREE-RIDER</th>
+                          <th style={{ padding: '12px 14px', textAlign: 'right' }}>THAO TÁC</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const effectiveTeams = getTeamsForClass(selectedClassCode);
+                          if (effectiveTeams.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                  <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📂</div>
+                                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                    {lang === 'vi' ? `Lớp ${selectedClassCode} chưa có nhóm đồ án nào.` : `No team projects assigned for ${selectedClassCode} yet.`}
+                                  </div>
+                                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '16px' }}>
+                                    {lang === 'vi' ? 'Giảng viên có thể bấm "Giao Đề Bài Nhóm (Đồ Án)" để phân chia nhóm và giao đề tài.' : 'Click "Assign Team Project" above to create teams.'}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowGroupAssignmentModal(true)}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '8px 18px',
+                                      borderRadius: '8px',
+                                      background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
+                                      color: '#FFFFFF',
+                                      border: 'none',
+                                      fontSize: '0.80rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    <FolderGit2 size={14} />
+                                    <span>{lang === 'vi' ? 'Giao Đề Bài Nhóm Đầu Tiên' : 'Assign First Project'}</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return effectiveTeams.map((team, idx) => {
+                            const reportData = teamReportsMap[team.teamName] || TEAM_REPORT_DATA_MAP[team.teamName];
+                            const commits = reportData ? reportData.totalCommits : 85;
+                            const loc = reportData ? reportData.netLoc : 6200;
+                            const hasFreeRider = reportData ? reportData.freeRiderCount > 0 : team.teamName.includes('3') || team.teamName.includes('5');
+
+                            return (
+                              <tr key={team.id || idx} style={{ borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.04)' }}>
+                                <td style={{ padding: '14px 14px' }}>
+                                  <div style={{ fontWeight: 800, color: 'var(--color-terracotta-700, #B5523A)', fontSize: '0.90rem' }}>
+                                    {team.teamName}
+                                  </div>
+                                  <div style={{ fontSize: '0.80rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '2px' }}>
+                                    {team.projectTopic}
+                                  </div>
+                                  <span style={{
+                                    fontSize: '0.68rem',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
+                                    background: team.topicType === 'teacher_assigned' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(238, 107, 47, 0.1)',
+                                    color: team.topicType === 'teacher_assigned' ? '#2563EB' : 'var(--color-terracotta-700, #B5523A)',
+                                    fontWeight: 700,
+                                    marginTop: '4px',
+                                    display: 'inline-block'
+                                  }}>
+                                    {team.topicType === 'teacher_assigned' ? (lang === 'vi' ? 'GV Chỉ Định' : 'Teacher-Assigned') : (lang === 'vi' ? 'SV Tự Chọn (Đã Duyệt)' : 'Student-Proposed')}
+                                  </span>
+                                </td>
+
+                                <td style={{ padding: '14px 14px', fontSize: '0.80rem' }}>
+                                  <div style={{ fontWeight: 800, color: 'var(--color-terracotta-800, #7A3E2E)' }}>
+                                    👑 {team.leader}
+                                  </div>
+                                  <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                                    {team.members.filter(m => m !== team.leader).join(', ') || 'Chưa thêm thành viên khác'}
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '14px 14px' }}>
+                                  <a
+                                    href={team.gitUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      color: 'var(--color-terracotta-700, #B5523A)',
+                                      fontWeight: 700,
+                                      textDecoration: 'none',
+                                      fontSize: '0.78rem'
+                                    }}
+                                  >
+                                    <GitBranch size={13} />
+                                    <span>{team.gitUrl.replace('https://github.com/', '')}</span>
+                                  </a>
+                                  <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                    Nhánh: <strong>{team.branch || 'main'}</strong>
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '14px 14px', fontSize: '0.80rem' }}>
+                                  <div><strong>{commits}</strong> commits hợp lệ</div>
+                                  <div style={{ color: 'var(--text-muted)' }}>+{loc.toLocaleString()} LOC thực tế</div>
+                                </td>
+
+                                <td style={{ padding: '14px 14px' }}>
+                                  {hasFreeRider ? (
+                                    <span style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      background: 'rgba(239, 68, 68, 0.12)',
+                                      color: '#DC2626',
+                                      fontWeight: 800,
+                                      fontSize: '0.74rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}>
+                                      ⚠️ {reportData?.freeRiderCount || 1} Free-Rider
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      background: 'rgba(16, 185, 129, 0.12)',
+                                      color: '#059669',
+                                      fontWeight: 800,
+                                      fontSize: '0.74rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}>
+                                      <CheckCircle size={13} />
+                                      <span>{lang === 'vi' ? 'Đóng góp đồng đều' : 'Fair contribution'}</span>
+                                    </span>
+                                  )}
+                                </td>
+
+                                <td style={{ padding: '14px 14px', textAlign: 'right' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setShowTeamGradingModal(true);
+                                    }}
+                                    style={{
+                                      padding: '6px 14px',
+                                      borderRadius: '8px',
+                                      background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                                      border: 'none',
+                                      color: '#FFFFFF',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {lang === 'vi' ? 'Chấm Đồ Án' : 'Grade'}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
                   </div>
+                </div>
+              )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Sub-tab: Danh Sách Sinh Viên */}
+              {classSpaceSubTab === 'students' && (
+                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '16px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(238, 107, 47, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-kumquat)' }}>
+                        <Users size={18} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                          {lang === 'vi' ? `Danh Sách Sinh Viên Trong Lớp ${selectedClassCode}` : `Students in ${selectedClassCode}`}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {lang === 'vi' ? `Quản lý ${getStudentsForClass(selectedClassCode).length} sinh viên, nhóm đồ án và tình trạng nộp bài` : `Manage ${getStudentsForClass(selectedClassCode).length} students and submissions`}
+                        </div>
+                      </div>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => {
-                        const emailInput = document.querySelector('input[type="email"]') as HTMLInputElement;
-                        if (emailInput) emailInput.focus();
-                      }}
+                      onClick={() => setShowAddStudentModal(true)}
                       style={{
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        padding: '7px 14px',
+                        padding: '7px 16px',
                         borderRadius: '8px',
-                        background: isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1',
-                        border: '1px solid var(--border-light)',
-                        color: 'var(--text-main)',
+                        background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                        border: 'none',
+                        color: '#FFFFFF',
                         fontSize: '0.78rem',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         cursor: 'pointer',
                       }}
                     >
-                      <UserPlus size={14} color="var(--color-kumquat)" />
-                      <span>{lang === 'vi' ? 'Thêm Sinh Viên Mới' : 'Add New Student'}</span>
+                      <UserPlus size={14} />
+                      <span>{lang === 'vi' ? 'Thêm Sinh Viên / Import Excel' : 'Add Student / Excel'}</span>
                     </button>
                   </div>
-                </div>
 
-                {/* Students Table */}
-                <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
                     <thead>
-                      <tr style={{
-                        borderBottom: isDark ? '1px solid var(--border-light)' : '2px solid rgba(0,0,0,0.06)',
-                        color: 'var(--text-muted)',
-                        fontSize: '0.75rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}>
+                      <tr style={{ background: isDark ? 'rgba(255,255,255,0.02)' : '#FAFAF9', borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.06)', color: 'var(--text-muted)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         <th style={{ padding: '12px 14px' }}>#</th>
                         <th style={{ padding: '12px 14px' }}>MSSV</th>
                         <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Họ và Tên' : 'Full Name'}</th>
                         <th style={{ padding: '12px 14px' }}>Email</th>
                         <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Nhóm (Team)' : 'Team'}</th>
                         <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Trạng Thái Nộp' : 'Submission'}</th>
-                        <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Hình Thức' : 'Format'}</th>
+                        <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Hình Thức' : 'Method'}</th>
                         <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Thời Gian Nộp' : 'Submitted At'}</th>
-                        <th style={{ padding: '12px 14px' }}>{lang === 'vi' ? 'Trạng Thái' : 'Status'}</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right' }}>{lang === 'vi' ? 'Hành Động' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(classStudents[selectedClassCode] || []).length === 0 ? (
+                      {getStudentsForClass(selectedClassCode).length === 0 ? (
                         <tr>
-                          <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                            <UserPlus size={32} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
-                            <div>{lang === 'vi' ? 'Lớp này chưa có sinh viên nào. Vui lòng nhập email ở khung trên để thêm sinh viên!' : 'No students enrolled in this class yet. Use the form above to add students!'}</div>
-                          </td>
-                        </tr>
-                      ) : (
-                        (classStudents[selectedClassCode] || []).map((std, idx) => {
-                          const isSubmitted = std.submitStatus === 'submitted';
-                          return (
-                            <tr
-                              key={std.mssv + '-' + idx}
-                              style={{
-                                borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.04)',
-                                transition: 'background 0.15s ease',
-                              }}
-                            >
-                              <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1}</td>
-                              <td style={{ padding: '12px 14px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--text-main)' }}>
-                                {std.mssv}
-                              </td>
-                              <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--text-main)' }}>
-                                {std.name}
-                              </td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <span style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  background: isDark ? 'rgba(59, 130, 246, 0.12)' : '#EFF6FF',
-                                  color: '#2563EB',
-                                  padding: '3px 8px',
-                                  borderRadius: '6px',
-                                  fontSize: '0.78rem',
-                                  fontFamily: 'monospace',
-                                  fontWeight: 600,
-                                }}>
-                                  <Mail size={12} />
-                                  <span>{std.email}</span>
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <span
-                                  onClick={() => {
-                                    const matchedKey = Object.keys(TEAM_REPORT_DATA_MAP).find((k) => std.team.includes(k)) || 'Nhóm 1';
-                                    setSelectedReportTeam(matchedKey);
-                                    setActiveTab('report');
-                                  }}
-                                  title={lang === 'vi' ? `Nhấp để xem Báo Cáo Free-Rider của ${std.team}` : `Click to view team report for ${std.team}`}
+                          <td colSpan={9} style={{ padding: '40px 20px', textAlign: 'center' }}>
+                            <div style={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '14px',
+                              background: isDark ? 'rgba(238, 107, 47, 0.15)' : 'rgba(238, 107, 47, 0.1)',
+                              color: 'var(--color-kumquat)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto 12px auto'
+                            }}>
+                              <Users size={24} />
+                              </div>
+                              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>
+                                {lang === 'vi' ? `Lớp ${selectedClassCode} chưa có sinh viên nào` : `No students in ${selectedClassCode} yet`}
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                                {lang === 'vi' ? 'Thêm sinh viên thủ công hoặc tải lên danh sách bằng file Excel.' : 'Add students manually or import via Excel.'}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAddStudentModal(true)}
                                   style={{
-                                    padding: '4px 10px',
-                                    borderRadius: '8px',
-                                    background: isDark ? 'var(--bg-surface-accent)' : '#F1F5F9',
-                                    color: 'var(--color-kumquat)',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '5px',
-                                    border: '1px solid transparent',
-                                    transition: 'all 0.15s ease',
-                                  }}
-                                  onMouseOver={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--color-kumquat)';
-                                    e.currentTarget.style.background = isDark ? 'rgba(238, 107, 47, 0.15)' : '#FFF7ED';
-                                  }}
-                                  onMouseOut={(e) => {
-                                    e.currentTarget.style.borderColor = 'transparent';
-                                    e.currentTarget.style.background = isDark ? 'var(--bg-surface-accent)' : '#F1F5F9';
+                                    gap: '6px',
+                                    padding: '9px 20px',
+                                    borderRadius: '10px',
+                                    background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                                    border: 'none',
+                                    color: '#FFFFFF',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    boxShadow: '0 3px 10px rgba(238, 107, 47, 0.28)',
                                   }}
                                 >
-                                  <span>{std.team}</span>
-                                  <span style={{ fontSize: '0.68rem', opacity: 0.75 }}>↗</span>
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 14px' }}>
-                                {isSubmitted ? (
-                                  <span style={{
+                                  <UserPlus size={16} />
+                                  <span>{lang === 'vi' ? '➕ Thêm Sinh Viên / Import Excel' : '➕ Enroll Student / Excel'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickAddSampleStudents(selectedClassCode)}
+                                  style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '5px',
-                                    color: '#059669',
-                                    background: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
-                                    padding: '3px 8px',
-                                    borderRadius: '999px',
-                                    fontSize: '0.74rem',
+                                    gap: '6px',
+                                    padding: '9px 18px',
+                                    borderRadius: '10px',
+                                    background: isDark ? 'var(--bg-surface-subtle)' : '#EFF6FF',
+                                    border: '1.5px solid #93C5FD',
+                                    color: '#2563EB',
+                                    fontSize: '0.82rem',
                                     fontWeight: 800,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title={lang === 'vi' ? `Nạp ngay 5 sinh viên mẫu vào lớp ${selectedClassCode}` : 'Quick load 5 sample students'}
+                                >
+                                  <Sparkles size={16} color="#2563EB" />
+                                  <span>{lang === 'vi' ? '⚡ Thêm Nhanh 5 Sinh Viên Mẫu' : '⚡ Load 5 Sample Students'}</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          getStudentsForClass(selectedClassCode).map((std, idx) => {
+                            const matchingSub = [...uploadedFiles, ...allSubmissions].find(s => {
+                              const sClass = (s.classCode || '').trim().toUpperCase();
+                              const curClass = (selectedClassCode || '').trim().toUpperCase();
+                              const isSameClass = !sClass || sClass === curClass || sClass.startsWith(curClass + '-') || curClass.startsWith(sClass + '-');
+                              const isSameEmail = std.email && s.studentEmail && std.email.trim().toLowerCase() === s.studentEmail.trim().toLowerCase();
+                              const isSameName = std.name && (s.student || s.studentName) && std.name.trim().toLowerCase() === (s.student || s.studentName).trim().toLowerCase();
+                              return isSameClass && (isSameEmail || isSameName);
+                            });
+                            const isSubmitted = std.submitStatus === 'submitted' || Boolean(matchingSub);
+                            const effectiveSubmitType = matchingSub?.method || std.submitType || '—';
+                            const effectiveSubmittedAt = matchingSub?.submittedAt || matchingSub?.time || std.submittedAt || '—';
+                            return (
+                              <tr
+                                key={std.mssv + '-' + idx}
+                                style={{
+                                  borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid rgba(0,0,0,0.04)',
+                                  transition: 'background 0.15s ease',
+                                }}
+                              >
+                                <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1}</td>
+                                <td style={{ padding: '12px 14px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--text-main)' }}>
+                                  {std.mssv}
+                                </td>
+                                <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--text-main)' }}>
+                                  {std.name}
+                                </td>
+                                <td style={{ padding: '12px 14px' }}>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    background: isDark ? 'rgba(59, 130, 246, 0.12)' : '#EFF6FF',
+                                    color: '#2563EB',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.78rem',
+                                    fontFamily: 'monospace',
+                                    fontWeight: 600,
                                   }}>
-                                    <CheckCircle size={12} />
-                                    <span>{lang === 'vi' ? 'Đã nộp bài' : 'Submitted'}</span>
+                                    <Mail size={12} />
+                                    <span>{std.email}</span>
                                   </span>
-                                ) : (
+                                </td>
+                                <td style={{ padding: '12px 14px' }}>
+                                  <span
+                                    onClick={() => {
+                                      const matchedKey = Object.keys(TEAM_REPORT_DATA_MAP).find((k) => std.team.includes(k)) || 'Nhóm 1';
+                                      setSelectedReportTeam(matchedKey);
+                                      setActiveTab('report');
+                                    }}
+                                    title={lang === 'vi' ? `Nhấp để xem Báo Cáo Free-Rider của ${std.team}` : `Click to view team report for ${std.team}`}
+                                    style={{
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      background: std.team === 'Chưa phân nhóm'
+                                        ? (isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6')
+                                        : 'rgba(238, 107, 47, 0.12)',
+                                      color: std.team === 'Chưa phân nhóm'
+                                        ? 'var(--text-muted)'
+                                        : 'var(--color-kumquat)',
+                                      fontSize: '0.76rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                    }}
+                                  >
+                                    <Users size={12} />
+                                    <span>{std.team}</span>
+                                  </span>
+                                </td>
+                                <td style={{ padding: '12px 14px' }}>
                                   <span style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '5px',
-                                    color: '#D97706',
-                                    background: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FFFBEB',
-                                    padding: '3px 8px',
-                                    borderRadius: '999px',
+                                    padding: '4px 9px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    background: isSubmitted ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: isSubmitted ? '#10B981' : '#EF4444',
+                                  }}>
+                                    {isSubmitted ? <CheckCircle size={13} /> : <Clock size={13} />}
+                                    <span>{isSubmitted ? (lang === 'vi' ? 'Đã Nộp' : 'Submitted') : (lang === 'vi' ? 'Chưa Nộp' : 'Pending')}</span>
+                                  </span>
+                                </td>
+                                <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                                  {effectiveSubmitType}
+                                </td>
+                                <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                                  {effectiveSubmittedAt}
+                                </td>
+                                <td style={{ padding: '12px 14px' }}>
+                                  <span style={{
                                     fontSize: '0.74rem',
                                     fontWeight: 700,
+                                    color: '#059669',
+                                    background: 'rgba(5, 150, 105, 0.1)',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px',
                                   }}>
-                                    <Clock size={12} />
-                                    <span>{lang === 'vi' ? 'Chưa nộp' : 'Pending'}</span>
+                                    {std.status || 'Đang học'}
                                   </span>
-                                )}
-                              </td>
-                              <td style={{ padding: '12px 14px', color: 'var(--text-body)', fontSize: '0.78rem' }}>
-                                {std.submitType || '—'}
-                              </td>
-                              <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '0.76rem' }}>
-                                {std.submittedAt || '—'}
-                              </td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <span style={{
-                                  padding: '2px 7px',
-                                  borderRadius: '5px',
-                                  background: '#EDF6E8',
-                                  color: '#4D7C0F',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 700,
-                                }}>
-                                  {std.status || 'Đang học'}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
             </div>
           )}
+
+
 
           {/* =============================================================== */}
           {/* TAB 1: SUBMISSIONS LIST (BATCH GRADING / STUDENT GRADEBOOK)     */}
@@ -9673,179 +10660,250 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   </div>
                 </div>
               ) : (
-                /* LECTURER & ADMIN CLASS BATCH GRADING VIEW */
+                /* LECTURER & ADMIN CLASS BATCH GRADING VIEW (MODERN WORKSPACE) */
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div>
-                      <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                        {t.lecturerBatchTitle}
-                      </h1>
-                      <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                        {t.lecturerBatchDesc}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={() => setShowTeamGradingModal(true)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '12px 20px',
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
-                          color: '#FFFFFF',
-                          fontWeight: 800,
-                          fontSize: '0.88rem',
-                          border: 'none',
-                          boxShadow: '0 8px 20px -4px rgba(181, 82, 58, 0.35)',
-                          cursor: 'pointer',
-                          transition: 'transform 0.15s, box-shadow 0.15s',
-                        }}
-                      >
-                        <FolderGit2 size={16} />
-                        <span>{lang === 'vi' ? 'Chấm Đồ Án Nhóm (Git & Free-Rider)' : 'Grade Team Projects (Git)'}</span>
-                      </button>
-
-                      <button
-                        disabled={selectedSubmissions.length === 0}
-                        onClick={() => setShowBatchModal(true)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '12px 20px',
-                          borderRadius: '12px',
-                          background: selectedSubmissions.length > 0 ? 'var(--color-orange-zest)' : '#D1D5DB',
-                          color: '#FFFFFF',
-                          fontWeight: 700,
-                          fontSize: '0.88rem',
-                          boxShadow: selectedSubmissions.length > 0 ? '0 8px 20px -4px rgba(217, 100, 31, 0.35)' : 'none',
-                          cursor: selectedSubmissions.length > 0 ? 'pointer' : 'not-allowed',
-                        }}
-                      >
-                        <Play size={16} fill="#FFFFFF" />
-                        <span>{t.startBatchBtn} ({selectedSubmissions.length})</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Class Filter Bar */}
                   {(() => {
-                    const displayedSubs = allSubmissions.filter((s) => batchFilterClass === 'all' || (s.classCode || 'SWP391-SE1801') === batchFilterClass);
-                    const classesList = Array.from(new Set([
-                      'SWP391-SE1801',
-                      'PRN231-SE1803',
-                      'PRJ301-IS1702',
-                      'MMA301',
-                      ...allSubmissions.map((s) => s.classCode).filter(Boolean),
-                    ]));
+                    // Combine allSubmissions and uploadedFiles for full individual submissions coverage
+                    const combinedIndividual: any[] = [...allSubmissions.filter(s => !s.isTeamJob)];
+                    for (const u of uploadedFiles) {
+                      const uNumId = typeof u.id === 'string' ? (parseInt(u.id.replace(/\D/g, ''), 10) || 101) : u.id;
+                      const uStudent = u.student || u.studentName || 'Lê Nguyễn Linh Nhi';
+                      const uTitle = u.assignment || u.title || 'Assignment';
+                      const uClass = u.classCode || getSubmissionClassCode(u);
+                      if (!combinedIndividual.some(m => m.id === uNumId || m.id === u.id || (m.student === uStudent && m.title === uTitle))) {
+                        combinedIndividual.push({
+                          id: uNumId,
+                          jobId: u.jobId || uNumId,
+                          student: uStudent,
+                          studentName: uStudent,
+                          studentEmail: u.studentEmail || 'lenguyenlinhnhi2110@gmail.com',
+                          title: uTitle,
+                          classCode: uClass,
+                          status: u.status === 'waiting' ? 'not graded' : (u.status || 'completed'),
+                          score: u.score || '88 / 100',
+                          testCases: u.testCases || '9/10 Passed',
+                          gradingReport: u.gradingReport || getSubmissionGradingReport(u),
+                          reviewStatus: u.reviewStatus || 'pending',
+                          reviewComment: u.reviewComment || '',
+                          reviewedAt: u.reviewedAt || null,
+                          time: u.submittedAt || u.time || 'Vừa xong',
+                        });
+                      }
+                    }
+
+                    const displayedSubs = combinedIndividual.filter((s) => {
+                      const c = (s.classCode || getSubmissionClassCode(s) || '').trim();
+                      if (isClassDeleted(c)) return false;
+                      const filter = (batchFilterClass || 'all').trim();
+                      if (filter === 'all') return true;
+                      return doesClassMatch(c, filter);
+                    });
+
+                    const totalIndividualCount = combinedIndividual.filter(s => !isClassDeleted(s.classCode)).length;
 
                     return (
                       <>
+                        {/* Top Header Bar with Class Dropdown & Action Buttons */}
                         <div style={{
                           display: 'flex',
-                          alignItems: 'center',
                           justifyContent: 'space-between',
-                          gap: '12px',
-                          marginBottom: '18px',
-                          background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
-                          borderRadius: '16px',
-                          padding: '12px 18px',
-                          border: isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0',
+                          alignItems: 'center',
+                          marginBottom: '20px',
                           flexWrap: 'wrap',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                          gap: '16px'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                              <Filter size={15} color="var(--color-orange-zest)" />
-                              <span>{lang === 'vi' ? 'LỌC THEO LỚP HỌC:' : 'FILTER BY CLASS:'}</span>
-                            </span>
-
-                            {/* All Classes Pill */}
-                            <button
-                              type="button"
-                              onClick={() => setBatchFilterClass('all')}
-                              style={{
-                                padding: '6px 14px',
-                                borderRadius: '10px',
-                                border: batchFilterClass === 'all'
-                                  ? '2px solid var(--color-orange-zest)'
-                                  : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                                background: batchFilterClass === 'all'
-                                  ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6')
-                                  : (isDark ? 'var(--bg-surface-subtle)' : '#FFFFFF'),
-                                color: batchFilterClass === 'all' ? 'var(--color-orange-zest)' : 'var(--text-main)',
-                                fontSize: '0.80rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                transition: 'all 0.15s ease',
-                              }}
-                            >
-                              <span>{lang === 'vi' ? 'Tất Cả Lớp' : 'All Classes'}</span>
-                              <span style={{
-                                fontSize: '0.70rem',
-                                fontWeight: 800,
-                                padding: '2px 7px',
-                                borderRadius: '6px',
-                                background: batchFilterClass === 'all' ? 'var(--color-orange-zest)' : (isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
-                                color: batchFilterClass === 'all' ? '#FFFFFF' : 'var(--text-muted)',
-                              }}>
-                                {allSubmissions.length}
-                              </span>
-                            </button>
-
-                            {/* Individual Class Pills */}
-                            {classesList.map((cCode) => {
-                              const count = allSubmissions.filter((s) => (s.classCode || 'SWP391-SE1801') === cCode).length;
-                              const isSelected = batchFilterClass === cCode;
-                              return (
-                                <button
-                                  key={cCode}
-                                  type="button"
-                                  onClick={() => setBatchFilterClass(cCode)}
-                                  style={{
-                                    padding: '6px 14px',
-                                    borderRadius: '10px',
-                                    border: isSelected
-                                      ? '2px solid var(--color-orange-zest)'
-                                      : (isDark ? '1px solid var(--border-light)' : '1px solid #E2E8F0'),
-                                    background: isSelected
-                                      ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6')
-                                      : (isDark ? 'var(--bg-surface-subtle)' : '#FFFFFF'),
-                                    color: isSelected ? 'var(--color-orange-zest)' : 'var(--text-main)',
-                                    fontSize: '0.80rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    transition: 'all 0.15s ease',
-                                  }}
-                                >
-                                  <span>{cCode}</span>
-                                  <span style={{
-                                    fontSize: '0.70rem',
-                                    fontWeight: 800,
-                                    padding: '2px 7px',
-                                    borderRadius: '6px',
-                                    background: isSelected ? 'var(--color-orange-zest)' : (isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9'),
-                                    color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
-                                  }}>
-                                    {count}
-                                  </span>
-                                </button>
-                              );
-                            })}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '42px',
+                              height: '42px',
+                              borderRadius: '12px',
+                              background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#FFFFFF',
+                              boxShadow: '0 4px 12px rgba(238, 107, 47, 0.28)',
+                              flexShrink: 0,
+                            }}>
+                              <CheckSquare size={22} />
+                            </div>
+                            <div>
+                              <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', margin: 0, lineHeight: 1.2 }}>
+                                {t.lecturerBatchTitle}
+                              </h1>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                <span>{lang === 'vi' ? 'Giảng viên:' : 'Instructor:'} <strong style={{ color: 'var(--color-kumquat)' }}>{userFullName}</strong></span>
+                                <span>•</span>
+                                <span>{lang === 'vi' ? 'Lớp đang xem:' : 'Class:'} <strong style={{ color: 'var(--text-main)' }}>{batchFilterClass === 'all' ? (lang === 'vi' ? 'Tất Cả Các Lớp' : 'All Classes') : batchFilterClass}</strong></span>
+                              </div>
+                            </div>
                           </div>
 
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                            {lang === 'vi' ? 'Đang lọc:' : 'Showing:'}{' '}
-                            <strong style={{ color: 'var(--text-main)' }}>{displayedSubs.length}</strong> {lang === 'vi' ? 'bài nộp' : 'submissions'}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            {/* Compact Class Selector Dropdown */}
+                            <div ref={submissionsClassDropdownRef} style={{ position: 'relative' }}>
+                              <button
+                                type="button"
+                                onClick={() => setIsSubmissionsClassDropdownOpen(!isSubmissionsClassDropdownOpen)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '9px 16px',
+                                  borderRadius: '10px',
+                                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                                  border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                                  color: 'var(--text-main)',
+                                  fontSize: '0.84rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <Building2 size={16} color="var(--color-kumquat)" />
+                                <span>{batchFilterClass === 'all' ? (lang === 'vi' ? 'Tất Cả Các Lớp' : 'All Classes') : batchFilterClass}</span>
+                                <span style={{
+                                  fontSize: '0.70rem',
+                                  padding: '1px 7px',
+                                  borderRadius: '8px',
+                                  background: isDark ? 'rgba(255,255,255,0.1)' : '#FAF2E6',
+                                  color: 'var(--color-kumquat)',
+                                  fontWeight: 800,
+                                }}>
+                                  {batchFilterClass === 'all' ? totalIndividualCount : displayedSubs.length} bài
+                                </span>
+                                <ChevronDown size={14} color="var(--text-muted)" style={{ transform: isSubmissionsClassDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+                              </button>
+
+                              {/* Dropdown Menu */}
+                              {isSubmissionsClassDropdownOpen && (
+                                <div style={{
+                                  position: 'absolute',
+                                  top: 'calc(100% + 6px)',
+                                  right: 0,
+                                  zIndex: 110,
+                                  width: '260px',
+                                  background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                                  borderRadius: '14px',
+                                  border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
+                                  boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+                                  padding: '8px',
+                                  maxHeight: '340px',
+                                  overflowY: 'auto',
+                                }}>
+                                  <div style={{ padding: '8px 12px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid #F3F4F6' }}>
+                                    {lang === 'vi' ? 'CHỌN LỚP XEM BÀI NỘP' : 'SELECT CLASS'}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setBatchFilterClass('all');
+                                      setIsSubmissionsClassDropdownOpen(false);
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      padding: '10px 12px',
+                                      borderRadius: '8px',
+                                      border: 'none',
+                                      background: batchFilterClass === 'all' ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : 'transparent',
+                                      color: batchFilterClass === 'all' ? 'var(--color-kumquat)' : 'var(--text-main)',
+                                      fontSize: '0.82rem',
+                                      fontWeight: batchFilterClass === 'all' ? 800 : 600,
+                                      cursor: 'pointer',
+                                      marginTop: '4px',
+                                    }}
+                                  >
+                                    <span>{lang === 'vi' ? 'Tất Cả Các Lớp' : 'All Classes'}</span>
+                                    <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
+                                      {totalIndividualCount} bài
+                                    </span>
+                                  </button>
+
+                                  {allSystemClasses.map((cls) => {
+                                    const count = combinedIndividual.filter((s) => doesClassMatch(s.classCode || getSubmissionClassCode(s), cls.code) && !isClassDeleted(s.classCode)).length;
+                                    const isSelected = doesClassMatch(batchFilterClass, cls.code);
+                                    return (
+                                      <button
+                                        key={cls.code}
+                                        type="button"
+                                        onClick={() => {
+                                          setBatchFilterClass(cls.code);
+                                          setIsSubmissionsClassDropdownOpen(false);
+                                        }}
+                                        style={{
+                                          width: '100%',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          padding: '10px 12px',
+                                          borderRadius: '8px',
+                                          border: 'none',
+                                          background: isSelected ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : 'transparent',
+                                          color: isSelected ? 'var(--color-kumquat)' : 'var(--text-main)',
+                                          fontSize: '0.82rem',
+                                          fontWeight: isSelected ? 800 : 600,
+                                          cursor: 'pointer',
+                                          marginTop: '2px',
+                                        }}
+                                      >
+                                        <span>{cls.code}</span>
+                                        <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>{count} bài</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setShowTeamGradingModal(true)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                background: 'linear-gradient(135deg, var(--color-terracotta-600, #D9794E), var(--color-terracotta-800, #7A3E2E))',
+                                color: '#FFFFFF',
+                                fontWeight: 800,
+                                fontSize: '0.82rem',
+                                border: 'none',
+                                boxShadow: '0 4px 12px rgba(181, 82, 58, 0.25)',
+                                cursor: 'pointer',
+                                transition: 'transform 0.15s, box-shadow 0.15s',
+                              }}
+                            >
+                              <FolderGit2 size={15} />
+                              <span>{lang === 'vi' ? 'Chấm Đồ Án Nhóm (Git & Free-Rider)' : 'Grade Team Projects (Git)'}</span>
+                            </button>
+
+                            <button
+                              disabled={selectedSubmissions.length === 0}
+                              onClick={() => setShowBatchModal(true)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                background: selectedSubmissions.length > 0 ? 'var(--color-orange-zest)' : '#D1D5DB',
+                                color: '#FFFFFF',
+                                fontWeight: 800,
+                                fontSize: '0.82rem',
+                                border: 'none',
+                                boxShadow: selectedSubmissions.length > 0 ? '0 4px 12px rgba(217, 100, 31, 0.28)' : 'none',
+                                cursor: selectedSubmissions.length > 0 ? 'pointer' : 'not-allowed',
+                              }}
+                            >
+                              <Play size={15} fill="#FFFFFF" />
+                              <span>{t.startBatchBtn} ({selectedSubmissions.length})</span>
+                            </button>
                           </div>
                         </div>
 
@@ -10343,37 +11401,47 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '10px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
                   <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: heartbeat ? '#10B981' : '#E2E8F0', transition: 'background 0.3s' }} />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-body)' }}>{t.queueLivePolling}</span>
+                  <span title={`BullMQ Redis: ${telemetry.total} jobs`} style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-body)' }}>{t.queueLivePolling}</span>
                 </div>
               </div>
 
-              {/* 4 Telemetry Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>⏳ WAITING</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>
-                    {Math.max(telemetry.waiting, allSubmissions.filter(s => s.status !== 'completed' && s.status !== 'failed' && s.status !== 'grading' && s.status !== 'graded').length)}
+              {/* 4 Telemetry Metrics (Synchronized directly with active classes and submissions) */}
+              {(() => {
+                const validQueueSubs = allSubmissions.filter(s => !isClassDeleted(s.classCode) && (allSystemClasses.length === 0 || allSystemClasses.some(c => c.code.toLowerCase() === (s.classCode || '').toLowerCase())));
+                const countWaiting = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status !== 'completed' && s.status !== 'failed' && s.status !== 'grading' && s.status !== 'graded').length;
+                const countActive = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status === 'grading' || s.status === 'active').length;
+                const countCompleted = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status === 'completed' || s.status === 'graded').length;
+                const countFailed = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status === 'failed' || s.status === 'dead').length;
+
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>⏳ WAITING</div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>
+                        {countWaiting}
+                      </div>
+                    </div>
+                    <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid rgba(238, 166, 75, 0.4)' : '1px solid rgba(238, 166, 75, 0.4)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-orange-zest)' }}>⚡ ACTIVE (WORKERS)</div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-orange-zest)', marginTop: '4px' }}>
+                        {countActive}
+                      </div>
+                    </div>
+                    <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-exocarp)' }}>✅ COMPLETED</div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-exocarp)', marginTop: '4px' }}>
+                        {countCompleted}
+                      </div>
+                    </div>
+                    <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(239, 68, 68, 0.3)' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#EF4444' }}>❌ FAILED (RETRIES)</div>
+                      <div style={{ fontSize: '2rem', fontWeight: 900, color: '#EF4444', marginTop: '4px' }}>
+                        {countFailed}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid rgba(238, 166, 75, 0.4)' : '1px solid rgba(238, 166, 75, 0.4)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-orange-zest)' }}>⚡ ACTIVE (WORKERS)</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-orange-zest)', marginTop: '4px' }}>
-                    {Math.max(telemetry.active, allSubmissions.filter(s => s.status === 'grading' || s.status === 'active').length)}
-                  </div>
-                </div>
-                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-exocarp)' }}>✅ COMPLETED</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-exocarp)', marginTop: '4px' }}>
-                    {Math.max(telemetry.completed, allSubmissions.filter(s => s.status === 'completed' || s.status === 'graded').length)}
-                  </div>
-                </div>
-                <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(239, 68, 68, 0.3)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#EF4444' }}>❌ FAILED (RETRIES)</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: '#EF4444', marginTop: '4px' }}>
-                    {Math.max(telemetry.failed, allSubmissions.filter(s => s.status === 'failed' || s.status === 'dead').length)}
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Jobs Table */}
               <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid var(--border-light)' : '1px solid rgba(120, 132, 23, 0.15)', overflow: 'hidden' }}>
@@ -10557,87 +11625,418 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
           )}
 
           {/* =============================================================== */}
-          {/* TAB 3: DEAD-LETTER QUEUE (DLQ)                                  */}
+          {/* TAB 3: DEAD-LETTER QUEUE (DLQ - MODERN WORKSPACE)               */}
           {/* =============================================================== */}
           {activeTab === 'dlq' && (
             <div>
-              <div style={{ marginBottom: '20px' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'var(--font-heading)' }}>
-                  {t.dlqTitle}
-                </h1>
-                <p style={{ color: 'var(--text-body)', fontSize: '0.84rem' }}>
-                  {t.dlqDesc}
-                </p>
+              {/* Header with Title and Class Selector Dropdown */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                gap: '16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#FFFFFF',
+                    boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)',
+                    flexShrink: 0,
+                  }}>
+                    <AlertTriangle size={22} />
+                  </div>
+                  <div>
+                    <h1 style={{ fontSize: '1.45rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-main)', margin: 0, lineHeight: 1.2 }}>
+                      {t.dlqTitle}
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.80rem', margin: '4px 0 0 0' }}>
+                      {t.dlqDesc}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right: Class Selector Dropdown for DLQ */}
+                <div ref={dlqClassDropdownRef} style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsDlqClassDropdownOpen(!isDlqClassDropdownOpen)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '9px 16px',
+                      borderRadius: '10px',
+                      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                      border: isDark ? '1px solid var(--border-light)' : '1px solid #CBD5E1',
+                      color: 'var(--text-main)',
+                      fontSize: '0.84rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Building2 size={16} color="#DC2626" />
+                    <span>{dlqFilterClass === 'all' ? (lang === 'vi' ? 'Tất Cả Các Lớp' : 'All Classes') : dlqFilterClass}</span>
+                    <span style={{
+                      fontSize: '0.70rem',
+                      padding: '1px 7px',
+                      borderRadius: '8px',
+                      background: '#FEE2E2',
+                      color: '#DC2626',
+                      fontWeight: 800,
+                    }}>
+                      {allSystemClasses.length === 0 ? 0 : dlqJobs.filter(job => {
+                        const c = (job.classCode || '').trim();
+                        if (c && isClassDeleted(c)) return false;
+                        const matched = allSystemClasses.find(sc =>
+                          (c && sc.code.toLowerCase() === c.toLowerCase()) ||
+                          (job.studentName && job.studentName.toLowerCase().includes(sc.code.toLowerCase()))
+                        );
+                        if (!matched) return false;
+                        return dlqFilterClass === 'all' || matched.code.toLowerCase() === dlqFilterClass.toLowerCase();
+                      }).length} job
+                    </span>
+                    <ChevronDown size={14} color="var(--text-muted)" style={{ transform: isDlqClassDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isDlqClassDropdownOpen && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      right: 0,
+                      zIndex: 110,
+                      width: '260px',
+                      background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+                      borderRadius: '14px',
+                      border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+                      padding: '8px',
+                      maxHeight: '340px',
+                      overflowY: 'auto',
+                    }}>
+                      <div style={{ padding: '8px 12px', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid #F3F4F6' }}>
+                        {lang === 'vi' ? 'LỌC HÀNG ĐỢI CHẾT THEO LỚP' : 'FILTER DLQ BY CLASS'}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDlqFilterClass('all');
+                          setIsDlqClassDropdownOpen(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: dlqFilterClass === 'all' ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : 'transparent',
+                          color: dlqFilterClass === 'all' ? '#DC2626' : 'var(--text-main)',
+                          fontSize: '0.82rem',
+                          fontWeight: dlqFilterClass === 'all' ? 800 : 600,
+                          cursor: 'pointer',
+                          marginTop: '4px',
+                        }}
+                      >
+                        <span>{lang === 'vi' ? 'Tất Cả Các Lớp' : 'All Classes'}</span>
+                      </button>
+
+                      {allSystemClasses.map((cls) => {
+                        const count = dlqJobs.filter(job => {
+                          const c = (job.classCode || '').trim();
+                          if (c && isClassDeleted(c)) return false;
+                          const matched = allSystemClasses.find(sc =>
+                            (c && sc.code.toLowerCase() === c.toLowerCase()) ||
+                            (job.studentName && job.studentName.toLowerCase().includes(sc.code.toLowerCase()))
+                          );
+                          return matched?.code.toLowerCase() === cls.code.toLowerCase();
+                        }).length;
+                        const isSelected = dlqFilterClass.toLowerCase() === cls.code.toLowerCase();
+                        return (
+                          <button
+                            key={cls.code}
+                            type="button"
+                            onClick={() => {
+                              setDlqFilterClass(cls.code);
+                              setIsDlqClassDropdownOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: isSelected ? (isDark ? 'var(--bg-surface-accent)' : '#FAF2E6') : 'transparent',
+                              color: isSelected ? '#DC2626' : 'var(--text-main)',
+                              fontSize: '0.82rem',
+                              fontWeight: isSelected ? 800 : 600,
+                              cursor: 'pointer',
+                              marginTop: '2px',
+                            }}
+                          >
+                            <span>{cls.code}</span>
+                            <span style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>{count} job</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(239, 68, 68, 0.25)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead style={{ background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2', borderBottom: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : 'none' }}>
-                    <tr>
-                      <th style={{ padding: '12px 18px' }}>{t.colJobId}</th>
-                      <th style={{ padding: '12px 18px' }}>{t.colStudent}</th>
-                      <th style={{ padding: '12px 18px' }}>{t.colErrorClass}</th>
-                      <th style={{ padding: '12px 18px' }}>{t.colRunTime}</th>
-                      <th style={{ padding: '12px 18px' }}>{t.colActionBr06}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dlqJobs.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                          🎉 {t.emptyDlq}
-                        </td>
-                      </tr>
-                    ) : (
-                      dlqJobs.map((job) => (
-                        <tr key={job.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
-                          <td style={{ padding: '16px 18px', fontWeight: 800, color: 'var(--text-main)' }}>#{job.id}</td>
-                          <td style={{ padding: '16px 18px', fontWeight: 700, color: 'var(--text-main)' }}>{job.studentName}</td>
-                          <td style={{ padding: '16px 18px' }}>
-                            <span style={{
-                              background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
-                              color: isDark ? '#F87171' : '#B91C1C',
-                              border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : 'none',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              fontWeight: 700
-                            }}>
-                              {job.errorClassification || 'timeout: sandbox execution exceeded 30s'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '16px 18px', color: 'var(--text-body)' }}>{job.runtimeDurationMs ? `${job.runtimeDurationMs.toLocaleString()} ms` : '30,124 ms'}</td>
-                          <td style={{ padding: '16px 18px' }}>
-                            <button
-                              onClick={() => setShowDlqModal(job.id)}
-                              style={{
-                                padding: '7px 14px',
-                                borderRadius: '8px',
-                                background: 'var(--color-orange-zest)',
-                                color: '#FFFFFF',
-                                fontWeight: 700,
-                                fontSize: '0.78rem',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                              }}
-                            >
-                              <span>{t.actionProcessReplay}</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {/* DLQ Content with KPI Cards & Table */}
+              {(() => {
+                const visibleDlqJobs = dlqJobs.filter(job => {
+                  if (allSystemClasses.length === 0) return false;
+                  const c = (job.classCode || '').trim();
+                  if (c && isClassDeleted(c)) return false;
+                  const matchedClass = allSystemClasses.find(sc =>
+                    (c && sc.code.toLowerCase() === c.toLowerCase()) ||
+                    (job.studentName && job.studentName.toLowerCase().includes(sc.code.toLowerCase()))
+                  );
+                  if (!matchedClass) return false;
+                  return dlqFilterClass === 'all' || matchedClass.code.toLowerCase() === dlqFilterClass.toLowerCase();
+                });
+
+                const countTotal = visibleDlqJobs.length;
+                const countTimeout = visibleDlqJobs.filter(j => (j.errorClassification || '').toLowerCase().includes('timeout')).length;
+                const countGit = visibleDlqJobs.filter(j => (j.errorClassification || '').toLowerCase().includes('git')).length;
+                const countCrash = visibleDlqJobs.filter(j => !(j.errorClassification || '').toLowerCase().includes('timeout') && !(j.errorClassification || '').toLowerCase().includes('git')).length;
+
+                const displayedDlqJobs = visibleDlqJobs.filter(j => {
+                  const isTeamJob = j.studentName?.includes('[Đồ Án Nhóm]') || j.submissionTitle?.includes('Nhóm') || j.submissionTitle?.includes('Capstone');
+                  if (dlqViewMode === 'team') return isTeamJob;
+                  return !isTeamJob;
+                });
+
+                return (
+                  <>
+                    {/* 4 DLQ Summary KPI Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '22px' }}>
+                      <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: '1px solid rgba(220, 38, 38, 0.25)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#DC2626' }}>🚨 TỔNG JOB CHẾT (DLQ)</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: '#DC2626', marginTop: '4px' }}>
+                          {countTotal}
+                        </div>
+                      </div>
+                      <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: '1px solid rgba(234, 88, 12, 0.25)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#EA580C' }}>⏱️ TIMEOUT (EXCEEDED)</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: '#EA580C', marginTop: '4px' }}>
+                          {countTimeout}
+                        </div>
+                      </div>
+                      <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: '1px solid rgba(147, 51, 234, 0.25)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9333EA' }}>🔗 GIT REPO ERROR</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: '#9333EA', marginTop: '4px' }}>
+                          {countGit}
+                        </div>
+                      </div>
+                      <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '18px', borderRadius: '14px', border: '1px solid rgba(100, 116, 139, 0.25)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B' }}>🛡️ RUNTIME CRASH</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: '#64748B', marginTop: '4px' }}>
+                          {countCrash}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sub-tabs: 1. Cá Nhân vs 2. Đồ Án Nhóm */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '16px',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      borderBottom: isDark ? '2px solid var(--border-light)' : '2px solid #E5E7EB',
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setDlqViewMode('individual')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            border: 'none',
+                            borderBottom: dlqViewMode === 'individual' ? '3px solid #DC2626' : '3px solid transparent',
+                            background: 'transparent',
+                            color: dlqViewMode === 'individual' ? '#DC2626' : 'var(--text-muted)',
+                            fontWeight: dlqViewMode === 'individual' ? 800 : 600,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer',
+                            marginBottom: '-2px',
+                          }}
+                        >
+                          <FileText size={16} />
+                          <span>{lang === 'vi' ? '1. Job Cá Nhân (Sandbox Test Cases)' : '1. Individual Jobs'}</span>
+                          <span style={{
+                            fontSize: '0.70rem',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: dlqViewMode === 'individual' ? '#FEE2E2' : 'rgba(0,0,0,0.06)',
+                            color: dlqViewMode === 'individual' ? '#DC2626' : 'var(--text-muted)',
+                            fontWeight: 800,
+                          }}>
+                            {visibleDlqJobs.filter(j => !j.studentName?.includes('[Đồ Án Nhóm]') && !j.submissionTitle?.includes('Nhóm')).length}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setDlqViewMode('team')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            border: 'none',
+                            borderBottom: dlqViewMode === 'team' ? '3px solid #AD3029' : '3px solid transparent',
+                            background: 'transparent',
+                            color: dlqViewMode === 'team' ? '#AD3029' : 'var(--text-muted)',
+                            fontWeight: dlqViewMode === 'team' ? 800 : 600,
+                            fontSize: '0.86rem',
+                            cursor: 'pointer',
+                            marginBottom: '-2px',
+                          }}
+                        >
+                          <FolderGit2 size={16} />
+                          <span>{lang === 'vi' ? '2. Job Đồ Án Nhóm (Git & Free-Rider)' : '2. Team Capstone Jobs'}</span>
+                          <span style={{
+                            fontSize: '0.70rem',
+                            padding: '2px 8px',
+                            borderRadius: '999px',
+                            background: dlqViewMode === 'team' ? 'rgba(173, 48, 41, 0.15)' : 'rgba(0,0,0,0.06)',
+                            color: dlqViewMode === 'team' ? '#AD3029' : 'var(--text-muted)',
+                            fontWeight: 800,
+                          }}>
+                            {visibleDlqJobs.filter(j => j.studentName?.includes('[Đồ Án Nhóm]') || j.submissionTitle?.includes('Nhóm')).length}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* DLQ Table */}
+                    <div style={{ background: isDark ? 'var(--bg-surface)' : '#FFFFFF', borderRadius: '18px', border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(239, 68, 68, 0.25)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                        <thead style={{ background: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2', borderBottom: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : 'none' }}>
+                          <tr>
+                            <th style={{ padding: '12px 18px' }}>{t.colJobId}</th>
+                            <th style={{ padding: '12px 18px' }}>{lang === 'vi' ? 'SINH VIÊN / NHÓM' : 'STUDENT / TEAM'}</th>
+                            <th style={{ padding: '12px 18px' }}>{lang === 'vi' ? 'LỚP HỌC' : 'CLASS'}</th>
+                            <th style={{ padding: '12px 18px' }}>{t.colErrorClass}</th>
+                            <th style={{ padding: '12px 18px' }}>{t.colRunTime}</th>
+                            <th style={{ padding: '12px 18px' }}>{t.colActionBr06}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {displayedDlqJobs.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} style={{ padding: '40px 18px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                <div style={{ fontSize: '1.8rem', marginBottom: '8px' }}>🎉</div>
+                                <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.92rem' }}>
+                                  {lang === 'vi' ? 'Không có tác vụ lỗi trong hàng đợi chết' : 'No dead-letter jobs in this queue'}
+                                </div>
+                                <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
+                                  {lang === 'vi' ? 'Tất cả các tác vụ chấm bài cá nhân và đồ án nhóm đang hoạt động ổn định.' : 'All grading jobs are operating normally.'}
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            displayedDlqJobs.map((job) => {
+                              const jobClass = job.classCode || (allSystemClasses.find(sc => job.studentName?.toLowerCase().includes(sc.code.toLowerCase()) || job.submissionTitle?.toLowerCase().includes(sc.code.toLowerCase()))?.code) || (dlqFilterClass === 'all' ? (allSystemClasses[0]?.code || 'SWP391-SE1801') : dlqFilterClass);
+
+                              return (
+                                <tr key={job.id} style={{ borderBottom: isDark ? '1px solid var(--border-subtle)' : '1px solid #F3F4F6' }}>
+                                  <td style={{ padding: '14px 18px', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'monospace' }}>#{job.id}</td>
+                                  <td style={{ padding: '14px 18px' }}>
+                                    <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{job.studentName}</div>
+                                    {job.submissionTitle && (
+                                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                        {job.submissionTitle}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '14px 18px' }}>
+                                    <span style={{
+                                      fontSize: '0.74rem',
+                                      fontWeight: 800,
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      background: 'rgba(220, 38, 38, 0.1)',
+                                      color: '#DC2626',
+                                    }}>
+                                      {jobClass}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '14px 18px' }}>
+                                    <span style={{
+                                      background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                                      color: isDark ? '#F87171' : '#B91C1C',
+                                      border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : 'none',
+                                      padding: '4px 8px',
+                                      borderRadius: '6px',
+                                      fontSize: '0.74rem',
+                                      fontWeight: 700,
+                                      display: 'inline-block',
+                                    }}>
+                                      {job.errorClassification || 'timeout: sandbox execution exceeded 30s'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '14px 18px', color: 'var(--text-body)', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                                    {job.runtimeDurationMs ? `${job.runtimeDurationMs.toLocaleString()} ms` : '30,124 ms'}
+                                  </td>
+                                  <td style={{ padding: '14px 18px' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowDlqModal(job.id)}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '7px 14px',
+                                        borderRadius: '8px',
+                                        background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
+                                        color: '#FFFFFF',
+                                        fontWeight: 800,
+                                        fontSize: '0.78rem',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 8px rgba(173, 48, 41, 0.25)',
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                    >
+                                      <RefreshCw size={13} />
+                                      <span>{lang === 'vi' ? 'Xử lý / Replay' : 'Resolve / Replay'}</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
-          {/* =============================================================== */}
-          {/* TAB 4: GIT REPO SUBMISSION                                      */}
-          {/* =============================================================== */}
           {/* =============================================================== */}
           {/* TAB 4: GIT REPO SUBMISSION & TEAM PROJECT                       */}
           {/* =============================================================== */}
@@ -10702,7 +12101,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   />
                 ) : (
                   <GitRepoSubmissionForm
-                    key={selectedTeamGitUrl}
+                    key={`${analysisBatchClass}-${selectedTeamGitUrl}`}
                     defaultUrl={selectedTeamGitUrl}
                     defaultBranch={selectedTeamGitBranch}
                     role={currentRole}
@@ -10710,6 +12109,18 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     submittedAt={teamGitSubmittedTime || undefined}
                     onViewReport={() => setActiveTab('report')}
                     onSubmit={handleStartAnalysis}
+                    selectedClassCode={analysisBatchClass || (selectedClassCode && selectedClassCode !== 'all' ? selectedClassCode : 'SWP391-SE1801')}
+                    availableClasses={allSystemClasses.map(c => c.code)}
+                    classTeams={getTeamsForClass(analysisBatchClass || selectedClassCode)}
+                    assignedTeam={studentMyAssignedTeam}
+                    onClassChange={(newCls) => {
+                      setAnalysisBatchClass(newCls);
+                      const teams = getTeamsForClass(newCls);
+                      if (teams && teams.length > 0) {
+                        setSelectedTeamGitUrl(teams[0].gitUrl || 'https://github.com/lenguyenanhmai05-dotcom/AITA-Intelligent');
+                        setSelectedTeamGitBranch(teams[0].branch || 'main');
+                      }
+                    }}
                     lang={lang}
                     isDark={isDark}
                   />
@@ -11783,7 +13194,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {allSystemClasses.map((cls) => {
+                      {allSystemClasses.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            {lang === 'vi' ? 'Hệ thống hiện chưa có lớp học nào. Nhấn "+ Thêm Lớp Mới" để tạo lớp.' : 'No active classes found. Click "+ Add Class" to create.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        allSystemClasses.map((cls) => {
                         const isSelected = selectedClassCode === cls.code;
                         return (
                           <tr
@@ -11831,7 +13249,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                                 </span>
                               </div>
                             </td>
-                            <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                            <td style={{ padding: '12px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -11850,10 +13268,37 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                               >
                                 {isSelected ? '✓ Đang xem' : 'Xem SV →'}
                               </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(lang === 'vi' ? `Bạn có chắc chắn muốn xóa lớp "${cls.code}"? Toàn bộ đề bài và dữ liệu liên quan sẽ bị xóa.` : `Are you sure you want to delete class "${cls.code}"?`)) {
+                                    handleDeleteClass(cls.code, cls.name, cls.id);
+                                  }
+                                }}
+                                title={lang === 'vi' ? `Xóa lớp ${cls.code}` : `Delete class ${cls.code}`}
+                                style={{
+                                  marginLeft: '6px',
+                                  padding: '5px 8px',
+                                  borderRadius: '7px',
+                                  background: 'transparent',
+                                  color: '#EF4444',
+                                  border: isDark ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid #FECACA',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <Trash2 size={13} color="#EF4444" />
+                                <span>{lang === 'vi' ? 'Xóa' : 'Delete'}</span>
+                              </button>
                             </td>
                           </tr>
                         );
-                      })}
+                      })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -11862,7 +13307,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
               {/* SECTION 2: DANH SÁCH SINH VIÊN CỦA LỚP ĐƯỢC CHỌN ("LỚP ĐÓ CÓ NHỮNG AI") */}
               {(() => {
                 const currentClass = allSystemClasses.find((c) => c.code === selectedClassCode) || allSystemClasses[0];
-                const rawStudents = classStudents[selectedClassCode] || CLASS_STUDENTS_MAP[selectedClassCode] || [];
+                const rawStudents = getStudentsForClass(selectedClassCode);
                 const filteredStudents = rawStudents.filter((s) => {
                   if (!studentSearchQuery.trim()) return true;
                   const q = studentSearchQuery.toLowerCase();
@@ -14389,6 +15834,436 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         </div>
       )}
 
+      {/* MODAL: ADD STUDENT / IMPORT EXCEL TO CLASS */}
+      {showAddStudentModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px',
+          }}
+          onClick={() => setShowAddStudentModal(false)}
+        >
+          <div
+            style={{
+              background: isDark ? 'var(--bg-surface)' : '#FFFFFF',
+              borderRadius: '20px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 45px rgba(0,0,0,0.22)',
+              border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E8D6',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '10px',
+                  background: 'rgba(238, 107, 47, 0.12)', color: 'var(--color-kumquat)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <UserPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    {lang === 'vi' ? `Thêm Sinh Viên vào Lớp ${selectedClassCode}` : `Add Students to ${selectedClassCode}`}
+                  </h3>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                    {lang === 'vi' ? 'Thêm sinh viên thủ công hoặc nhập từ danh sách Excel' : 'Manual add or import from Excel file'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddStudentModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Manual Form */}
+            <form onSubmit={handleAddStudentToClass} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '18px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'Họ và tên sinh viên *' : 'Student Full Name *'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  placeholder="Lê Nguyễn Linh Nhi"
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '10px',
+                    background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
+                    border: '1px solid var(--border-light)', color: 'var(--text-main)', fontSize: '0.84rem', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'Mã Số Sinh Viên (MSSV - Để trống sẽ tự sinh)' : 'Student ID (MSSV - Optional auto-gen)'}
+                </label>
+                <input
+                  type="text"
+                  value={newStudentMssv}
+                  onChange={(e) => setNewStudentMssv(e.target.value)}
+                  placeholder="SE180999"
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '10px',
+                    background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
+                    border: '1px solid var(--border-light)', color: 'var(--text-main)', fontSize: '0.84rem', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'Email trường (FPT Edu) *' : 'Student Email *'}
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newStudentEmail}
+                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                  placeholder="nhiln@fpt.edu.vn"
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '10px',
+                    background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
+                    border: '1px solid var(--border-light)', color: 'var(--text-main)', fontSize: '0.84rem', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  {lang === 'vi' ? 'Nhóm Đồ Án (Tùy chọn)' : 'Assigned Team (Optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={newStudentTeam}
+                  onChange={(e) => setNewStudentTeam(e.target.value)}
+                  placeholder="Nhóm 1"
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: '10px',
+                    background: isDark ? 'var(--bg-surface-subtle)' : '#F9FAFB',
+                    border: '1px solid var(--border-light)', color: 'var(--text-main)', fontSize: '0.84rem', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, var(--color-kumquat), var(--color-orange-zest))',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  marginTop: '4px',
+                }}
+              >
+                {lang === 'vi' ? '+ Thêm Sinh Viên Này' : '+ Add This Student'}
+              </button>
+            </form>
+
+            <div style={{ textAlign: 'center', margin: '14px 0', position: 'relative' }}>
+              <div style={{ borderTop: '1px solid var(--border-light)', position: 'absolute', top: '50%', left: 0, right: 0 }} />
+              <span style={{ position: 'relative', background: isDark ? 'var(--bg-surface)' : '#FFFFFF', padding: '0 10px', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                {lang === 'vi' ? 'HOẶC NHẬP FILE EXCEL' : 'OR IMPORT EXCEL'}
+              </span>
+            </div>
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsExcelDragging(true); }}
+              onDragLeave={() => setIsExcelDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsExcelDragging(false);
+                if (e.dataTransfer.files?.[0]) parseExcelFile(e.dataTransfer.files[0]);
+              }}
+              style={{
+                border: isExcelDragging ? '2px dashed var(--color-kumquat)' : '2px dashed var(--border-light)',
+                borderRadius: '12px',
+                padding: '18px',
+                textAlign: 'center',
+                background: isExcelDragging ? 'rgba(238, 107, 47, 0.08)' : (isDark ? 'var(--bg-surface-subtle)' : '#FAF9F1'),
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.xlsx, .xls, .csv';
+                input.onchange = (e: any) => handleExcelFileSelect(e);
+                input.click();
+              }}
+            >
+              <FileSpreadsheet size={28} color="var(--color-kumquat)" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+              <div style={{ fontSize: '0.80rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                {lang === 'vi' ? 'Nhấp chọn hoặc kéo thả file Excel vào đây' : 'Click to upload or drag & drop Excel'}
+              </div>
+              <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {lang === 'vi' ? 'Cột: Họ tên (Full Name), Email, Nhóm (Team)' : 'Columns: Full Name, Email, Team'}
+              </div>
+            </div>
+
+            {/* Quick Helper Tools: Download Template & Quick Sample Load */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+              <button
+                type="button"
+                onClick={handleDownloadSampleExcel}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  background: isDark ? 'var(--bg-surface-subtle)' : '#F3F4F6',
+                  border: isDark ? '1px solid var(--border-light)' : '1px solid #E5E7EB',
+                  color: 'var(--text-main)',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                title={lang === 'vi' ? `Tải file mẫu Excel với mã lớp ${selectedClassCode}` : 'Download Excel Template'}
+              >
+                <Download size={15} color="var(--color-kumquat)" />
+                <span>{lang === 'vi' ? 'Tải File Mẫu (.xlsx)' : 'Download Template'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickAddSampleStudents(selectedClassCode)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 12px',
+                  borderRadius: '10px',
+                  background: 'rgba(37, 99, 235, 0.10)',
+                  border: '1.5px solid #93C5FD',
+                  color: '#2563EB',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                title={lang === 'vi' ? `Nạp ngay 5 sinh viên mẫu vào lớp ${selectedClassCode}` : 'Quick load 5 sample students'}
+              >
+                <Sparkles size={15} color="#2563EB" />
+                <span>{lang === 'vi' ? 'Nạp 5 SV Mẫu' : 'Load 5 Sample SV'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRM DELETE CLASS */}
+      {classToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.48)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '16px',
+          }}
+          onClick={() => setClassToDelete(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '16px',
+              maxWidth: '420px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              border: '1px solid #FEE2E2',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: '#FEE2E2', color: '#DC2626',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1F2937' }}>
+                  {lang === 'vi' ? 'Xác nhận xóa lớp học?' : 'Confirm Delete Class?'}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#6B7280' }}>
+                  {classToDelete.code} - {classToDelete.name}
+                </span>
+              </div>
+            </div>
+
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#4B5563', lineHeight: 1.5 }}>
+              {lang === 'vi'
+                ? `Bạn có chắc chắn muốn xóa lớp học "${classToDelete.code}" không? Tất cả dữ liệu đề bài và sinh viên của lớp này sẽ bị xóa khỏi danh sách.`
+                : `Are you sure you want to delete class "${classToDelete.code}"? All related data will be removed.`}
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setClassToDelete(null)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  background: '#F3F4F6',
+                  color: '#4B5563',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {lang === 'vi' ? 'Hủy Bỏ' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = classToDelete;
+                  setClassToDelete(null);
+                  handleDeleteClass(target.code, target.name, target.id);
+                }}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  background: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
+                }}
+              >
+                {lang === 'vi' ? 'Xác Nhận Xóa' : 'Delete Class'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRM DELETE ASSIGNMENT */}
+      {assignmentToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.48)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '16px',
+          }}
+          onClick={() => setAssignmentToDelete(null)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '16px',
+              maxWidth: '440px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              border: '1px solid #FEE2E2',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: '#FEE2E2', color: '#DC2626',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#1F2937' }}>
+                  {lang === 'vi' ? 'Xác nhận xóa đề bài?' : 'Confirm Delete Task?'}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#6B7280' }}>
+                  {assignmentToDelete.title}
+                </span>
+              </div>
+            </div>
+
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.85rem', color: '#4B5563', lineHeight: 1.5 }}>
+              {lang === 'vi'
+                ? `Bạn có chắc chắn muốn xóa đề bài "${assignmentToDelete.title}" của lớp ${assignmentToDelete.classCode || selectedClassCode} không?`
+                : `Are you sure you want to delete task "${assignmentToDelete.title}"?`}
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setAssignmentToDelete(null)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  background: '#F3F4F6',
+                  color: '#4B5563',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {lang === 'vi' ? 'Hủy Bỏ' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = assignmentToDelete;
+                  setAssignmentToDelete(null);
+                  handleDeleteAssignment(target);
+                }}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  background: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
+                }}
+              >
+                {lang === 'vi' ? 'Xác Nhận Xóa' : 'Delete Task'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: PREVIEW EXCEL IMPORT ROSTER & TEAMS */}
       {showExcelPreviewModal && (
         <div style={{
@@ -14482,7 +16357,38 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                 🏷️ {new Set(excelPreviewData.map(s => s.team)).size} {lang === 'vi' ? 'Nhóm đồ án' : 'Teams'}
               </span>
               <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '4px 12px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
-                🏫 {new Set(excelPreviewData.map(s => s.targetClass)).size} {lang === 'vi' ? 'Lớp học' : 'Classes'} ({Array.from(new Set(excelPreviewData.map(s => s.targetClass))).join(', ')})
+                🏫 {selectedClassCode}
+              </span>
+            </div>
+
+            {/* Target Class Badge */}
+            <div style={{
+              padding: '10px 24px',
+              background: isDark ? 'rgba(238, 107, 47, 0.12)' : '#FFF7ED',
+              borderBottom: isDark ? '1px solid var(--border-light)' : '1px solid #FFEDD5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-kumquat)' }}>
+                  🎯 {lang === 'vi' ? 'Đích nhập dữ liệu:' : 'Import Destination:'}
+                </span>
+                <span style={{
+                  fontSize: '0.80rem',
+                  fontWeight: 800,
+                  padding: '2px 10px',
+                  borderRadius: '6px',
+                  background: 'var(--color-kumquat)',
+                  color: '#FFFFFF'
+                }}>
+                  {selectedClassCode || 'MMA301-SE19B'}
+                </span>
+              </div>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                {lang === 'vi' ? `Toàn bộ ${excelPreviewData.length} sinh viên sẽ được nạp trực tiếp vào lớp ${selectedClassCode || 'MMA301-SE19B'}` : `All students will be imported into ${selectedClassCode}`}
               </span>
             </div>
 

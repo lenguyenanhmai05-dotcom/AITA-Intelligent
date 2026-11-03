@@ -138,13 +138,13 @@ const PATAuthModal: React.FC<PATAuthModalProps> = ({ isOpen, onClose }) => {
               padding: '10px 22px',
               borderRadius: '10px',
               border: 'none',
-              background: 'linear-gradient(135deg, var(--color-terracotta-700, #B5523A), var(--color-terracotta-600, #D9794E))',
+              background: 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)',
               color: '#FFFFFF',
               fontWeight: 800,
               fontSize: '0.84rem',
               cursor: !tokenInput.trim() ? 'not-allowed' : 'pointer',
               opacity: !tokenInput.trim() ? 0.5 : 1,
-              boxShadow: '0 4px 14px rgba(181, 82, 58, 0.35)',
+              boxShadow: '0 4px 14px rgba(173, 48, 41, 0.28)',
               transition: 'opacity 0.2s'
             }}
           >

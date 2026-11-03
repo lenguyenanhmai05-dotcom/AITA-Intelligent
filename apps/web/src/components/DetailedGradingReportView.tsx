@@ -147,7 +147,7 @@ export const DetailedGradingReportView: React.FC<DetailedGradingReportViewProps>
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#FFFFFF',
-                boxShadow: '0 4px 14px rgba(238, 107, 47, 0.35)',
+                boxShadow: '0 4px 14px rgba(173, 48, 41, 0.28)',
                 flexShrink: 0,
               }}
             >
@@ -1271,7 +1271,7 @@ export const DetailedGradingReportView: React.FC<DetailedGradingReportViewProps>
               fontWeight: 800,
               fontSize: '0.82rem',
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(238, 107, 47, 0.3)',
+              boxShadow: '0 2px 8px rgba(173, 48, 41, 0.28)',
             }}
           >
             {lang === 'vi' ? 'Đóng' : 'Close'}

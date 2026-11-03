@@ -122,7 +122,7 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
             border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE',
           }}>
             <Users size={13} />
-            <span>{lang === 'vi' ? 'NHÓM 2 • ĐỒ ÁN SWP391 • AITA INTELLIGENT' : 'GROUP 2 • SWP391 CAPSTONE • AITA INTELLIGENT'}</span>
+            <span>{lang === 'vi' ? 'NHÓM 2 • ĐỒ ÁN SWP391 • AITA INTELLIGENT' : 'GROUP 1 • SWP391 CAPSTONE • AITA INTELLIGENT'}</span>
           </div>
           <h1 style={{
             fontSize: '1.85rem',
@@ -132,7 +132,7 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
             margin: '0 0 6px 0',
             letterSpacing: '-0.3px',
           }}>
-            {lang === 'vi' ? 'Tiến Độ Dự Án & Phân Bổ Công Việc Nhóm 2' : 'Group 2 Project Progress & Workload Balance'}
+            {lang === 'vi' ? 'Tiến Độ Dự Án & Phân Bổ Công Việc Nhóm 2' : 'GROUP 1 Project Progress & Workload Balance'}
           </h1>
           <p style={{
             fontSize: '0.86rem',
@@ -350,7 +350,7 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
       }}>
         <div style={{ padding: '20px 24px', borderBottom: isDark ? '1px solid #374151' : '1px solid #F1F5F9' }}>
           <h3 style={{ fontSize: '1.02rem', fontWeight: 800, margin: 0, color: isDark ? '#F9FAFB' : '#0F172A' }}>
-            {lang === 'vi' ? 'Bảng Đóng Góp Thành Viên Nhóm 2' : 'Group 2 Member Contribution Breakdown'}
+            {lang === 'vi' ? 'Bảng Đóng Góp Thành Viên Nhóm 2' : 'GROUP 1 Member Contribution Breakdown'}
           </h3>
           <p style={{ fontSize: '0.78rem', color: isDark ? '#9CA3AF' : '#64748B', margin: '4px 0 0 0' }}>
             {lang === 'vi' ? 'Chi tiết số lượt commit, dòng mã thực tế và vai trò trong đồ án của từng bạn.' : 'Details of commits, net code lines, and project roles for each member.'}
@@ -470,10 +470,10 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
                         style={{
                           padding: '6px 14px',
                           borderRadius: '8px',
-                          background: isDark ? 'rgba(37, 99, 235, 0.15)' : '#EFF6FF',
-                          border: isDark ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE',
-                          color: '#2563EB',
-                          fontWeight: 700,
+                          background: '#FFF5F4',
+                          border: '1.5px solid #CC8780',
+                          color: '#AD3029',
+                          fontWeight: 800,
                           fontSize: '0.78rem',
                           cursor: 'pointer',
                           display: 'inline-flex',
@@ -482,12 +482,14 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
                           transition: 'all 0.15s ease',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#2563EB';
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #AD3029 0%, #CD5252 100%)';
                           e.currentTarget.style.color = '#FFFFFF';
+                          e.currentTarget.style.borderColor = '#AD3029';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = isDark ? 'rgba(37, 99, 235, 0.15)' : '#EFF6FF';
-                          e.currentTarget.style.color = '#2563EB';
+                          e.currentTarget.style.background = '#FFF5F4';
+                          e.currentTarget.style.color = '#AD3029';
+                          e.currentTarget.style.borderColor = '#CC8780';
                         }}
                       >
                         <Search size={13} />
@@ -505,3 +507,4 @@ export const StudentTeamProgressView: React.FC<StudentTeamProgressViewProps> = (
     </div>
   );
 };
+

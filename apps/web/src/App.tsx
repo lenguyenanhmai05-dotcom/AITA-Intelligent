@@ -3,6 +3,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { DashboardPortal } from './components/DashboardPortal';
 import { Language } from './translations';
 import { GitAuthProvider } from './contexts/GitAuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export const ADMIN_EMAILS = [
   'lenguyenanhmai05@gmail.com',
@@ -60,23 +61,24 @@ export default function App() {
   const [lang, setLang] = useState<Language>(() => {
     return (localStorage.getItem('aita_lang') as Language) || 'vi';
   });
-  const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('aita_theme') as Theme) || 'light';
-  });
+  const [theme] = useState<Theme>('light');
 
   const handleToggleLang = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem('aita_lang', newLang);
   };
 
-  const handleToggleTheme = (newTheme: Theme) => {
-    setTheme(newTheme);
-    localStorage.setItem('aita_theme', newTheme);
+  const handleToggleTheme = (_newTheme?: Theme) => {
+    // Dark mode is permanently disabled across the application
   };
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    try {
+      localStorage.removeItem('aita_theme');
+    } catch {}
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.style.colorScheme = 'light';
+  }, []);
 
   useEffect(() => {
     // Check saved session on load
@@ -125,29 +127,31 @@ export default function App() {
   };
 
   return (
-    <GitAuthProvider>
-      <div style={{ position: 'relative', minHeight: '100vh' }}>
-        {isLoggedIn ? (
-          <DashboardPortal
-            role={userRole}
-            userEmail={userEmail}
-            userFullName={userFullName}
-            lang={lang}
-            onToggleLang={handleToggleLang}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onLogout={handleLogout}
-          />
-        ) : (
-          <LoginScreen
-            lang={lang}
-            onToggleLang={handleToggleLang}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onLoginSuccess={handleLoginSuccess}
-          />
-        )}
-      </div>
-    </GitAuthProvider>
+    <ErrorBoundary>
+      <GitAuthProvider>
+        <div style={{ position: 'relative', minHeight: '100vh' }}>
+          {isLoggedIn ? (
+            <DashboardPortal
+              role={userRole}
+              userEmail={userEmail}
+              userFullName={userFullName}
+              lang={lang}
+              onToggleLang={handleToggleLang}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <LoginScreen
+              lang={lang}
+              onToggleLang={handleToggleLang}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              onLoginSuccess={handleLoginSuccess}
+            />
+          )}
+        </div>
+      </GitAuthProvider>
+    </ErrorBoundary>
   );
 }
