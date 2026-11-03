@@ -1257,7 +1257,7 @@ export const DetailedGradingReportView: React.FC<DetailedGradingReportViewProps>
           }}
         >
           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-            ⚡ AITA Intelligent Grading Engine • 4 Rubrics • 10 Test Cases
+            ⚡ AITA Intelligent Grading Engine • 4 Rubrics • {report.totalTestCases || report.testCaseResults?.length || 10} Test Cases
           </div>
           <button
             type="button"

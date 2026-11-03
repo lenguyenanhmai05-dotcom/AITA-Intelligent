@@ -380,6 +380,13 @@ export const createSubmission = async (req: Request, res: Response) => {
       jobRecord.runtimeDurationMs = realReport.runtimeDurationMs || 420;
       persistSubmissionsToDisk();
     } else {
+      let matchedAssignment: any = null;
+      try {
+        matchedAssignment = await prisma.assignment.findFirst({
+          where: { title: { equals: newSubRecord.title, mode: 'insensitive' } }
+        });
+      } catch {}
+
       const initialReport = evaluateSubmissionByCriteria({
         id: submissionId,
         studentName: newSubRecord.studentName,
@@ -390,6 +397,8 @@ export const createSubmission = async (req: Request, res: Response) => {
         notes: newSubRecord.notes,
         codeUrl,
         fileName: fileName || newSubRecord.fileName,
+        codeSnippet: req.body.codeSnippet || newSubRecord.codeSnippet,
+        customTestCases: (matchedAssignment?.testCases as any[]) || req.body.customTestCases,
       });
 
       // Mô phỏng Worker chạy chấm bài theo hàng đợi sau 4.5 giây để thấy rõ tiến trình xử lý
