@@ -291,6 +291,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
         const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
           client_id: DEFAULT_GOOGLE_CLIENT_ID,
           scope: 'email profile openid',
+          error_callback: (err: any) => {
+            console.warn('[Google OAuth2] error_callback:', err);
+            handleExecuteGoogleAuth();
+          },
           callback: async (tokenResponse: any) => {
             if (tokenResponse?.access_token) {
               try {
@@ -742,6 +746,85 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ lang, onToggleLang, th
                 {isLoading ? (lang === 'vi' ? 'Đang kết nối Google...' : 'Connecting Google...') : t.googleButton}
               </span>
             </button>
+          </div>
+
+          {/* Quick Demo Access Bar */}
+          <div style={{
+            marginTop: '20px',
+            paddingTop: '16px',
+            borderTop: '1px dashed rgba(173, 48, 41, 0.2)',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              fontSize: '0.74rem',
+              color: '#784340',
+              fontWeight: 600,
+              marginBottom: '10px',
+            }}>
+              {lang === 'vi' ? '⚡ Vào nhanh để trải nghiệm & chấm điểm (Không cần chờ Google):' : '⚡ Quick Demo Login (Skip Google Auth):'}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => handleExecuteGoogleAuth('lenguyenanhmai113@gmail.com', 'Lê Nguyễn Anh Mai')}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: '#FFF5F4',
+                  border: '1px solid #AD3029',
+                  color: '#AD3029',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                🎓 {lang === 'vi' ? 'Giảng viên: Anh Mai' : 'Lecturer: Anh Mai'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExecuteGoogleAuth('lenguyenlinhnhi2110@gmail.com', 'Lê Nguyễn Linh Nhi')}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: '#F0F9FF',
+                  border: '1px solid #0284C7',
+                  color: '#0369A1',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                👨‍💻 {lang === 'vi' ? 'Sinh viên: Linh Nhi' : 'Student: Linh Nhi'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExecuteGoogleAuth('lenguyenanhmai05@gmail.com', 'Lê Nguyễn Anh Mai (Admin)')}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: '#FEF3C7',
+                  border: '1px solid #D97706',
+                  color: '#B45309',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                🛡️ Admin
+              </button>
+            </div>
           </div>
         </div>
         )}
