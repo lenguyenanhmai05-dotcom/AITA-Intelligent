@@ -9,6 +9,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "node apps/api/dist/server.js",
     "dev": "npm run dev:all",
     "dev:all": "concurrently -n \"API,WORKER,WEB\" -c \"blue,green,magenta\" \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:web\"",
     "dev:api": "npm run dev --workspace=apps/api",
