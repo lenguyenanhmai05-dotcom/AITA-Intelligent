@@ -1,3 +1,14 @@
+
+export const normalizeClassCodeStr = (raw?: string | null): string => {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  const codePart = trimmed.split(/\s*[—–-]\s*/)[0].trim().toUpperCase();
+  if (codePart.includes('SWP391') || codePart.includes('SE1801')) return 'SWP391-SE1801';
+  if (codePart.includes('PRN231') || codePart.includes('SE1803')) return 'PRN231-SE1803';
+  if (codePart.includes('PRJ301') || codePart.includes('IS1702')) return 'PRJ301-IS1702';
+  return codePart || trimmed.toUpperCase();
+};
+
 import { AitaLogo } from './AitaLogo';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
@@ -120,11 +131,11 @@ export interface ClassAssignmentItem {
 
 export const DEFAULT_CLASS_ASSIGNMENTS: ClassAssignmentItem[] = [
   {
-    id: 'ASM-SWP-01',
+    id: 'ASM-1',
     classCode: 'SWP391-SE1801',
     title: 'Assignment 3: Xây dựng Kiến trúc Microservices & Redis BullMQ Queue',
     description: 'Yêu cầu các nhóm hoàn thiện tích hợp hàng đợi phân tán BullMQ, thiết lập worker concurrency 1-10, cấu hình Exponential Backoff retry 3 lần và giao diện giám sát 2s. Nộp link GitHub Repository nhóm.',
-    deadline: '2026-10-30 23:59',
+    deadline: '2026-11-15 23:59',
     type: 'Assignment',
     assignedBy: 'TS. Nguyễn Văn Giảng',
     createdAt: '2026-10-14 08:00',
@@ -134,43 +145,15 @@ export const DEFAULT_CLASS_ASSIGNMENTS: ClassAssignmentItem[] = [
         name: 'De_Assignment_3_SWP391_Microservices_BullMQ.docx',
         size: '285 KB',
         type: 'docx'
-      },
-      {
-        name: 'SWP391_Starter_Template_v1.zip',
-        size: '1.4 MB',
-        type: 'zip'
-      },
-      {
-        name: 'Huong_Dan_Cai_Dat_Redis_BullMQ.pdf',
-        size: '540 KB',
-        type: 'pdf'
       }
     ]
   },
   {
-    id: 'ASM-SWP-EXPIRED',
-    classCode: 'SWP391-SE1801',
-    title: 'Lab 2: Thiết lập Môi trường Docker Sandbox & Unit Tests Cơ bản',
-    description: 'Yêu cầu sinh viên cấu hình Docker Engine, viết 5 Unit Tests kiểm thử hàm tính điểm thuật toán. Hạn chót đã kết thúc ngày 2026-10-15 23:59. Hệ thống đã khóa nộp bài; chỉ có thể nộp lại khi Giảng viên gia hạn thời gian.',
-    deadline: '2026-10-15 23:59',
-    type: 'Practice',
-    assignedBy: 'TS. Nguyễn Văn Giảng',
-    createdAt: '2026-10-08 08:00',
-    allowedSubmissionType: 'both',
-    attachments: [
-      {
-        name: 'De_Lab_02_Docker_Sandbox_Setup.docx',
-        size: '180 KB',
-        type: 'docx'
-      }
-    ]
-  },
-  {
-    id: 'ASM-SWP-02',
+    id: 'ASM-2',
     classCode: 'SWP391-SE1801',
     title: 'Final Project: Nền tảng AST Code Analytics & Đánh Giá Đóng Góp Nhóm',
     description: 'Yêu cầu hoàn thiện toàn diện 4 giai đoạn bóc tách Git (Cloning, Parsing, Sanitizing, Scoring 40/40/20), quét mã gian lận Whitespace & Self-revert, bắt cờ Free-Rider và kiểm thử >= 80% coverage.',
-    deadline: '2026-11-15 23:59',
+    deadline: '2026-11-20 23:59',
     type: 'Exam',
     assignedBy: 'TS. Nguyễn Văn Giảng',
     createdAt: '2026-10-15 10:30',
@@ -180,109 +163,45 @@ export const DEFAULT_CLASS_ASSIGNMENTS: ClassAssignmentItem[] = [
         name: 'De_Final_Project_AST_Git_Scoring_2026.docx',
         size: '340 KB',
         type: 'docx'
-      },
-      {
-        name: 'AST_Scoring_Rubrics_V2.pdf',
-        size: '420 KB',
-        type: 'pdf'
       }
     ]
   },
   {
-    id: 'ASM-SWP-03',
+    id: 'ASM-3',
     classCode: 'SWP391-SE1801',
     title: 'Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms',
     description: 'Thực hiện đánh chỉ mục (Index) trên grading_jobs và git_commits, cấu hình Redis Cache cho Telemetry và kiểm thử tải throughput.',
-    deadline: '2026-10-25 23:59',
+    deadline: '2026-11-25 23:59',
     type: 'Practice',
     assignedBy: 'TS. Nguyễn Văn Giảng',
     createdAt: '2026-10-12 14:00',
-    allowedSubmissionType: 'zip',
+    allowedSubmissionType: 'both',
     attachments: [
       {
         name: 'Lab_05_Database_Indexing_Optimization.docx',
         size: '195 KB',
         type: 'docx'
-      },
-      {
-        name: 'sample_dataset_100k_records.zip',
-        size: '3.2 MB',
-        type: 'zip'
       }
     ]
   },
   {
-    id: 'ASM-PRN-01',
-    classCode: 'PRN231-SE1803',
-    title: 'Assignment 2: Xây dựng RESTful Web API với ASP.NET Core & Entity Framework',
-    description: 'Thiết kế API chuẩn RESTful, tích hợp xác thực JWT, phân quyền RBAC và Swagger documentation.',
-    deadline: '2026-11-05 23:59',
+    id: 'ASM-4',
+    classCode: 'SWP391-SE1801',
+    title: 'Bài Tập Lập Trình: Thiết Kế Hệ Thống Backend Bền Vững Với Supabase & Redis',
+    description: 'Xây dựng hệ thống Backend hiệu năng cao, tích hợp Supabase Cloud Database và Redis Caching.',
+    deadline: '2026-11-30 23:59',
     type: 'Assignment',
-    assignedBy: 'ThS. Trần Thị Mai Lan',
-    createdAt: '2026-10-13 09:00',
+    assignedBy: 'TS. Nguyễn Văn Giảng',
+    createdAt: '2026-10-16 09:00',
     allowedSubmissionType: 'both',
     attachments: [
       {
-        name: 'PRN231_Assignment_2_Specification.docx',
-        size: '260 KB',
+        name: 'Bai_Tap_Thiet_Ke_Backend_Ben_Vung.docx',
+        size: '220 KB',
         type: 'docx'
       }
     ]
-  },
-  {
-    id: 'ASM-PRJ-01',
-    classCode: 'PRJ301-IS1702',
-    title: 'Assignment 1: Java Servlet & JSP Web Application with MySQL Database',
-    description: 'Xây dựng ứng dụng quản lý với mô hình MVC Model 2, xử lý Session, Cookie và kết nối CSDL qua JDBC/Hibernate.',
-    deadline: '2026-10-28 23:59',
-    type: 'Assignment',
-    assignedBy: 'TS. Lê Hồng Sơn',
-    createdAt: '2026-10-11 16:00',
-    allowedSubmissionType: 'both',
-    attachments: [
-      {
-        name: 'PRJ301_Assignment_1_Requirement.docx',
-        size: '310 KB',
-        type: 'docx'
-      }
-    ]
-  },
-  {
-    id: 'ASM-SWP-EXAM',
-    classCode: 'SWP391-SE1801',
-    title: 'Exam: Hệ thống Kiểm thử Tự động & Quản lý Chấm điểm',
-    description: 'Kỳ thi thực hành cuối kỳ: Kiểm thử tự động trên Docker Sandbox & Quản lý chấm điểm. Hạn nộp đã kết thúc ngày 2026-10-15 23:59.',
-    deadline: '2026-10-15 23:59',
-    type: 'Exam',
-    assignedBy: 'TS. Nguyễn Văn Giảng',
-    createdAt: '2026-10-10 08:00',
-    allowedSubmissionType: 'both',
-    attachments: [],
-  },
-  {
-    id: 'ASM-SWP-SPRINGBOOT',
-    classCode: 'SWP391-SE1801',
-    title: 'Assignment 3 — Spring Boot REST Service',
-    description: 'Xây dựng RESTful API service với Spring Boot, Hibernate ORM và Redis Queue. Hạn nộp đã kết thúc ngày 2026-10-15 23:59.',
-    deadline: '2026-10-15 23:59',
-    type: 'Assignment',
-    assignedBy: 'TS. Nguyễn Văn Giảng',
-    createdAt: '2026-10-09 08:00',
-    allowedSubmissionType: 'both',
-    attachments: [],
-  },
-  {
-    id: 'ASM-MMA-01',
-    classCode: 'MMA301',
-    title: 'Bài Tập Lập Trình: Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices',
-    description: 'Xây dựng hệ thống Backend phân tán trên Node.js/Express, Docker Compose và tích hợp API Gateway.',
-    deadline: '2026-10-30 23:59',
-    type: 'Assignment',
-    assignedBy: 'TS. Lê Hồng Sơn',
-    createdAt: '2026-10-14 09:00',
-    allowedSubmissionType: 'both',
-    attachments: [],
-  },
+  }
 ];
 
 export interface SystemLecturerItem {
@@ -376,17 +295,7 @@ export const SYSTEM_CLASSES: SystemClassItem[] = [
     submittedCount: 1,
     teams: 0,
   },
-  {
-    id: 'CL-04',
-    code: 'MMA301',
-    name: 'Kiến Trúc Ứng Dụng Di Động & Microservices (MMA301)',
-    lecturer: 'TS. Nguyễn Văn Giảng',
-    lecturerEmail: 'giangnv@fpt.edu.vn',
-    department: 'Kỹ thuật Phần mềm (SE)',
-    studentCount: 4,
-    submittedCount: 4,
-    teams: 1,
-  },
+
 ];
 
 export interface ClassStudentItem {
@@ -1004,8 +913,8 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
           const dbList: ClassAssignmentItem[] = json.data.map((item: any) => ({
-            id: `ASM-${item.id}`,
-            classCode: item.class?.className || item.classCode || 'SWP391-SE1801',
+            id: String(item.id).startsWith('ASM-') ? String(item.id) : `ASM-${item.id}`,
+            classCode: normalizeClassCodeStr(item.class?.className || item.classCode || 'SWP391-SE1801'),
             title: item.title,
             description: item.description,
             deadline: item.deadline ? new Date(item.deadline).toISOString().replace('T', ' ').slice(0, 16) : '2026-11-15 23:59',
@@ -1022,13 +931,12 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
             attachments: item.sourceFileName ? [{ name: item.sourceFileName, size: 'Slide bài học', type: 'pdf' }] : undefined,
           }));
 
-          setClassAssignments(prev => {
-            const merged = dedupAssignments([...dbList, ...prev]);
+          if (dbList.length > 0) {
+            setClassAssignments(dbList);
             try {
-              localStorage.setItem('aita_class_assignments', JSON.stringify(merged));
+              localStorage.setItem('aita_class_assignments', JSON.stringify(dbList));
             } catch {}
-            return merged;
-          });
+          }
 
           // Sync any classes from assignments into classesList
           const asmClassCodes = dbList.map((a: ClassAssignmentItem) => a.classCode).filter(Boolean);
@@ -1051,13 +959,12 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           const apiClassCodes = json.data
-            .map((c: any) => (c.className || c.code)?.toUpperCase())
+            .map((c: any) => normalizeClassCodeStr(c.className || c.code))
             .filter((c: string) => Boolean(c) && !isClassDeleted(c));
-          setClassesList(prev => {
-            const merged = Array.from(new Set([...prev.filter(c => !isClassDeleted(c)), ...apiClassCodes]));
-            try { localStorage.setItem('aita_custom_classes', JSON.stringify(merged)); } catch {}
-            return merged;
-          });
+          if (apiClassCodes.length > 0) {
+            setClassesList(apiClassCodes);
+            try { localStorage.setItem('aita_custom_classes', JSON.stringify(apiClassCodes)); } catch {}
+          }
           setClassStudents(prev => {
             const nextMap = { ...prev };
             let hasChanges = false;
@@ -1141,7 +1048,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
   // Persistent list of Class Codes (Database & Custom Classes)
   const [classesList, setClassesList] = useState<string[]>(() => {
-    let list = ['SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702', 'MMA301-SE19B', 'MMA301'];
+    let list = ['SWP391-SE1801', 'PRN231-SE1803', 'PRJ301-IS1702'];
     try {
       const saved = localStorage.getItem('aita_custom_classes');
       if (saved) {
@@ -1173,7 +1080,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       if (saved) {
         const parsed: ClassAssignmentItem[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          baseList = [...parsed, ...DEFAULT_CLASS_ASSIGNMENTS];
+          baseList = parsed;
         }
       }
       const deleted = localStorage.getItem('aita_deleted_classes');
@@ -2603,26 +2510,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   // Dynamic merged classes list for Admin, Lecturer and Student views
   const allSystemClasses: SystemClassItem[] = useMemo(() => {
     const allDiscoveredCodes = new Set<string>();
-    SYSTEM_CLASSES.forEach(c => {
-      if (!isClassDeleted(c.code) && !isClassDeleted(c.id)) {
-        allDiscoveredCodes.add(c.code);
-      }
-    });
     classesList.forEach(code => {
-      if (!isClassDeleted(code)) allDiscoveredCodes.add(code);
-    });
-    classAssignments.forEach(asm => {
-      if (asm.classCode && !isClassDeleted(asm.classCode)) allDiscoveredCodes.add(asm.classCode);
-    });
-    uploadedFiles.forEach(sub => {
-      const code = getSubmissionClassCode(sub);
-      if (code && !isClassDeleted(code)) allDiscoveredCodes.add(code);
-    });
-    allSubmissions.forEach(sub => {
-      const code = sub.classCode || getSubmissionClassCode(sub);
-      if (code && !isClassDeleted(code)) allDiscoveredCodes.add(code);
-    });
-    Object.keys(classStudents).forEach(code => {
       if (!isClassDeleted(code)) allDiscoveredCodes.add(code);
     });
 
@@ -2759,6 +2647,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
   // Delete Assignment Handler (Cascade remove from state and localStorage)
   const handleDeleteAssignment = useCallback((target: ClassAssignmentItem) => {
     const isVietnamese = lang === 'vi';
+    if (target.id) {
+      fetch('/api/assignments/' + encodeURIComponent(target.id), { method: 'DELETE' }).catch(() => {});
+    }
     setClassAssignments((prev) => {
       const next = prev.filter((a) => {
         if (target.id && a.id) return a.id !== target.id;

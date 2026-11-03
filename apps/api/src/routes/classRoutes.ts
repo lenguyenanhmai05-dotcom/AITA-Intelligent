@@ -123,37 +123,15 @@ router.get('/classes', async (_req: Request, res: Response) => {
       },
       orderBy: { id: 'asc' },
     });
-    rawClasses.push(...dbClasses);
+    if (dbClasses && dbClasses.length > 0) {
+      rawClasses = dbClasses;
+    } else {
+      rawClasses = [...inMemoryClasses];
+    }
   } catch (error: any) {
     console.warn('[Class Routes] Database unavailable, using in-memory classes:', error?.message);
+    rawClasses = [...inMemoryClasses];
   }
-
-  // 2. Merge in-memory classes
-  rawClasses.push(...inMemoryClasses);
-
-  // 3. Sync from assignments.json if any
-  try {
-    const assignmentsPath = path.resolve(__dirname, '../../data/assignments.json');
-    if (fs.existsSync(assignmentsPath)) {
-      const raw = fs.readFileSync(assignmentsPath, 'utf-8');
-      const storedAsms = JSON.parse(raw);
-      if (Array.isArray(storedAsms)) {
-        storedAsms.forEach((asm: any) => {
-          const cName = (asm.classCode || asm.class?.className || '').trim();
-          if (cName) {
-            rawClasses.push({
-              id: asm.id || 999,
-              className: cName,
-              courseName: asm.title || `Lớp học ${cName}`,
-              department: 'Kỹ thuật phần mềm (SE)',
-              lecturer: asm.creator || { fullName: 'TS. Nguyễn Văn Giảng', email: 'giangnv@fpt.edu.vn' },
-              createdAt: asm.createdAt || new Date().toISOString(),
-            });
-          }
-        });
-      }
-    }
-  } catch { }
 
   // 4. Strict deduplication & deletion filtering
   const dedupMap = new Map<string, any>();
