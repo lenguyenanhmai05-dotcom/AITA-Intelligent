@@ -113,14 +113,27 @@ router.post('/assignments', async (req: Request, res: Response) => {
       if (classId) {
         targetClass = await prisma.class.findUnique({ where: { id: Number(classId) } });
       } else if (classCode) {
+        const cleanCode = normalizeClassCodeStr(String(classCode));
         targetClass = await prisma.class.findFirst({
           where: {
-            className: { equals: String(classCode).trim(), mode: 'insensitive' }
+            OR: [
+              { className: { equals: String(classCode).trim(), mode: 'insensitive' } },
+              { className: { contains: cleanCode, mode: 'insensitive' } },
+              { className: { startsWith: cleanCode, mode: 'insensitive' } },
+            ]
           }
         });
       }
 
       // Fallback: If class does not exist in DB yet, auto-find or link to first class or create it
+      if (!targetClass) {
+        targetClass = await prisma.class.findFirst({
+          where: {
+            className: { contains: 'SWP391', mode: 'insensitive' }
+          }
+        }) || await prisma.class.findFirst();
+      }
+
       if (!targetClass && classCode) {
         let lecturer = null;
         if (lecturerEmail) {
@@ -140,7 +153,9 @@ router.post('/assignments', async (req: Request, res: Response) => {
           });
         }
       }
-    } catch {}
+    } catch (e: any) {
+      console.warn('[Assignment Routes] Error resolving target class:', e?.message);
+    }
 
     const targetClassName = targetClass?.className || (classCode ? String(classCode).trim().toUpperCase() : 'SWP391-SE1801');
 
@@ -154,14 +169,14 @@ router.post('/assignments', async (req: Request, res: Response) => {
         creator = await prisma.user.findUnique({ where: { id: targetClass.lecturerId } });
       }
       if (!creator) {
-        creator = await prisma.user.findFirst();
+        creator = await prisma.user.findFirst({ where: { role: 'lecturer' } }) || await prisma.user.findFirst();
       }
 
       if (targetClass && creator) {
         assignment = await prisma.assignment.create({
           data: {
             classId: targetClass.id,
-            title,
+            title: title.trim(),
             type,
             description: description || '',
             rubric: rubric || null,
@@ -256,7 +271,13 @@ router.get('/assignments', async (req: Request, res: Response) => {
 
     const deletedSet = getDeletedClassCodes();
 
-    const validAssignments = assignments
+    // Include any assignments saved to disk that aren't yet in DB (e.g. newly created assignments)
+    const stored = getStoredAssignments();
+    const dbTitles = new Set(assignments.map((a: any) => (a.title || '').trim().toLowerCase()));
+    const missingFromDb = stored.filter((s: any) => !dbTitles.has((s.title || '').trim().toLowerCase()));
+    const combined = [...assignments, ...missingFromDb];
+
+    const validAssignments = combined
       .filter((a: any) => {
         const c = String(a.class?.className || a.classCode || '');
         const norm = normalizeClassCodeStr(c);

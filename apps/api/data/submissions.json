@@ -1,5 +1,165 @@
 [
   {
+    "id": 1,
+    "studentName": "Lê Nguyễn Linh Nhi",
+    "studentEmail": "lenguyenlinhnhi2110@gmail.com",
+    "title": "Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms",
+    "classCode": "SWP391-SE1801",
+    "status": "completed",
+    "reviewStatus": "pending",
+    "reviewComment": "",
+    "method": "Tệp ZIP: 2026-11-03T07_23_42.508Z_QE190151.zip (16.25 MB)",
+    "submittedAt": "2026-11-04 07:23",
+    "notes": "Em đã hoàn thiện trọn vẹn 10/10 test cases và cấu hình Docker container.",
+    "codeUrl": "uploads/2026-11-03T07_23_42.508Z_QE190151.zip",
+    "score": "24 / 100",
+    "testCases": "1/5 Passed",
+    "gradingReport": {
+      "submissionId": 1,
+      "assignmentTitle": "Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms",
+      "classCode": "SWP391-SE1801",
+      "studentName": "Lê Nguyễn Linh Nhi",
+      "studentEmail": "lenguyenlinhnhi2110@gmail.com",
+      "overallScore": 24,
+      "score10": 2.4,
+      "scoreDisplay": "24 / 100",
+      "gradeLetter": "F",
+      "classificationVi": "Không đạt (Điểm liệt)",
+      "classificationEn": "Fail / Retry",
+      "totalTestCases": 5,
+      "passedTestCases": 1,
+      "failedTestCases": 4,
+      "testCasesSummary": "1/5 Passed",
+      "runtimeDurationMs": 30000,
+      "rubricBreakdown": [
+        {
+          "id": "crit-01",
+          "name": "Tính đúng đắn chức năng & Test Cases (Functional Correctness)",
+          "weight": 40,
+          "maxScore": 40,
+          "earnedScore": 8,
+          "scoreScale10": 2,
+          "status": "poor",
+          "feedbackVi": "Thất bại 4/5 ca kiểm thử tự động. Mã nguồn nộp thiếu các xử lý nghiệp vụ theo đặc tả của bài \"Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms\".",
+          "feedbackEn": "Failed 4/5 test cases. Missing functional requirements for \"Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms\"."
+        },
+        {
+          "id": "crit-02",
+          "name": "Kiến trúc mã nguồn & Clean Code (Code Architecture & Design)",
+          "weight": 20,
+          "maxScore": 20,
+          "earnedScore": 4,
+          "scoreScale10": 2,
+          "status": "poor",
+          "feedbackVi": "Mã nguồn nộp sơ sài hoặc không có cấu trúc phân tầng chuẩn. Thiếu tách biệt giữa tầng Controller, Service và Repository.",
+          "feedbackEn": "No layered architecture detected."
+        },
+        {
+          "id": "crit-03",
+          "name": "Xử lý ngoại lệ, Dữ liệu biên & Độ tin cậy (Error & Edge Case Handling)",
+          "weight": 20,
+          "maxScore": 20,
+          "earnedScore": 3,
+          "scoreScale10": 1.5,
+          "status": "poor",
+          "feedbackVi": "Thiếu hoàn toàn cơ chế xử lý ngoại lệ, không bắt lỗi dữ liệu đầu vào hoặc lỗi kết nối.",
+          "feedbackEn": "Missing exception handling."
+        },
+        {
+          "id": "crit-04",
+          "name": "Chất lượng kiểm thử & Quy trình Git (Testing & Git Quality)",
+          "weight": 20,
+          "maxScore": 20,
+          "earnedScore": 9,
+          "scoreScale10": 4.5,
+          "status": "poor",
+          "feedbackVi": "Không có bộ Unit Test tự động đi kèm hoặc không phát hiện lịch sử commit mã nguồn hợp lệ.",
+          "feedbackEn": "No valid unit test suite detected."
+        }
+      ],
+      "testCaseResults": [
+        {
+          "id": "TC01",
+          "name": "TC01: Thiết kế cấu trúc CSDL chuẩn hóa bậc 3 (12 Tables 3NF Schema)",
+          "category": "functional",
+          "status": "passed",
+          "points": 8,
+          "maxPoints": 8,
+          "durationMs": 172,
+          "input": "Kiểm tra cấu trúc 12 bảng trong PostgreSQL",
+          "expectedOutput": "Lược đồ đạt chuẩn 3NF: Không phụ thuộc bắc cầu, không dư thừa",
+          "actualOutput": "Lược đồ đạt chuẩn 3NF: Không phụ thuộc bắc cầu, không dư thừa"
+        },
+        {
+          "id": "TC02",
+          "name": "TC02: Ràng buộc toàn vẹn khóa ngoại (Foreign Keys & Cascade Constraints)",
+          "category": "boundary",
+          "status": "failed",
+          "points": 0,
+          "maxPoints": 8,
+          "durationMs": 120,
+          "input": "Thực hiện xóa một lớp học mẫu có chứa bài tập liên quan",
+          "expectedOutput": "ON DELETE CASCADE hoặc RESTRICT kích hoạt bảo toàn toàn vẹn",
+          "actualOutput": "Trả về kết quả chưa đúng đặc tả của bài toán",
+          "errorMessage": "AssertionError: Expected criteria validation not met"
+        },
+        {
+          "id": "TC03",
+          "name": "TC03: Đánh chỉ mục B-Tree trên các trường lọc thường xuyên (status, created_at)",
+          "category": "performance",
+          "status": "failed",
+          "points": 0,
+          "maxPoints": 8,
+          "durationMs": 120,
+          "input": "CREATE INDEX idx_status_created ON grading_jobs(status, created_at)",
+          "expectedOutput": "Chỉ mục B-Tree tạo thành công, Index Scan thay thế Seq Scan",
+          "actualOutput": "Trả về kết quả chưa đúng đặc tả của bài toán",
+          "errorMessage": "AssertionError: Expected criteria validation not met"
+        },
+        {
+          "id": "TC04",
+          "name": "TC04: Đánh chỉ mục tổng hợp (Compound Index) tối ưu truy vấn đa điều kiện",
+          "category": "performance",
+          "status": "failed",
+          "points": 0,
+          "maxPoints": 8,
+          "durationMs": 120,
+          "input": "SELECT * FROM submissions WHERE class_code = $1 AND student_email = $2",
+          "expectedOutput": "Sử dụng Bitmap Index Scan trên Compound Index (class_code, student_email)",
+          "actualOutput": "Trả về kết quả chưa đúng đặc tả của bài toán",
+          "errorMessage": "AssertionError: Expected criteria validation not met"
+        },
+        {
+          "id": "TC05",
+          "name": "TC05: Kế hoạch thực thi truy vấn (EXPLAIN ANALYZE < 100ms trên 100,000 bản ghi)",
+          "category": "performance",
+          "status": "failed",
+          "points": 0,
+          "maxPoints": 8,
+          "durationMs": 30000,
+          "input": "EXPLAIN ANALYZE SELECT * FROM submissions JOIN grading_jobs ON ...",
+          "expectedOutput": "Execution Time = 42.15 ms (< ngưỡng yêu cầu 100ms)",
+          "actualOutput": "Trả về kết quả chưa đúng đặc tả của bài toán",
+          "errorMessage": "AssertionError: Expected criteria validation not met"
+        }
+      ],
+      "astAnalysis": {
+        "astDuplicationRate": 24.5,
+        "cyclomaticComplexity": 32,
+        "cleanCodeScore": 35,
+        "solidCompliance": "1/5 (Cần cải thiện)",
+        "detectedCodeSmells": [
+          "High Cyclomatic Complexity",
+          "Missing Exception Catch",
+          "Minimal Implementation"
+        ]
+      },
+      "overallFeedbackVi": "⚠️ BÀI NỘP CHƯA ĐẠT (Điểm: 24/100 — Xếp loại F): Hệ thống đã thực thi bộ 5 ca kiểm thử tự động của đề bài \"Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms\". Mã nguồn nộp sơ sài hoặc chưa cài đặt các chức năng cốt lõi. Chỉ vượt qua 1/5 test cases. Sinh viên vui lòng hoàn thiện đầy đủ các yêu cầu và nộp lại bài làm.",
+      "overallFeedbackEn": "⚠️ Submission did not meet minimum requirements (24/100 — Grade F). Passed 1/5 test cases. Please complete functional requirements and resubmit.",
+      "gradedAt": "2026-11-04T00:23:32.412Z"
+    }
+  },
+  {
     "id": 102,
     "studentName": "Lê Nguyễn Linh Nhi",
     "studentEmail": "lenguyenlinhnhi2110@gmail.com",

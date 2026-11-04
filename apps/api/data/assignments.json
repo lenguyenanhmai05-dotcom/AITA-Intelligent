@@ -1,5 +1,545 @@
 [
   {
+    "id": 7,
+    "classCode": "SWP391-SE1801",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Khởi tạo luồng xử lý dữ liệu chuẩn (Happy Path Input)",
+        "input": "ValidPayload { id: 1, action: \"EXECUTE\", status: \"PENDING\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Xử lý ngoại lệ dữ liệu sai định dạng (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Xác thực tính toàn vẹn dữ liệu và phân quyền truy cập",
+        "input": "UnauthenticatedRequest { user: \"guest\", permission: \"WRITE\" }",
+        "expectedOutput": "Status: 403 Forbidden, Access Denied",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC05: Kiểm tra hiệu năng tính toán nghiệp vụ (< 500ms)",
+        "input": "Mảng 5,000 phần tử đưa vào hàm xử lý thuật toán",
+        "expectedOutput": "Hoàn tất tính toán trong 120ms (< 500ms)",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Ghi nhận vết kiểm toán & Nhật ký thao tác (Audit Log)",
+        "input": "Thực hiện thao tác cập nhật trạng thái bản ghi",
+        "expectedOutput": "Audit log được ghi kèm timestamp và user ID tương ứng",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-11-15 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot9-10_Authentication_and_Security.pptx",
+    "createdAt": "2026-11-04T00:22:45.935Z",
+    "class": {
+      "className": "SWP391-SE1801"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 6,
+    "classCode": "SWP391-SE1801",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Khởi tạo luồng xử lý dữ liệu chuẩn (Happy Path Input)",
+        "input": "ValidPayload { id: 1, action: \"EXECUTE\", status: \"PENDING\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Xử lý ngoại lệ dữ liệu sai định dạng (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Xác thực tính toàn vẹn dữ liệu và phân quyền truy cập",
+        "input": "UnauthenticatedRequest { user: \"guest\", permission: \"WRITE\" }",
+        "expectedOutput": "Status: 403 Forbidden, Access Denied",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC05: Kiểm tra hiệu năng tính toán nghiệp vụ (< 500ms)",
+        "input": "Mảng 5,000 phần tử đưa vào hàm xử lý thuật toán",
+        "expectedOutput": "Hoàn tất tính toán trong 120ms (< 500ms)",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Ghi nhận vết kiểm toán & Nhật ký thao tác (Audit Log)",
+        "input": "Thực hiện thao tác cập nhật trạng thái bản ghi",
+        "expectedOutput": "Audit log được ghi kèm timestamp và user ID tương ứng",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-11-15 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot9-10_Authentication_and_Security.pptx",
+    "createdAt": "2026-11-04T00:22:45.869Z",
+    "class": {
+      "className": "SWP391-SE1801"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 5,
+    "classCode": "SWP391-SE1801",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Khởi tạo luồng xử lý dữ liệu chuẩn (Happy Path Input)",
+        "input": "ValidPayload { id: 1, action: \"EXECUTE\", status: \"PENDING\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Xử lý ngoại lệ dữ liệu sai định dạng (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Xác thực tính toàn vẹn dữ liệu và phân quyền truy cập",
+        "input": "UnauthenticatedRequest { user: \"guest\", permission: \"WRITE\" }",
+        "expectedOutput": "Status: 403 Forbidden, Access Denied",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC05: Kiểm tra hiệu năng tính toán nghiệp vụ (< 500ms)",
+        "input": "Mảng 5,000 phần tử đưa vào hàm xử lý thuật toán",
+        "expectedOutput": "Hoàn tất tính toán trong 120ms (< 500ms)",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Ghi nhận vết kiểm toán & Nhật ký thao tác (Audit Log)",
+        "input": "Thực hiện thao tác cập nhật trạng thái bản ghi",
+        "expectedOutput": "Audit log được ghi kèm timestamp và user ID tương ứng",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-11-15 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot9-10_Authentication_and_Security.pptx",
+    "createdAt": "2026-11-04T00:22:45.688Z",
+    "class": {
+      "className": "SWP391-SE1801"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 4,
+    "classCode": "SWP391-SE1801",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Khởi tạo luồng xử lý dữ liệu chuẩn (Happy Path Input)",
+        "input": "ValidPayload { id: 1, action: \"EXECUTE\", status: \"PENDING\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Xử lý ngoại lệ dữ liệu sai định dạng (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Xác thực tính toàn vẹn dữ liệu và phân quyền truy cập",
+        "input": "UnauthenticatedRequest { user: \"guest\", permission: \"WRITE\" }",
+        "expectedOutput": "Status: 403 Forbidden, Access Denied",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC05: Kiểm tra hiệu năng tính toán nghiệp vụ (< 500ms)",
+        "input": "Mảng 5,000 phần tử đưa vào hàm xử lý thuật toán",
+        "expectedOutput": "Hoàn tất tính toán trong 120ms (< 500ms)",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Ghi nhận vết kiểm toán & Nhật ký thao tác (Audit Log)",
+        "input": "Thực hiện thao tác cập nhật trạng thái bản ghi",
+        "expectedOutput": "Audit log được ghi kèm timestamp và user ID tương ứng",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-11-15 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot9-10_Authentication_and_Security.pptx",
+    "createdAt": "2026-11-04T00:22:44.639Z",
+    "class": {
+      "className": "SWP391-SE1801"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 3,
+    "classCode": "SWP391-SE1801",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Khởi tạo luồng xử lý dữ liệu chuẩn (Happy Path Input)",
+        "input": "ValidPayload { id: 1, action: \"EXECUTE\", status: \"PENDING\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Xử lý ngoại lệ dữ liệu sai định dạng (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Xác thực tính toàn vẹn dữ liệu và phân quyền truy cập",
+        "input": "UnauthenticatedRequest { user: \"guest\", permission: \"WRITE\" }",
+        "expectedOutput": "Status: 403 Forbidden, Access Denied",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC05: Kiểm tra hiệu năng tính toán nghiệp vụ (< 500ms)",
+        "input": "Mảng 5,000 phần tử đưa vào hàm xử lý thuật toán",
+        "expectedOutput": "Hoàn tất tính toán trong 120ms (< 500ms)",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Ghi nhận vết kiểm toán & Nhật ký thao tác (Audit Log)",
+        "input": "Thực hiện thao tác cập nhật trạng thái bản ghi",
+        "expectedOutput": "Audit log được ghi kèm timestamp và user ID tương ứng",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-11-15 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot9-10_Authentication_and_Security.pptx",
+    "createdAt": "2026-11-04T00:22:43.456Z",
+    "class": {
+      "className": "SWP391-SE1801"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
+    "id": 2,
+    "classCode": "SWP391-SE1801",
+    "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",
+    "type": "Assignment",
+    "description": "Thiết kế ứng dụng web hiện đại với Next.js App Router, React Server Components (RSC), tối ưu SEO, caching và Server Actions. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components.\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ TypeScript (Next.js) phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Khởi tạo luồng xử lý dữ liệu chuẩn (Happy Path Input)",
+        "input": "ValidPayload { id: 1, action: \"EXECUTE\", status: \"PENDING\" }",
+        "expectedOutput": "Status: 200 OK, Result: SUCCESS, processedAt != null",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Kiểm tra dữ liệu biên & Chuỗi rỗng (Empty / Boundary Input)",
+        "input": "EmptyPayload { id: null, action: \"\" }",
+        "expectedOutput": "Status: 400 Bad Request, ErrorCode: INVALID_PAYLOAD",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Xử lý ngoại lệ dữ liệu sai định dạng (Exception Recovery)",
+        "input": "MalformedPayload { corruptToken: true }",
+        "expectedOutput": "Status: 422 Unprocessable, Handled gracefully without crash",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Xác thực tính toàn vẹn dữ liệu và phân quyền truy cập",
+        "input": "UnauthenticatedRequest { user: \"guest\", permission: \"WRITE\" }",
+        "expectedOutput": "Status: 403 Forbidden, Access Denied",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC05: Kiểm tra hiệu năng tính toán nghiệp vụ (< 500ms)",
+        "input": "Mảng 5,000 phần tử đưa vào hàm xử lý thuật toán",
+        "expectedOutput": "Hoàn tất tính toán trong 120ms (< 500ms)",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Ghi nhận vết kiểm toán & Nhật ký thao tác (Audit Log)",
+        "input": "Thực hiện thao tác cập nhật trạng thái bản ghi",
+        "expectedOutput": "Audit log được ghi kèm timestamp và user ID tương ứng",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "TypeScript (Next.js)",
+    "deadline": "2026-11-13 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot9-10_Authentication_and_Security.pptx",
+    "createdAt": "2026-11-04T00:21:31.682Z",
+    "class": {
+      "className": "SWP391-SE1801"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
     "id": 1,
     "classCode": "SWP391-SE1801",
     "title": "Assignment 3: Xây dựng Kiến trúc Microservices & Redis BullMQ Queue",

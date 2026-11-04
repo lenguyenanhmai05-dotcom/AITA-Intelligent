@@ -91,6 +91,8 @@ Bạn là Trợ lý Giảng viên Cao cấp (Senior TA & Curriculum Architect) c
 Nhiệm vụ của bạn là: Đọc kỹ tài liệu/slide bài giảng được cung cấp, xác định chuẩn đầu ra (Course Learning Outcomes) và tạo ra:
 1. Đề bài lập trình có bối cảnh thực tế (Real-world Scenario) bám sát kiến thức trong bài.
 2. Danh sách yêu cầu chức năng (Functional Requirements) và ràng buộc kỹ thuật (Technical Constraints).
+3. Bộ test case mẫu (gồm cả test thông thường và edge-case).
+4. Ma trận Tiêu chí chấm điểm (Grading Rubric Matrix) chi tiết với tổng điểm 100% (tương đương 10.0 điểm).
 3. BỘ TEST CASES KIỂM THỬ TỰ ĐỘNG VỚI SỐ LƯỢNG LINH HOẠT VÀ PHÂN HÓA THEO ĐỘ KHÓ:
    - Nếu Độ khó là 'Easy': Sinh chính xác từ 4 đến 5 test cases.
    - Nếu Độ khó là 'Medium': Sinh chính xác từ 5 đến 7 test cases (khuyến nghị 6 test cases).
@@ -134,6 +136,20 @@ Hãy xuất ra DUY NHẤT một JSON hợp lệ theo đúng cấu trúc sau (kh�
       "expectedOutput": "...",
       "points": 2.0,
       "isHidden": false
+    },
+    {
+      "name": "TC02 - Edge Case / Boundary Value",
+      "input": "...",
+      "expectedOutput": "...",
+      "points": 2.0,
+      "isHidden": false
+    },
+    {
+      "name": "TC03 - Exception / Invalid Input Handling",
+      "input": "...",
+      "expectedOutput": "...",
+      "points": 2.0,
+      "isHidden": true
     }
   ],
   "gradingRubric": [
@@ -201,6 +217,7 @@ Hãy xuất ra DUY NHẤT một JSON hợp lệ theo đúng cấu trúc sau (kh�
 }
 
 /**
+ * Intelligent curriculum-based assignment generator
  * Intelligent curriculum-based assignment generator with dynamic test case counts (4 to 10 TCs)
  */
 function generateHeuristicAssignment(
@@ -254,10 +271,19 @@ function generateHeuristicAssignment(
   } else if (rawContent.includes('node') || rawContent.includes('express') || rawContent.includes('nest') || lang.toLowerCase().includes('node')) {
     topicName = 'Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices';
     contextScenario = 'Xây dựng hệ thống Backend hiệu năng cao với Node.js, xử lý I/O bất đồng bộ (Non-blocking I/O), phân quyền JWT và bảo mật API.';
+  } else if (rawContent.includes('redis') || rawContent.includes('queue') || rawContent.includes('bullmq')) {
+    topicName = 'Hàng Đợi Nhiệm Vụ Redis & Xử Lý Tác Vụ Bất Đồng Bộ (Asynchronous Queue)';
+    contextScenario = 'Thiết kế hệ thống Background Worker với Redis Queue, hỗ trợ cơ chế retry Exponential Backoff và phân bổ độ ưu tiên tác vụ.';
     topicKey = 'node-microservices';
   } else if (rawContent.includes('oop') || rawContent.includes('kế thừa') || rawContent.includes('polymorphism')) {
     topicName = 'Lập Trình Hướng Đối Tượng (OOP): Đa Hình, Đóng Gói & Trừu Tượng';
     contextScenario = 'Xây dựng mô hình phân cấp lớp (Class Hierarchy) mô phỏng hệ sinh thái phần mềm với tính đóng gói nghiêm ngặt.';
+  } else if (rawContent.includes('api') || rawContent.includes('rest') || rawContent.includes('controller')) {
+    topicName = 'Thiết Kế Kiến Trúc RESTful API & Xác Thực JWT Token';
+    contextScenario = 'Xây dựng bộ API chuẩn RESTful với phân quyền RBAC (Role-Based Access Control) và kiểm soát lỗi tập trung.';
+  } else if (rawContent.includes('git') || rawContent.includes('commit') || rawContent.includes('team')) {
+    topicName = 'Quy Chuẩn Làm Việc Nhóm Git Flow & Kiểm Soát Mã Nguồn Phân Tán';
+    contextScenario = 'Thực hành phân tích lịch sử commit Git, tối ưu hóa kích thước branch và phòng chống gian lận mã nguồn.';
     topicKey = 'oop';
   }
 

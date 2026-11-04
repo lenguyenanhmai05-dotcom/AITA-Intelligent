@@ -493,75 +493,36 @@ export const TEAM_REPORT_DATA_MAP: Record<string, TeamReportData> = {
 
 export const normalizeAssignmentGroup = (title: string): string => {
   const t = (title || '').toLowerCase().trim();
-  if (t === 'exam' || t.startsWith('exam') || t.includes('kiểm thử tự động') || t.includes('chấm điểm')) return 'exam_swp391';
-  if (t === 'assignment 3' || t.startsWith('assignment 3') || t.includes('spring boot') || t.includes('bullmq') || t.includes('microservices & redis')) return 'assignment_3_swp391';
-  if (t === 'assignment 1' || t.startsWith('assignment 1') || t.includes('java servlet') || t.includes('jsp')) return 'assignment_1_prj301';
-  if (t === 'assignment 2' || t.startsWith('assignment 2') || t.includes('asp.net') || t.includes('entity framework')) return 'assignment_2_prn231';
-  if (t.includes('mma301') || (t.includes('microservices') && t.includes('backend')) || t.includes('backend node.js') || t.includes('kiến trúc microservices')) return 'assignment_mma301';
-  if (t.includes('lab 2') || t.includes('docker sandbox')) return 'lab_2_docker';
-  if (t.includes('lab 5') || t.includes('database indexing')) return 'lab_5_indexing';
-  if (t.includes('final project') || t.includes('ast code analytics')) return 'final_project_swp391';
+  if (t === 'exam' || t === 'exam: kiểm thử tự động') return 'exam_swp391';
+  if (t === 'assignment 3' || t === 'asm 3') return 'assignment_3_swp391';
+  if (t === 'assignment 1' || t === 'asm 1') return 'assignment_1_prj301';
+  if (t === 'assignment 2' || t === 'asm 2') return 'assignment_2_prn231';
+  if (t === 'lab 2') return 'lab_2_docker';
+  if (t === 'lab 5') return 'lab_5_indexing';
   return t;
 };
 
 export const getFullAssignmentTitle = (rawTitle: string): string => {
-  const group = normalizeAssignmentGroup(rawTitle);
-  if (group === 'exam_swp391') return 'Exam: Hệ thống Kiểm thử Tự động & Quản lý Chấm điểm';
-  if (group === 'assignment_3_swp391') {
-    const t = (rawTitle || '').toLowerCase();
-    if (t.includes('spring boot')) return 'Assignment 3 — Spring Boot REST Service';
-    return 'Assignment 3: Xây dựng Kiến trúc Microservices & Redis BullMQ Queue';
-  }
-  if (group === 'assignment_1_prj301') return 'Assignment 1: Java Servlet & JSP Web Application with MySQL Database';
-  if (group === 'assignment_2_prn231') return 'Assignment 2: Xây dựng RESTful Web API với ASP.NET Core & Entity Framework';
-  if (group === 'assignment_mma301') return 'Bài Tập Lập Trình: Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices';
-  if (group === 'lab_2_docker') return 'Lab 2: Thiết lập Môi trường Docker Sandbox & Unit Tests Cơ bản';
-  if (group === 'lab_5_indexing') return 'Lab 5: Tối ưu hóa Database Indexing 12 Bảng 3NF & Caching < 100ms';
-  if (group === 'final_project_swp391') return 'Final Project: Nền tảng AST Code Analytics & Đánh Giá Đóng Góp Nhóm';
-  return rawTitle;
+  return (rawTitle || '').trim();
 };
 
-// Helper: Loại bỏ hoàn toàn các đề bài bị trùng lặp (giữ duy nhất 1 bài cho mỗi đề theo từng lớp hoặc phân lớp)
+// Helper: Loại bỏ bài nộp thực sự bị trùng lặp (chỉ lọc khi trùng đúng mã lớp và tiêu đề bài tập)
 export const dedupAssignments = (assignments: ClassAssignmentItem[]): ClassAssignmentItem[] => {
   if (!Array.isArray(assignments)) return [];
-
-  // 1. Phân loại các lớp con/section (ví dụ: MMA301-SE19B) theo nhóm đề bài
-  // Nếu đã có đề giao cho lớp chi tiết MMA301-SE19B, thì đề mẫu chung MMA301 sẽ tự động được loại bỏ
-  const sectionCourseMap = new Map<string, Set<string>>();
-  for (const item of assignments) {
-    if (!item) continue;
-    const c = (item.classCode || '').trim().toUpperCase();
-    if (c.includes('-')) {
-      const baseCourse = c.split('-')[0].trim();
-      const groupKey = normalizeAssignmentGroup(item.title || '');
-      if (!sectionCourseMap.has(groupKey)) {
-        sectionCourseMap.set(groupKey, new Set());
-      }
-      sectionCourseMap.get(groupKey)!.add(baseCourse);
-    }
-  }
 
   const seenKeys = new Set<string>();
   const result: ClassAssignmentItem[] = [];
 
   for (const item of assignments) {
     if (!item) continue;
-    const rawTitle = item.title || '';
-    const groupKey = normalizeAssignmentGroup(rawTitle);
+    const rawTitle = (item.title || '').trim();
+    if (!rawTitle) continue;
     const classKey = (item.classCode || '').trim().toUpperCase();
 
-    // Bỏ qua đề bài mẫu chung nếu lớp chi tiết thuộc môn đó đã có đề
-    if (!classKey.includes('-') && sectionCourseMap.get(groupKey)?.has(classKey)) {
-      continue;
-    }
-
-    const compositeKey = `${classKey}:::${groupKey}`;
+    const compositeKey = `${classKey}:::${rawTitle.toLowerCase()}`;
     if (!seenKeys.has(compositeKey)) {
       seenKeys.add(compositeKey);
-      result.push({
-        ...item,
-        title: getFullAssignmentTitle(rawTitle),
-      });
+      result.push(item);
     }
   }
   return result;
@@ -2092,20 +2053,39 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
       };
 
       setClassAssignments(prev => {
-        const baseCourse = newAsmClass.includes('-') ? newAsmClass.split('-')[0].trim().toUpperCase() : '';
-        const normGroup = normalizeAssignmentGroup(newAsmTitle);
-        const filtered = prev.filter(p => {
-          if (p.id === newAsm.id) return false;
-          // Purge generic base course assignment when a section-specific assignment is added
-          if (baseCourse && (p.classCode || '').trim().toUpperCase() === baseCourse) {
-            if (normalizeAssignmentGroup(p.title) === normGroup) return false;
-          }
-          return true;
-        });
-        const nextList = dedupAssignments([newAsm, ...filtered]);
+        const filtered = prev.filter(p => p.id !== newAsm.id && p.title.trim().toLowerCase() !== newAsm.title.trim().toLowerCase());
+        const nextList = [newAsm, ...filtered];
         try { localStorage.setItem('aita_class_assignments', JSON.stringify(nextList)); } catch {}
         return nextList;
       });
+
+      // Also trigger a re-fetch of /api/assignments to ensure DB sync
+      try {
+        const refreshRes = await fetch('/api/assignments');
+        const refreshJson = await refreshRes.json();
+        if (refreshJson.success && Array.isArray(refreshJson.data) && refreshJson.data.length > 0) {
+          const dbList: ClassAssignmentItem[] = refreshJson.data.map((item: any) => ({
+            id: String(item.id).startsWith('ASM-') ? String(item.id) : `ASM-${item.id}`,
+            classCode: normalizeClassCodeStr(item.class?.className || item.classCode || newAsmClass),
+            title: item.title,
+            description: item.description,
+            deadline: item.deadline ? new Date(item.deadline).toISOString().replace('T', ' ').slice(0, 16) : '2026-11-15 23:59',
+            type: item.type as any,
+            assignedBy: item.creator?.fullName || userFullName || 'TS. Nguyễn Văn Giảng',
+            createdAt: new Date(item.createdAt).toISOString().slice(0, 10),
+            allowedSubmissionType: item.allowedFormat || 'both',
+            rubric: item.rubric,
+            testCases: item.testCases,
+            difficulty: item.difficulty,
+            programmingLang: item.programmingLang,
+            sourceFileName: item.sourceFileName,
+            generatedByAi: Boolean(item.sourceFileName || item.rubric),
+            attachments: item.sourceFileName ? [{ name: item.sourceFileName, size: 'Slide bài học', type: 'pdf' }] : undefined,
+          }));
+          setClassAssignments(dbList);
+          try { localStorage.setItem('aita_class_assignments', JSON.stringify(dbList)); } catch {}
+        }
+      } catch {}
 
       setSelectedClassCode(newAsmClass);
       setShowCreateAssignmentModal(false);
@@ -5294,7 +5274,7 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                       });
                       const seen = new Set<string>();
                       return valid.filter(a => {
-                        const k = normalizeAssignmentGroup(a.title);
+                        const k = `${(a.classCode || '').trim().toUpperCase()}:::${(a.title || '').trim().toLowerCase()}`;
                         if (seen.has(k)) return false;
                         seen.add(k);
                         return true;
@@ -5367,22 +5347,9 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                   return true;
                 });
 
-                const tasksInClass = (() => {
-                  const targetList = studentSelectedClass === 'all'
-                    ? validStudentAssignments
-                    : validStudentAssignments.filter(a => doesClassMatch(a.classCode, studentSelectedClass));
-
-                  const seenTitles = new Set<string>();
-                  const deduped: ClassAssignmentItem[] = [];
-                  for (const a of targetList) {
-                    const groupKey = normalizeAssignmentGroup(a.title);
-                    if (!seenTitles.has(groupKey)) {
-                      seenTitles.add(groupKey);
-                      deduped.push(a);
-                    }
-                  }
-                  return deduped;
-                })();
+                const tasksInClass = studentSelectedClass === 'all'
+                  ? validStudentAssignments
+                  : validStudentAssignments.filter(a => doesClassMatch(a.classCode, studentSelectedClass));
                 const submittedTasks = tasksInClass.filter(asm =>
                   (selectedAssignmentId === asm.id && uploadedFiles.length > 0) || asm.id === 'ASM-SWP-01'
                 );
