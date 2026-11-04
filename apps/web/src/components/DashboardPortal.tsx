@@ -3696,6 +3696,87 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
       // Mô phỏng Worker chạy tiến trình chấm sau 4.5 giây
       setTimeout(() => {
+        const isDlqSimulation = Boolean(
+          (selectedFileName && (selectedFileName.toLowerCase().includes('dlq') || selectedFileName.toLowerCase().includes('crash') || selectedFileName.toLowerCase().includes('timeout') || selectedFileName.toLowerCase().includes('loi'))) ||
+          (submittedCodeText && (submittedCodeText.includes('TRIGGER_DLQ') || submittedCodeText.includes('triggerDeadLetterQueue') || (submittedCodeText.includes('while (true)') && submittedCodeText.includes('InfiniteLoop')))) ||
+          (submissionNotes && submissionNotes.toLowerCase().includes('dlq'))
+        );
+
+        if (isDlqSimulation) {
+          const dlqJobItem = {
+            id: 1000 + newDbId,
+            batchId: 1,
+            submissionId: newDbId,
+            studentName: cleanUserFullName,
+            submissionTitle: submitAssignmentTitle,
+            classCode: studentSubmitClassCode,
+            status: 'dead',
+            retryCount: 3,
+            runtimeDurationMs: 30124,
+            errorClassification: 'timeout: sandbox execution exceeded 30,000ms (Worker SIGKILL / Infinite Loop)',
+            stackTrace: 'FatalExecutionError: Docker Sandbox Execution Timeout (30000ms exceeded)\n    at Worker.processJob (/bullmq/gradingWorker.ts:114:15)\n    at DockerContainer.run (/sandbox/dockerRunner.ts:68:20)\n[BR-04 / BR-05] Retried 3 times (Exponential Backoff: 2s, 4s, 8s). Max attempts reached.\n[DLQ Isolation] Job routed to Dead-Letter Queue for Lecturer intervention.',
+            dismissed: false,
+            createdAt: new Date().toISOString(),
+          };
+
+          setDlqJobs(prev => [dlqJobItem, ...prev.filter(j => j.id !== dlqJobItem.id)]);
+
+          setUploadedFiles((prev) => {
+            const updated = prev.map((p) =>
+              p.id === submissionCode
+                ? {
+                    ...p,
+                    status: 'failed',
+                    score: '0 / 100',
+                    testCases: '0/6 Passed (Lỗi DLQ: Timeout 30s)',
+                    gradingReport: {
+                      overallScore: 0,
+                      scoreDisplay: '0 / 100',
+                      testCasesSummary: '0/6 Passed (DLQ Crash)',
+                      classificationVi: 'Thất bại (Cách ly vào DLQ)',
+                      classificationEn: 'Dead-Letter Queue Isolation',
+                      executionError: 'Timeout 30,000ms: Vòng lặp vô hạn hoặc treo Docker Sandbox.',
+                      runtimeDurationMs: 30124,
+                      failedTestCases: 6,
+                      passedTestCases: 0,
+                    },
+                    reviewStatus: 'pending',
+                    reviewComment: 'Tác vụ gặp lỗi Timeout và đã được chuyển vào Hàng Đợi Chết (DLQ) để Giảng viên kiểm tra.',
+                  }
+                : p
+            );
+            try { localStorage.setItem(STORAGE_KEY_STUDENT_UPLOADS, JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+
+          setAllSubmissions((prev) => {
+            const updated = prev.map((p) =>
+              (p.id === newDbId || String(p.id) === String(newDbId) || ((p.student || p.studentName) === cleanUserFullName && (p.title || p.assignment) === submitAssignmentTitle))
+                ? {
+                    ...p,
+                    status: 'failed',
+                    score: '0 / 100',
+                    testCases: '0/6 Passed (DLQ Crash)',
+                    reviewStatus: 'pending',
+                    reviewComment: 'Lỗi Timeout 30,000ms. Job đã chuyển sang Dead-Letter Queue (DLQ).',
+                  }
+                : p
+            );
+            try { localStorage.setItem(STORAGE_KEY_ALL_SUBMISSIONS, JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+
+          setSubmitSuccessMsg(
+            lang === 'vi'
+              ? `🚨 CẢNH BÁO: Bài nộp #${submissionCode} bị lỗi Timeout Sandbox (>30s) và đã thử lại 3 lần thất bại (BR-04 & BR-05). Tác vụ đã được tự động cách ly vào Hàng Đợi Chết (Dead-Letter Queue)! Giảng viên có thể vào tab "Giám Sát Hàng Đợi & DLQ" để xử lý/replay.`
+              : `🚨 WARNING: Submission #${submissionCode} encountered Timeout and exhausted 3 retries. Routed to Dead-Letter Queue (DLQ)!`
+          );
+
+          fetchDlqJobs();
+          fetchTelemetry();
+          return;
+        }
+
         const computedReport = evaluateCodeAgainstAssignment({
           codeText: submittedCodeText,
           assignmentTitle: submitAssignmentTitle,
@@ -11265,11 +11346,11 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
 
               {/* 4 Telemetry Metrics (Synchronized directly with active classes and submissions) */}
               {(() => {
-                const validQueueSubs = allSubmissions.filter(s => !isClassDeleted(s.classCode) && (allSystemClasses.length === 0 || allSystemClasses.some(c => c.code.toLowerCase() === (s.classCode || '').toLowerCase())));
-                const countWaiting = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status !== 'completed' && s.status !== 'failed' && s.status !== 'grading' && s.status !== 'graded').length;
-                const countActive = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status === 'grading' || s.status === 'active').length;
-                const countCompleted = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status === 'completed' || s.status === 'graded').length;
-                const countFailed = allSystemClasses.length === 0 ? 0 : validQueueSubs.filter(s => s.status === 'failed' || s.status === 'dead').length;
+                const validQueueSubs = allSubmissions.filter(s => !isClassDeleted(s.classCode));
+                const countWaiting = validQueueSubs.filter(s => s.status !== 'completed' && s.status !== 'failed' && s.status !== 'grading' && s.status !== 'graded').length;
+                const countActive = validQueueSubs.filter(s => s.status === 'grading' || s.status === 'active').length;
+                const countCompleted = validQueueSubs.filter(s => s.status === 'completed' || s.status === 'graded').length;
+                const countFailed = validQueueSubs.filter(s => s.status === 'failed' || s.status === 'dead').length;
 
                 return (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
@@ -11316,14 +11397,14 @@ export const DashboardPortal: React.FC<DashboardPortalProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {allSubmissions.length === 0 ? (
+                    {allSubmissions.filter(s => !isClassDeleted(s.classCode)).length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
                           {t.emptyQueue}
                         </td>
                       </tr>
                     ) : (
-                      [...allSubmissions].sort((a, b) => a.id - b.id).map((job, index) => {
+                      [...allSubmissions.filter(s => !isClassDeleted(s.classCode))].sort((a, b) => a.id - b.id).map((job, index) => {
                         let badgeBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9';
                         let badgeColor = 'var(--text-muted)';
                         let statusText = 'WAITING';

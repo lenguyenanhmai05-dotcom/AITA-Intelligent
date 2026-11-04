@@ -401,8 +401,72 @@ export const createSubmission = async (req: Request, res: Response) => {
         customTestCases: (matchedAssignment?.testCases as any[]) || req.body.customTestCases,
       });
 
+      const isDlqSimulation = Boolean(
+        (fileName && (fileName.toLowerCase().includes('dlq') || fileName.toLowerCase().includes('crash') || fileName.toLowerCase().includes('timeout') || fileName.toLowerCase().includes('loi'))) ||
+        (codeSnippet && (codeSnippet.includes('TRIGGER_DLQ') || codeSnippet.includes('triggerDeadLetterQueue') || codeSnippet.includes('FATAL_CRASH') || (codeSnippet.includes('while (true)') && codeSnippet.includes('InfiniteLoop')))) ||
+        (notes && notes.toLowerCase().includes('dlq')) ||
+        req.body.isDlq === true
+      );
+
       // Mô phỏng Worker chạy chấm bài theo hàng đợi sau 4.5 giây để thấy rõ tiến trình xử lý
       setTimeout(async () => {
+        if (isDlqSimulation) {
+          jobRecord.status = 'dead';
+          jobRecord.retryCount = 3;
+          jobRecord.runtimeDurationMs = 30124;
+          jobRecord.errorClassification = 'timeout: sandbox execution exceeded 30,000ms (Worker SIGKILL / Infinite Loop)';
+          jobRecord.stackTrace = 'FatalExecutionError: Docker Sandbox Execution Timeout (30000ms exceeded)\n    at Worker.processJob (/bullmq/gradingWorker.ts:114:15)\n    at DockerContainer.run (/sandbox/dockerRunner.ts:68:20)\n[BR-04 / BR-05] Retried 3 times (Exponential Backoff: 2s, 4s, 8s). Max attempts reached.\n[DLQ Isolation] Job routed to Dead-Letter Queue for Lecturer intervention.';
+          
+          newSubRecord.status = 'failed';
+          newSubRecord.score = '0 / 100';
+          newSubRecord.testCases = '0/6 Passed (Lỗi DLQ: Timeout 30,000ms)';
+          newSubRecord.gradingReport = {
+            overallScore: 0,
+            scoreDisplay: '0 / 100',
+            testCasesSummary: '0/6 Passed (DLQ Crash)',
+            classificationVi: 'Thất bại (Đưa vào Hàng Đợi Chết - DLQ)',
+            classificationEn: 'Dead-Letter Queue Isolation',
+            executionError: 'Timeout 30,000ms: Vòng lặp vô hạn hoặc treo Docker Sandbox.',
+            runtimeDurationMs: 30124,
+            failedTestCases: 6,
+            passedTestCases: 0,
+          };
+          persistSubmissionsToDisk();
+
+          try {
+            await prisma.gradingJob.upsert({
+              where: { id: jobRecord.id },
+              update: {
+                status: 'dead',
+                retryCount: 3,
+                runtimeDurationMs: 30124,
+                errorClassification: jobRecord.errorClassification,
+                stackTrace: jobRecord.stackTrace,
+              },
+              create: {
+                id: jobRecord.id,
+                batchId: 1,
+                submissionId,
+                studentName: newSubRecord.studentName,
+                submissionTitle: newSubRecord.title,
+                priority: (title?.includes('Exam') ? 'Exam' : 'Assignment'),
+                status: 'dead',
+                retryCount: 3,
+                runtimeDurationMs: 30124,
+                errorClassification: jobRecord.errorClassification,
+                stackTrace: jobRecord.stackTrace,
+              },
+            });
+            await prisma.submission.update({
+              where: { id: submissionId },
+              data: { submissionStatus: 'failed' },
+            }).catch(() => {});
+          } catch {}
+
+          console.log(`[BullMQ Worker Simulation] 🚨 Submission #${submissionId} failed 3 retries and was ISOLATED into Dead-Letter Queue (DLQ)!`);
+          return;
+        }
+
         newSubRecord.status = 'completed';
         newSubRecord.score = initialReport.scoreDisplay;
         newSubRecord.testCases = initialReport.testCasesSummary;

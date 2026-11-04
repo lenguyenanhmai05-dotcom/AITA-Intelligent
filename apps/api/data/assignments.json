@@ -1,5 +1,95 @@
 [
   {
+    "id": 8,
+    "classCode": "SWP391-SE1801 — Software Development Project",
+    "title": "Bài Tập Lập Trình: Phân Tích Cú Pháp AST & Thuật Toán Phát Hiện Thành Viên Ảo (Free-Rider)",
+    "type": "Assignment",
+    "description": "Xây dựng công cụ phân tích AST Code Parsing, tính toán Net LOC, lọc commit gian lận và đánh giá công bằng đóng góp nhóm. Đề bài được sinh tự động dựa trên tài liệu bài học của lớp SWP391-SE1801. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả 6 ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.\n\nYÊU CẦU CHỨC NĂNG (FUNCTIONAL REQUIREMENTS):\n1. Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của Phân Tích Cú Pháp AST & Thuật Toán Phát Hiện Thành Viên Ảo (Free-Rider).\n2. Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.\n3. Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.\n4. Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).\n\nRÀNG BUỘC KỸ THUẬT (TECHNICAL CONSTRAINTS):\n• Sử dụng ngôn ngữ Node.js phiên bản mới nhất, không dùng thư viện ngoài bị cấm.\n• Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.\n• Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.\n• Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.",
+    "rubric": [
+      {
+        "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
+        "weight": 40,
+        "maxScore": 4,
+        "description": "Vượt qua toàn bộ 6 ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker."
+      },
+      {
+        "criterion": "Cấu trúc mã nguồn & Thiết kế Clean Code",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY)."
+      },
+      {
+        "criterion": "Xử lý ngoại lệ & Dữ liệu biên (Error Handling)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error)."
+      },
+      {
+        "criterion": "Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)",
+        "weight": 20,
+        "maxScore": 2,
+        "description": "Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention."
+      }
+    ],
+    "testCases": [
+      {
+        "name": "TC01: Kết nối Git Tree & Bóc tách toàn bộ lịch sử Commits",
+        "input": "Clone repository qua token, phân tích commit DAG graph",
+        "expectedOutput": "Trích xuất chính xác danh sách Commits, Tác giả và SHA-1 Hash",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC02: Phân tích AST Parsing mã nguồn đa ngôn ngữ (Babel / TypeScript AST)",
+        "input": "Phân tích file mã nguồn thành cây cú pháp trừu tượng AST",
+        "expectedOutput": "Tạo thành công cây AST Node (Function, Class, Variables)",
+        "points": 2,
+        "isHidden": false
+      },
+      {
+        "name": "TC03: Tính toán số dòng mã thực tế Net LOC (Loại bỏ Comment & Blank)",
+        "input": "File mã nguồn 300 dòng gồm code, comment và dòng trống",
+        "expectedOutput": "Net LOC được tính chính xác, loại trừ hoàn toàn comment và blank",
+        "points": 1.5,
+        "isHidden": false
+      },
+      {
+        "name": "TC04: Phát hiện gian lận độ dài mã (Whitespace Padding & Format Inflation)",
+        "input": "Chèn nhiều khoảng trắng hoặc format lại toàn bộ file để tăng LOC",
+        "expectedOutput": "Chuẩn hóa AST diff, phát hiện gian lận và không cộng điểm dòng thừa",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC05: Phát hiện gian lận tự đảo ngược Commit (Self-Revert Spamming)",
+        "input": "Commit thêm mã rồi commit revert lại ngay sau đó",
+        "expectedOutput": "Phát hiện cặp commit đảo ngược (Self-revert pairs), trừ điểm gian lận",
+        "points": 1.5,
+        "isHidden": true
+      },
+      {
+        "name": "TC06: Tính toán độ hỗn loạn phân bố thời gian làm việc (Commit Entropy)",
+        "input": "Phân tích phân bố thời gian commit trong suốt thời gian đồ án",
+        "expectedOutput": "Chỉ số Entropy cao chứng minh đóng góp đều đặn theo tuần",
+        "points": 1.5,
+        "isHidden": false
+      }
+    ],
+    "difficulty": "Medium",
+    "programmingLang": "Node.js",
+    "deadline": "2026-11-15 23:59",
+    "allowedFormat": "both",
+    "sourceFileName": "Slot6_RestfulApi-with-Express-mongodb-and-mongoose.pptx",
+    "createdAt": "2026-11-04T01:02:06.295Z",
+    "class": {
+      "className": "SWP391-SE1801 — Software Development Project"
+    },
+    "creator": {
+      "fullName": "Lê Nguyễn Anh Mai",
+      "email": "lenguyenanhmai113@gmail.com"
+    }
+  },
+  {
     "id": 7,
     "classCode": "SWP391-SE1801",
     "title": "Bài Tập Lập Trình: Xây Dựng Ứng Dụng Web Full-stack Next.js & Server Components",

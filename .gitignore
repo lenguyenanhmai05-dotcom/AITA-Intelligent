@@ -46,3 +46,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Standalone test submission folders
+Bai_Lam_Test_Loi_DLQ/
