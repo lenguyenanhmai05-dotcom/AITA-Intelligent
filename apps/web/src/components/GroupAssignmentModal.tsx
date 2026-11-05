@@ -83,9 +83,10 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
       setTargetClass(classesList[0]);
     }
   }, [selectedClassCode, classesList, targetClass]);
-  const [deadline, setDeadline] = useState<string>('2026-11-15 23:59');
+  const [deadline, setDeadline] = useState<string>('2026-11-15 23:55');
   const [freeRiderThreshold, setFreeRiderThreshold] = useState<number>(10);
   const [minCommits, setMinCommits] = useState<number>(5);
+  const [topicMode, setTopicMode] = useState<'student_proposed' | 'teacher_assigned'>('student_proposed');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAiParsing, setIsAiParsing] = useState<boolean>(false);
@@ -95,65 +96,6 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
     studentCount: number;
   } | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-
-  // 3 standard default teams matching sample Excel (10 students across 3 teams)
-  const defaultTeams: TeamGroupItem[] = [
-    {
-      id: 'TG-1',
-      teamName: 'Nhóm 1',
-      projectTopic: 'AITA Intelligent - Nền Tảng Chấm Bài & Phân Tích Đóng Góp Git Tự Động',
-      topicType: 'teacher_assigned',
-      leader: 'Lê Nguyễn Anh Mai',
-      leaderMssv: 'SE180101',
-      members: ['Lê Nguyễn Anh Mai', 'Lê Nguyễn Linh Nhi', 'Nguyễn Tường Vy'],
-      memberDetails: [
-        { mssv: 'SE180101', name: 'Lê Nguyễn Anh Mai', email: 'maina.se180101@fpt.edu.vn', role: 'Leader' },
-        { mssv: 'SE180102', name: 'Lê Nguyễn Linh Nhi', email: 'nhilnl.se180102@fpt.edu.vn', role: 'Member' },
-        { mssv: 'SE180103', name: 'Nguyễn Tường Vy', email: 'vynt.se180103@fpt.edu.vn', role: 'Member' }
-      ],
-      gitUrl: 'https://github.com/lenguyenanhmai05/AITA-Intelligent',
-      branch: 'main',
-      status: 'approved',
-      classCode: 'SWP391-SE1801'
-    },
-    {
-      id: 'TG-2',
-      teamName: 'Nhóm 2',
-      projectTopic: 'Smart Logistics - Hệ Thống Quản Lý Kho Vận & Vận Chuyển',
-      topicType: 'student_proposed',
-      leader: 'Trần Minh Quân',
-      leaderMssv: 'SE180201',
-      members: ['Trần Minh Quân', 'Hoàng Văn Nam', 'Phạm Thị Dung', 'Đỗ Đức Anh'],
-      memberDetails: [
-        { mssv: 'SE180201', name: 'Trần Minh Quân', email: 'quantm.se180201@fpt.edu.vn', role: 'Leader' },
-        { mssv: 'SE180202', name: 'Hoàng Văn Nam', email: 'namhv.se180202@fpt.edu.vn', role: 'Member' },
-        { mssv: 'SE180203', name: 'Phạm Thị Dung', email: 'dungpt.se180203@fpt.edu.vn', role: 'Member' },
-        { mssv: 'SE180204', name: 'Đỗ Đức Anh', email: 'anhdd.se180204@fpt.edu.vn', role: 'Member' }
-      ],
-      gitUrl: 'https://github.com/smart-lms/smart-lms-platform',
-      branch: 'main',
-      status: 'approved',
-      classCode: 'SWP391-SE1801'
-    },
-    {
-      id: 'TG-3',
-      teamName: 'Nhóm 3',
-      projectTopic: 'E-Commerce AI - Sàn Thương Mại Điện Tử & Gợi Ý AI',
-      topicType: 'student_proposed',
-      leader: 'Phạm Hoàng Long',
-      leaderMssv: 'SE180301',
-      members: ['Phạm Hoàng Long', 'Vũ Quỳnh Anh', 'Ngô Quốc Bảo'],
-      memberDetails: [
-        { mssv: 'SE180301', name: 'Phạm Hoàng Long', email: 'longph.se180301@fpt.edu.vn', role: 'Leader' },
-        { mssv: 'SE180302', name: 'Vũ Quỳnh Anh', email: 'anhvq.se180302@fpt.edu.vn', role: 'Member' },
-        { mssv: 'SE180303', name: 'Ngô Quốc Bảo', email: 'baonq.se180303@fpt.edu.vn', role: 'Member' }
-      ],
-      gitUrl: 'https://github.com/ecommerce-ai/platform',
-      branch: 'main',
-      status: 'approved',
-      classCode: 'SWP391-SE1801'
-    }
-  ];
 
   const [teams, setTeams] = useState<TeamGroupItem[]>(() => {
     if (initialTeams && initialTeams.length > 0) {
@@ -170,11 +112,11 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
         return { ...t, classCode: t.classCode || targetClass };
       });
     }
-    return defaultTeams;
+    return [];
   });
 
   // Track expanded cards
-  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(() => new Set(['TG-1']));
+  const [expandedTeamIds, setExpandedTeamIds] = useState<Set<string>>(() => new Set());
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Manual add team form drawer
@@ -667,6 +609,7 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
       classCode: targetClass,
       projectTitle: computedTitle,
       description: computedDesc,
+      topicMode,
       deadline,
       freeRiderThreshold,
       minCommits,
@@ -740,20 +683,6 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
               <FolderGit2 size={23} />
             </div>
             <div>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.70rem',
-                fontWeight: 800,
-                color: 'var(--color-terracotta-700, #B5523A)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.6px',
-                marginBottom: '2px'
-              }}>
-                <Sparkles size={12} />
-                <span>{lang === 'vi' ? 'BÓC TÁCH EXCEL THÔNG MINH AI • PHÂN CÔNG ĐỒ ÁN NHÓM' : 'SMART AI EXCEL PARSER • TEAM PROJECT ALLOCATION'}</span>
-              </div>
               <h3 style={{ fontSize: '1.20rem', fontWeight: 800, margin: 0, color: isDark ? '#FFFAF6' : 'var(--color-terracotta-900, #7A3E2E)' }}>
                 {lang === 'vi' ? 'Giao Đề Bài Đồ Án Nhóm (SWP391 / Capstone Project)' : 'Assign Team Project & Capstone'}
               </h3>
@@ -896,6 +825,60 @@ export const GroupAssignmentModal: React.FC<GroupAssignmentModalProps> = ({
                       }}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* 4. Topic Mode: Sinh viên tự chọn chủ đề hay Giảng viên chỉ định */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-terracotta-800, #7A3E2E)', textTransform: 'uppercase', marginBottom: '5px' }}>
+                  {lang === 'vi' ? '4. Quy Định Đề Tài Đồ Án *' : '4. Project Topic Mode *'}
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTopicMode('student_proposed');
+                      setTeams(prev => prev.map(t => ({
+                        ...t,
+                        topicType: 'student_proposed',
+                        projectTopic: t.projectTopic.startsWith('AITA Intelligent') || t.projectTopic.startsWith('Smart Logistics') || t.projectTopic.startsWith('E-Commerce')
+                          ? 'Sinh viên tự do đề xuất đề tài (Giảng viên duyệt)'
+                          : t.projectTopic
+                      })));
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '7px 8px',
+                      borderRadius: '8px',
+                      border: topicMode === 'student_proposed' ? '1.5px solid var(--color-kumquat)' : (isDark ? '1px solid var(--border-light)' : '1px solid #F1C2A7'),
+                      background: topicMode === 'student_proposed' ? (isDark ? 'rgba(238, 107, 47, 0.2)' : '#FFF7ED') : 'transparent',
+                      color: topicMode === 'student_proposed' ? 'var(--color-kumquat)' : 'var(--text-muted)',
+                      fontSize: '0.74rem',
+                      fontWeight: topicMode === 'student_proposed' ? 800 : 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    💡 {lang === 'vi' ? 'SV tự chọn chủ đề' : 'Student Proposed'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTopicMode('teacher_assigned')}
+                    style={{
+                      flex: 1,
+                      padding: '7px 8px',
+                      borderRadius: '8px',
+                      border: topicMode === 'teacher_assigned' ? '1.5px solid var(--color-kumquat)' : (isDark ? '1px solid var(--border-light)' : '1px solid #F1C2A7'),
+                      background: topicMode === 'teacher_assigned' ? (isDark ? 'rgba(238, 107, 47, 0.2)' : '#FFF7ED') : 'transparent',
+                      color: topicMode === 'teacher_assigned' ? 'var(--color-kumquat)' : 'var(--text-muted)',
+                      fontSize: '0.74rem',
+                      fontWeight: topicMode === 'teacher_assigned' ? 800 : 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    📋 {lang === 'vi' ? 'GV giao sẵn đề' : 'Lecturer Assigned'}
+                  </button>
                 </div>
               </div>
             </div>

@@ -64,20 +64,31 @@ export const loadSubmissionsFromDisk = () => {
     if (fs.existsSync(SUBMISSIONS_FILE)) {
       const data = fs.readFileSync(SUBMISSIONS_FILE, 'utf-8');
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Lọc sạch toàn bộ sinh viên ảo / dữ liệu giả và chuẩn hóa tên sinh viên theo email
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) {
+          inMemorySubmissions = [];
+          inMemoryJobs = [];
+          return;
+        }
+        const deletedSet = getDeletedClassCodes();
+        // Lọc sạch toàn bộ sinh viên ảo / dữ liệu giả và các lớp đã bị xóa
         const cleaned = parsed
           .filter(
-            (s) =>
-              !s.studentName?.includes('Bảo') &&
-              !s.studentName?.includes('Long') &&
-              !s.studentName?.includes('Trí') &&
-              !s.studentName?.includes('Đạt') &&
-              !s.studentName?.includes('Duyên') &&
-              !s.studentName?.includes('Kiệt') &&
-              !s.studentName?.includes('Huy') &&
-              !s.studentName?.includes('Trang') &&
-              !s.studentName?.includes('Nam')
+            (s) => {
+              const cCode = s.classCode || s.title || '';
+              if (isClassCodeInDeletedSet(cCode, deletedSet)) return false;
+              return (
+                !s.studentName?.includes('Bảo') &&
+                !s.studentName?.includes('Long') &&
+                !s.studentName?.includes('Trí') &&
+                !s.studentName?.includes('Đạt') &&
+                !s.studentName?.includes('Duyên') &&
+                !s.studentName?.includes('Kiệt') &&
+                !s.studentName?.includes('Huy') &&
+                !s.studentName?.includes('Trang') &&
+                !s.studentName?.includes('Nam')
+              );
+            }
           )
           .map((s) => {
             const cleanEmail = (s.studentEmail || '').toLowerCase().trim();
@@ -100,91 +111,38 @@ export const loadSubmissionsFromDisk = () => {
             }
             return s;
           });
-        if (cleaned.length > 0) {
-          inMemorySubmissions = cleaned;
-          inMemoryJobs = cleaned.map((s, idx) => ({
-            id: s.jobId || (1000 + s.id) || (idx + 1),
-            batchId: 1,
-            submissionId: s.id,
-            studentName: s.studentName,
-            submissionTitle: s.title,
-            classCode: s.classCode || 'MMA301-SE19B',
-            status: s.status || 'completed',
-            retryCount: 0,
-            runtimeDurationMs: s.gradingReport?.runtimeDurationMs || 840,
-            errorClassification: null,
-            stackTrace: null,
-            dismissed: false,
-            dismissedBy: null,
-            dismissedAt: null,
-            reviewStatus: s.reviewStatus || 'pending',
-            reviewedBy: s.reviewedBy || null,
-            reviewedAt: s.reviewedAt || null,
-            reviewComment: s.reviewComment || '',
-            createdAt: new Date(s.submittedAt || Date.now()),
-          }));
-          return;
-        }
+
+        inMemorySubmissions = cleaned;
+        inMemoryJobs = cleaned.map((s, idx) => ({
+          id: s.jobId || (1000 + s.id) || (idx + 1),
+          batchId: 1,
+          submissionId: s.id,
+          studentName: s.studentName,
+          submissionTitle: s.title,
+          classCode: s.classCode || 'SWP391-SE1801',
+          status: s.status || 'completed',
+          retryCount: 0,
+          runtimeDurationMs: s.gradingReport?.runtimeDurationMs || 840,
+          errorClassification: null,
+          stackTrace: null,
+          dismissed: false,
+          dismissedBy: null,
+          dismissedAt: null,
+          reviewStatus: s.reviewStatus || 'pending',
+          reviewedBy: s.reviewedBy || null,
+          reviewedAt: s.reviewedAt || null,
+          reviewComment: s.reviewComment || '',
+          createdAt: new Date(s.submittedAt || Date.now()),
+        }));
+        return;
       }
     }
   } catch (err: any) {
     console.warn(`[Submissions] File load warning: ${err.message}`);
   }
 
-  // Danh sách bài nộp thật mặc định (Chỉ giữ dữ liệu thật, loại bỏ toàn bộ bài nộp giả)
-  inMemorySubmissions = [
-    {
-      id: 101,
-      studentName: 'Lê Nguyễn Anh Mai',
-      studentEmail: 'lenguyenanhmai05@gmail.com',
-      title: 'Exam: Hệ thống Kiểm thử Tự động & Quản lý Chấm điểm',
-      classCode: 'SWP391-SE1801',
-      status: 'completed',
-      reviewStatus: 'pending',
-      reviewComment: '',
-      reviewedAt: null,
-      method: 'GitHub: https://github.com/lenguyenanhmai05-dotcom/AITA-Intelligent.git (main)',
-      submittedAt: '2026-10-14 07:35',
-      notes: 'Bài làm chính thức đã vượt qua 9/10 test cases, tối ưu Redis queue.',
-      codeUrl: 'https://github.com/lenguyenanhmai05-dotcom/AITA-Intelligent.git',
-      score: '88 / 100',
-      testCases: '9/10 Passed',
-    },
-    {
-      id: 102,
-      studentName: 'Lê Nguyễn Anh Mai',
-      studentEmail: 'lenguyenanhmai05@gmail.com',
-      title: 'Assignment 3 — Spring Boot REST Service',
-      classCode: 'SWP391-SE1801',
-      status: 'completed',
-      reviewStatus: 'approved',
-      reviewComment: 'Cấu trúc controller và service rõ ràng, xử lý exception tốt.',
-      reviewedAt: '2026-10-19 18:30',
-      method: 'Tệp ZIP: assignment3_springboot.zip (2.4 MB)',
-      submittedAt: '2026-10-14 07:20',
-      notes: 'Nộp bổ sung mã nguồn đóng gói ZIP dự án Spring Boot.',
-      codeUrl: 'uploads/assignment3_springboot.zip',
-      score: '84 / 100',
-      testCases: '8/10 Passed',
-    },
-    {
-      id: 111,
-      studentName: 'Lê Nguyễn Linh Nhi',
-      studentEmail: 'lenguyenlinhnhi2110@gmail.com',
-      title: 'Assignment 2: Xây dựng RESTful Web API với ASP.NET Core & Entity Framework',
-      classCode: 'PRN231-SE1803',
-      status: 'completed',
-      reviewStatus: 'pending',
-      reviewComment: '',
-      reviewedAt: null,
-      method: 'Tệp ZIP: SDN302_ProjectReport_Group2.zip (7.61 MB)',
-      submittedAt: '2026-11-01 14:29',
-      notes: 'Em đã hoàn thiện trọn vẹn 10/10 test cases và cấu hình Docker container.',
-      codeUrl: 'uploads/SDN302_ProjectReport_Group2.zip',
-      score: '84 / 100',
-      testCases: '8/10 Passed',
-    },
-  ];
+  inMemorySubmissions = [];
+  inMemoryJobs = [];
   persistSubmissionsToDisk();
 };
 
@@ -1469,3 +1427,97 @@ export const resetAllGradingData = () => {
     }
   } catch {}
 };
+
+/**
+ * Xóa một bài nộp theo ID và dọn dẹp hàng đợi BullMQ tương ứng
+ */
+export const deleteSubmission = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const numId = Number(id);
+
+    // 1. Delete from database if available
+    try {
+      await prisma.gradingJob.deleteMany({
+        where: {
+          OR: [
+            { submissionId: numId },
+            { id: numId },
+            { id: 1000 + numId },
+          ]
+        }
+      }).catch(() => {});
+
+      await prisma.submission.deleteMany({
+        where: { id: numId }
+      }).catch(() => {});
+    } catch {}
+
+    // 2. Remove from inMemorySubmissions
+    inMemorySubmissions = inMemorySubmissions.filter(s => s.id !== numId && String(s.id) !== String(id));
+    persistSubmissionsToDisk();
+
+    // 3. Remove from inMemoryJobs
+    inMemoryJobs = inMemoryJobs.filter(j => j.submissionId !== numId && j.id !== numId && String(j.id) !== String(id));
+
+    return res.json({ success: true, message: `Đã xóa bài nộp #${id} thành công` });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * Xóa nhiều bài nộp đã chọn
+ */
+export const bulkDeleteSubmissions = async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ success: false, message: 'Danh sách ID không hợp lệ' });
+    }
+    const numIds = ids.map(x => Number(x)).filter(x => !isNaN(x));
+
+    try {
+      await prisma.gradingJob.deleteMany({
+        where: {
+          OR: [
+            { submissionId: { in: numIds } },
+            { id: { in: numIds } },
+          ]
+        }
+      }).catch(() => {});
+
+      await prisma.submission.deleteMany({
+        where: { id: { in: numIds } }
+      }).catch(() => {});
+    } catch {}
+
+    const idSet = new Set(ids.map(x => String(x)));
+    inMemorySubmissions = inMemorySubmissions.filter(s => !idSet.has(String(s.id)));
+    persistSubmissionsToDisk();
+
+    inMemoryJobs = inMemoryJobs.filter(j => !idSet.has(String(j.submissionId)) && !idSet.has(String(j.id)));
+
+    return res.json({ success: true, message: `Đã xóa ${ids.length} bài nộp thành công` });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * Xóa toàn bộ bài nộp và dọn dẹp hàng đợi BullMQ
+ */
+export const clearAllSubmissions = async (_req: Request, res: Response) => {
+  try {
+    try {
+      await prisma.gradingJob.deleteMany({}).catch(() => {});
+      await prisma.submission.deleteMany({}).catch(() => {});
+    } catch {}
+
+    resetAllGradingData();
+    return res.json({ success: true, message: 'Đã dọn dẹp toàn bộ bài nộp và hàng đợi' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+

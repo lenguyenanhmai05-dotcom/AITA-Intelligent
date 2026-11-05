@@ -52,13 +52,19 @@ export async function generateAssignmentFromLecture(
 
   let extractedText = options.topicOrText || '';
   let pdfBuffer: Buffer | null = null;
+  let imageBuffer: Buffer | null = null;
+  let imageMime: string | null = null;
 
   // 1. Process uploaded file if provided
   if (options.fileBuffer && options.fileBuffer.length > 0) {
     const mime = options.mimeType || '';
     const name = (options.fileName || '').toLowerCase();
 
-    if (mime.includes('pdf') || name.endsWith('.pdf')) {
+    if (mime.includes('image') || name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp')) {
+      imageBuffer = options.fileBuffer;
+      imageMime = mime.includes('png') ? 'image/png' : 'image/jpeg';
+      console.log(`[AI Service] Detected uploaded exam image (${options.fileName}, size: ${options.fileBuffer.length} bytes)`);
+    } else if (mime.includes('pdf') || name.endsWith('.pdf')) {
       pdfBuffer = options.fileBuffer;
       try {
         const parsed = await (pdfParse as any)(options.fileBuffer);
@@ -87,95 +93,101 @@ export async function generateAssignmentFromLecture(
       });
 
       const promptInstructions = `
-Bạn là Trợ lý Giảng viên Cao cấp (Senior TA & Curriculum Architect) của trường Đại học (môn học Kỹ thuật Phần mềm / Lập trình FPT University).
-Nhiệm vụ của bạn là: Đọc kỹ tài liệu/slide bài giảng được cung cấp, xác định chuẩn đầu ra (Course Learning Outcomes) và tạo ra:
-1. Đề bài lập trình có bối cảnh thực tế (Real-world Scenario) bám sát kiến thức trong bài.
-2. Danh sách yêu cầu chức năng (Functional Requirements) và ràng buộc kỹ thuật (Technical Constraints).
-3. Bộ test case mẫu (gồm cả test thông thường và edge-case).
-4. Ma trận Tiêu chí chấm điểm (Grading Rubric Matrix) chi tiết với tổng điểm 100% (tương đương 10.0 điểm).
-3. BỘ TEST CASES KIỂM THỬ TỰ ĐỘNG VỚI SỐ LƯỢNG LINH HOẠT VÀ PHÂN HÓA THEO ĐỘ KHÓ:
-   - Nếu Độ khó là 'Easy': Sinh chính xác từ 4 đến 5 test cases.
-   - Nếu Độ khó là 'Medium': Sinh chính xác từ 5 đến 7 test cases (khuyến nghị 6 test cases).
-   - Nếu Độ khó là 'Hard' hoặc Loại bài là 'Exam': Sinh chính xác từ 8 đến 10 test cases.
-   - Mỗi test case phải gắn liền với nghiệp vụ của đề bài: có tên rõ ràng (TC01 - TC...), input thực tế, expectedOutput cụ thể, và điểm số (points) sao cho TỔNG ĐIỂM TẤT CẢ TEST CASES CỘNG LẠI BẰNG CHÍNH XÁC 10.0 ĐIỂM.
-   - Phải có sự phân hóa độ khó: kiểm tra luồng chuẩn (Happy Path), kiểm tra dữ liệu biên (Boundary/Empty), kiểm tra bảo mật/xác thực (Security), kiểm tra xử lý lỗi ngoại lệ (Exception Handling) với ít nhất 1-3 test cases ẩn ("isHidden": true) để chống gian lận.
-4. Ma trận Tiêu chí chấm điểm (Grading Rubric Matrix) chi tiết 4 tiêu chí chuẩn hóa với tổng điểm 100% (tương đương 10.0 điểm):
-   - Tính đúng đắn chức năng & Test Cases (40% - 4.0đ)
-   - Cấu trúc mã nguồn & Clean Code (20% - 2.0đ)
-   - Xử lý ngoại lệ & Dữ liệu biên (20% - 2.0đ)
-   - Chất lượng kiểm thử & Quy trình Git (20% - 2.0đ)
+Bạn là Trưởng bộ môn Khảo thí & Giảng viên Chuyên gia môn Lập trình Hướng đối tượng Java OOP (PRO192 / Practical Exam) của trường Đại học.
+Nhiệm vụ của bạn là: Đọc kỹ hình ảnh đề thi (chứa biểu đồ UML, các lớp, thuộc tính, phương thức, ràng buộc nghiệp vụ) hoặc văn bản mô tả đề thi để tạo ra:
+1. assignmentTitle: Tiêu đề đề thi Java OOP chuyên nghiệp (ví dụ: "Practical Exam: Lập Trình Hướng Đối Tượng Java OOP (PRO192)").
+2. problemStatement: Tóm tắt bài toán thực tế và mô tả các Question trong đề thi.
+3. functionalRequirements: Danh sách yêu cầu chi tiết phân tách rõ theo từng câu hỏi thực tế trong đề thi (Question 1, Question 2, Question 3... tùy theo đề bài cung cấp):
+   - Phân tích chi tiết từng class, thuộc tính, constructor, getter/setter, logic phương thức, tính kế thừa và đa hình theo đúng đề thi.
+4. technicalConstraints: Ràng buộc kỹ thuật bắt buộc theo UML đề thi (ngôn ngữ Java OOP, tên package, tên class, visibility private/public, clean code).
+5. sampleTestCases: BỘ TEST CASES BÁM SÁT TỪNG CÂU HỎI TRONG ĐỀ THI VỚI TỔNG ĐIỂM CHÍNH XÁC 10.0 ĐIỂM:
+   - Tùy theo số lượng câu hỏi và yêu cầu phương thức trong đề bài thực tế để trích xuất số lượng Test Cases tương ứng (không giới hạn số lượng cố định, tùy thuộc vào độ dài và cấu trúc đề).
+   - Phân bổ điểm cho từng test case hợp lý sao cho TỔNG ĐIỂM TẤT CẢ CÁC TEST CASES CỘNG LẠI CHÍNH XÁC BẰNG 10.0 ĐIỂM (thang điểm 10).
+   - Mỗi test case phải có:
+     + name: Đánh dấu rõ câu hỏi, ví dụ: "[Q1] TC01: Kiểm tra Person.getName() in hoa (1.5đ)", "[Q2] TC02: Kiểm tra SpecChair.setType() (2.0đ)"...
+     + input: Đoạn code Java mẫu để gọi hàm
+     + expectedOutput: Giá trị kỳ vọng chính xác từng ký tự theo đề bài (ví dụ: "ALEX", "John,4.0", "black,8,discount")
+     + points: Số điểm tương ứng (tổng tất cả test cases = 10.0đ)
+     + isHidden: false
 
 Yêu cầu tham số:
-- Ngôn ngữ lập trình ưu tiên: ${options.programmingLang || 'Java'}
+- Ngôn ngữ lập trình: Java (OOP)
 - Độ khó: ${options.difficulty || 'Medium'}
-- Loại bài tập: ${options.taskType || 'Assignment'}
-- Lớp học mục tiêu: ${options.targetClass || 'SWP391'}
+- Loại bài tập: ${options.taskType || 'Exam'}
+- Lớp học mục tiêu: ${options.targetClass || 'PRO192'}
 ${options.customInstructions ? `- Ghi chú riêng của giảng viên: ${options.customInstructions}` : ''}
 
 Hãy xuất ra DUY NHẤT một JSON hợp lệ theo đúng cấu trúc sau (không kèm markdown):
 {
-  "assignmentTitle": "Tên bài tập súc tích, chuyên nghiệp",
+  "assignmentTitle": "Practical Exam: Lập Trình Hướng Đối Tượng Java OOP (PRO192)",
   "difficulty": "${options.difficulty || 'Medium'}",
-  "programmingLang": "${options.programmingLang || 'Java'}",
-  "taskType": "${options.taskType || 'Assignment'}",
-  "problemStatement": "Mô tả bối cảnh bài toán, đặt vấn đề kinh doanh thực tế và mục tiêu sinh viên cần hoàn thành...",
+  "programmingLang": "Java (OOP)",
+  "taskType": "${options.taskType || 'Exam'}",
+  "problemStatement": "...",
   "functionalRequirements": [
-    "Yêu cầu chức năng 1...",
-    "Yêu cầu chức năng 2...",
-    "Yêu cầu chức năng 3..."
+    "Question 1 (5.0 điểm): ...",
+    "Question 2 (5.0 điểm): ..."
   ],
   "technicalConstraints": [
-    "Cấu trúc thư mục chuẩn...",
-    "Áp dụng nguyên lý OOP / Design Pattern...",
-    "Xử lý ngoại lệ (Exception Handling)..."
+    "Ngôn ngữ: Java (JDK 17/21)...",
+    "Đặt đúng tên Class và phương thức theo biểu đồ UML..."
   ],
   "sampleTestCases": [
     {
-      "name": "TC01 - Basic Valid Input",
-      "input": "...",
-      "expectedOutput": "...",
+      "name": "[Q1] TC01: Kiểm tra Person.getName() in hoa",
+      "input": "Person p = new Person(\"alex\", 2.5); p.getName()",
+      "expectedOutput": "\"ALEX\"",
+      "points": 1.5,
+      "isHidden": false
+    },
+    {
+      "name": "[Q1] TC02: Định dạng Person.toString() không khoảng trắng",
+      "input": "new Person(\"John\", 4.0).toString()",
+      "expectedOutput": "\"John,4.0\"",
+      "points": 1.5,
+      "isHidden": false
+    },
+    {
+      "name": "[Q1] TC03: Tăng ngày nghỉ setSickLeave cộng dồn",
+      "input": "Person p = new Person(\"Mary\", 3.0); p.setSickLeave(1.5); p.toString()",
+      "expectedOutput": "\"Mary,4.5\"",
       "points": 2.0,
       "isHidden": false
     },
     {
-      "name": "TC02 - Edge Case / Boundary Value",
-      "input": "...",
-      "expectedOutput": "...",
-      "points": 2.0,
+      "name": "[Q2] TC04: Lớp cha Chair (getColor, getQuantity, toString)",
+      "input": "new Chair(\"red\", 4).toString()",
+      "expectedOutput": "\"red,4\"",
+      "points": 1.5,
       "isHidden": false
     },
     {
-      "name": "TC03 - Exception / Invalid Input Handling",
-      "input": "...",
-      "expectedOutput": "...",
+      "name": "[Q2] TC05: Lớp con SpecChair.getType() cắt bỏ ký tự cuối",
+      "input": "new SpecChair(\"brown\", 2, \"gaming\").getType()",
+      "expectedOutput": "\"gamin\"",
+      "points": 1.5,
+      "isHidden": false
+    },
+    {
+      "name": "[Q2] TC06: Logic SpecChair.setType() theo quantity > 5",
+      "input": "SpecChair sc = new SpecChair(\"black\", 8, \"old\"); sc.setType(); sc.toString()",
+      "expectedOutput": "\"black,8,discount\"",
       "points": 2.0,
-      "isHidden": true
+      "isHidden": false
     }
   ],
   "gradingRubric": [
     {
-      "criterion": "Tính đúng đắn chức năng (Functional Correctness)",
-      "weight": 40,
-      "maxScore": 4.0,
-      "description": "Vượt qua toàn bộ bộ test case kiểm thử tự động trên Worker"
+      "criterion": "Question 1: Cấu trúc & Logic Class Person (50%)",
+      "weight": 50,
+      "maxScore": 5.0,
+      "description": "Vượt qua toàn bộ 3 test case kiểm thử của Question 1 (5.0 điểm)"
     },
     {
-      "criterion": "Cấu trúc mã nguồn & Clean Code (Code Architecture)",
-      "weight": 20,
-      "maxScore": 2.0,
-      "description": "Thiết kế lớp đúng chuẩn OOP, tuân thủ naming convention và tính đóng gói"
-    },
-    {
-      "criterion": "Xử lý ngoại lệ & Tính tin cậy (Error & Edge Case Handling)",
-      "weight": 20,
-      "maxScore": 2.0,
-      "description": "Bắt lỗi nhập liệu, xử lý null/empty, không gây crash chương trình"
-    },
-    {
-      "criterion": "Kiểm thử tự động & Đóng góp Git (Testing & Git Commits)",
-      "weight": 20,
-      "maxScore": 2.0,
-      "description": "Bộ Unit Test đầy đủ, commit log rõ ràng, không gian lận LOC"
+      "criterion": "Question 2: Kế thừa & Xử lý Chuỗi SpecChair (50%)",
+      "weight": 50,
+      "maxScore": 5.0,
+      "description": "Vượt qua toàn bộ 3 test case kiểm thử của Question 2 (5.0 điểm)"
     }
   ]
 }
@@ -183,8 +195,15 @@ Hãy xuất ra DUY NHẤT một JSON hợp lệ theo đúng cấu trúc sau (kh�
 
       const contents: any[] = [{ text: promptInstructions }];
 
-      // If we have a PDF buffer, attach it directly as inlineData to Gemini!
-      if (pdfBuffer) {
+      // Attach image buffer if image uploaded, or PDF buffer
+      if (imageBuffer && imageMime) {
+        contents.push({
+          inlineData: {
+            data: imageBuffer.toString('base64'),
+            mimeType: imageMime,
+          },
+        });
+      } else if (pdfBuffer) {
         contents.push({
           inlineData: {
             data: pdfBuffer.toString('base64'),
@@ -193,7 +212,7 @@ Hãy xuất ra DUY NHẤT một JSON hợp lệ theo đúng cấu trúc sau (kh�
         });
       } else if (extractedText.trim().length > 0) {
         contents.push({
-          text: `NỘI DUNG TÀI LIỆU BÀI GIẢNG / SLIDE:\n\n${extractedText.slice(0, 50000)}`,
+          text: `NỘI DUNG TÀI LIỆU / ĐỀ BÀI:\n\n${extractedText.slice(0, 50000)}`,
         });
       }
 
@@ -224,19 +243,23 @@ function generateHeuristicAssignment(
   options: GenerateAssignmentOptions,
   extractedText: string
 ): GeneratedAssignmentResult {
-  const lang = options.programmingLang || 'Java';
+  const lang = options.programmingLang || 'Java (OOP)';
   const diff = options.difficulty || 'Medium';
-  const taskType = options.taskType || 'Assignment';
-  const cls = options.targetClass || 'SWP391-SE1801';
+  const taskType = options.taskType || 'Exam';
+  const cls = options.targetClass || 'PRO192';
 
   // Determine topic from text or file name
   const rawContent = (extractedText + ' ' + (options.fileName || '') + ' ' + (options.topicOrText || '')).toLowerCase();
 
-  let topicName = 'Hệ Thống Phân Tán & Quản Lý Dữ Liệu';
-  let contextScenario = 'Xây dựng dịch vụ quản lý dữ liệu an toàn, hỗ trợ xử lý đồng thời và kiểm thử tự động.';
-  let topicKey = 'generic';
+  let topicName = 'Lập Trình Hướng Đối Tượng Java OOP (PRO192)';
+  let contextScenario = 'Xây dựng hệ thống phân cấp lớp (Class Hierarchy), tuân thủ nghiêm ngặt tính đóng gói Encapsulation, kế thừa Inheritance và xử lý logic chuỗi.';
+  let topicKey = 'java-oop';
 
-  if (rawContent.includes('react native') || lang.toLowerCase().includes('react native')) {
+  if (rawContent.includes('chair') || rawContent.includes('person') || rawContent.includes('pro192') || lang.includes('Java')) {
+    topicName = 'Lập Trình Hướng Đối Tượng Java OOP (PRO192)';
+    contextScenario = 'Xây dựng lớp Person độc lập và phân cấp kế thừa Chair -> SpecChair đáp ứng các ca kiểm thử tự động.';
+    topicKey = 'java-oop';
+  } else if (rawContent.includes('react native') || lang.toLowerCase().includes('react native')) {
     topicName = 'Phát Triển Ứng Dụng Di Động React Native & Tối Ưu State Management';
     contextScenario = 'Xây dựng ứng dụng di động đa nền tảng với React Native, tích hợp React Navigation, Offline Storage và kết nối REST API bảo mật.';
     topicKey = 'react-native';
@@ -271,40 +294,51 @@ function generateHeuristicAssignment(
   } else if (rawContent.includes('node') || rawContent.includes('express') || rawContent.includes('nest') || lang.toLowerCase().includes('node')) {
     topicName = 'Thiết Kế Hệ Thống Backend Node.js & Kiến Trúc Microservices';
     contextScenario = 'Xây dựng hệ thống Backend hiệu năng cao với Node.js, xử lý I/O bất đồng bộ (Non-blocking I/O), phân quyền JWT và bảo mật API.';
-  } else if (rawContent.includes('redis') || rawContent.includes('queue') || rawContent.includes('bullmq')) {
-    topicName = 'Hàng Đợi Nhiệm Vụ Redis & Xử Lý Tác Vụ Bất Đồng Bộ (Asynchronous Queue)';
-    contextScenario = 'Thiết kế hệ thống Background Worker với Redis Queue, hỗ trợ cơ chế retry Exponential Backoff và phân bổ độ ưu tiên tác vụ.';
     topicKey = 'node-microservices';
-  } else if (rawContent.includes('oop') || rawContent.includes('kế thừa') || rawContent.includes('polymorphism')) {
-    topicName = 'Lập Trình Hướng Đối Tượng (OOP): Đa Hình, Đóng Gói & Trừu Tượng';
-    contextScenario = 'Xây dựng mô hình phân cấp lớp (Class Hierarchy) mô phỏng hệ sinh thái phần mềm với tính đóng gói nghiêm ngặt.';
-  } else if (rawContent.includes('api') || rawContent.includes('rest') || rawContent.includes('controller')) {
-    topicName = 'Thiết Kế Kiến Trúc RESTful API & Xác Thực JWT Token';
-    contextScenario = 'Xây dựng bộ API chuẩn RESTful với phân quyền RBAC (Role-Based Access Control) và kiểm soát lỗi tập trung.';
-  } else if (rawContent.includes('git') || rawContent.includes('commit') || rawContent.includes('team')) {
-    topicName = 'Quy Chuẩn Làm Việc Nhóm Git Flow & Kiểm Soát Mã Nguồn Phân Tán';
-    contextScenario = 'Thực hành phân tích lịch sử commit Git, tối ưu hóa kích thước branch và phòng chống gian lận mã nguồn.';
-    topicKey = 'oop';
-  }
-
-  // Determine dynamic test case count based on difficulty and taskType:
-  // - Easy: 4 test cases
-  // - Medium: 6 test cases
-  // - Hard: 8 test cases
-  // - Exam: 10 test cases
-  let targetCount = 6;
-  if (taskType === 'Exam') {
-    targetCount = 10;
-  } else if (diff === 'Hard') {
-    targetCount = 8;
-  } else if (diff === 'Easy') {
-    targetCount = 4;
   } else {
-    targetCount = 6;
+    topicKey = 'java-oop';
   }
 
-  // Pre-defined 10 test cases pools per topic
-  const testPools: Record<string, Array<{ name: string; input: string; expected: string; isHidden?: boolean }>> = {
+  // Pre-defined test cases pools per topic
+  const testPools: Record<string, Array<{ name: string; input: string; expected: string; points?: number; isHidden?: boolean }>> = {
+    'java-oop': [
+      {
+        name: '[Q1] TC01: Khởi tạo Person & getName() in hoa (1.5đ)',
+        input: 'Person p = new Person("alex", 2.5); p.getName()',
+        expected: '"ALEX"',
+        points: 1.5,
+      },
+      {
+        name: '[Q1] TC02: Định dạng Person.toString() không khoảng trắng (1.5đ)',
+        input: 'new Person("John", 4.0).toString()',
+        expected: '"John,4.0"',
+        points: 1.5,
+      },
+      {
+        name: '[Q1] TC03: Tăng ngày nghỉ setSickLeave(upValue) cộng dồn (2.0đ)',
+        input: 'Person p = new Person("Mary", 3.0); p.setSickLeave(1.5); p.toString()',
+        expected: '"Mary,4.5"',
+        points: 2.0,
+      },
+      {
+        name: '[Q2] TC04: Lớp cha Chair (getColor, getQuantity, toString) (1.5đ)',
+        input: 'new Chair("red", 4).toString()',
+        expected: '"red,4"',
+        points: 1.5,
+      },
+      {
+        name: '[Q2] TC05: Lớp con SpecChair.getType() cắt bỏ ký tự cuối (1.5đ)',
+        input: 'new SpecChair("brown", 2, "gaming").getType()',
+        expected: '"gamin"',
+        points: 1.5,
+      },
+      {
+        name: '[Q2] TC06: Logic SpecChair.setType() theo quantity > 5 (2.0đ)',
+        input: 'SpecChair sc = new SpecChair("black", 8, "old"); sc.setType(); sc.toString()',
+        expected: '"black,8,discount"',
+        points: 2.0,
+      },
+    ],
     'redis-queue': [
       { name: 'TC01: Khởi tạo kết nối Redis Cluster & BullMQ Client', input: 'new Queue("grading-queue", { connection: redisConfig })', expected: 'Redis Client kết nối PING/PONG thành công, Hàng đợi sẵn sàng' },
       { name: 'TC02: Đưa tác vụ vào hàng đợi (Enqueue Job với Payload & Priority)', input: 'queue.add("grade-submission", { subId: "SUB-101", priority: 1 })', expected: 'Trả về Job ID #101 với trạng thái "waiting", payload tuần tự hóa JSON' },
@@ -379,8 +413,19 @@ function generateHeuristicAssignment(
     ]
   };
 
-  const pool = testPools[topicKey] || testPools['generic'];
-  const selectedPool = pool.slice(0, targetCount);
+  let targetCount = 6;
+  if (taskType === 'Exam') {
+    targetCount = 10;
+  } else if (diff === 'Hard') {
+    targetCount = 8;
+  } else if (diff === 'Easy') {
+    targetCount = 4;
+  } else {
+    targetCount = 6;
+  }
+
+  const pool = testPools[topicKey] || testPools['java-oop'];
+  const selectedPool = topicKey === 'java-oop' ? pool : pool.slice(0, targetCount);
 
   // Allocate points so they sum exactly to 10.0
   const pointsDistribution: Record<number, number[]> = {
@@ -399,57 +444,89 @@ function generateHeuristicAssignment(
     name: item.name,
     input: item.input,
     expectedOutput: item.expected,
-    points: pts[idx] || 1.0,
+    points: item.points !== undefined ? item.points : (pts[idx] || 1.0),
     isHidden: Boolean(item.isHidden),
   }));
 
-  const baseTitle = `${taskType === 'Exam' ? 'Đề Thi Thực Hành' : 'Bài Tập Lập Trình'}: ${topicName}`;
+  const baseTitle = topicKey === 'java-oop'
+    ? 'Practical Exam: Lập Trình Hướng Đối Tượng Java OOP (PRO192)'
+    : `${taskType === 'Exam' ? 'Đề Thi Thực Hành' : 'Bài Tập Lập Trình'}: ${topicName}`;
+
+  const gradingRubric: RubricCriterion[] = topicKey === 'java-oop'
+    ? [
+        {
+          criterion: 'Question 1: Cấu trúc & Logic Class Person (50%)',
+          weight: 50,
+          maxScore: 5.0,
+          description: 'Vượt qua toàn bộ 3 test case kiểm thử của Question 1 (5.0 điểm)',
+        },
+        {
+          criterion: 'Question 2: Kế thừa & Xử lý Chuỗi SpecChair (50%)',
+          weight: 50,
+          maxScore: 5.0,
+          description: 'Vượt qua toàn bộ 3 test case kiểm thử của Question 2 (5.0 điểm)',
+        },
+      ]
+    : [
+        {
+          criterion: 'Tính đúng đắn chức năng (Functional Correctness)',
+          weight: 40,
+          maxScore: 4.0,
+          description: `Vượt qua toàn bộ ${sampleTestCases.length} ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker.`,
+        },
+        {
+          criterion: 'Cấu trúc mã nguồn & Thiết kế Clean Code',
+          weight: 20,
+          maxScore: 2.0,
+          description: 'Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY).',
+        },
+        {
+          criterion: 'Xử lý ngoại lệ & Dữ liệu biên (Error Handling)',
+          weight: 20,
+          maxScore: 2.0,
+          description: 'Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error).',
+        },
+        {
+          criterion: 'Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)',
+          weight: 20,
+          maxScore: 2.0,
+          description: 'Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention.',
+        },
+      ];
 
   return {
     assignmentTitle: baseTitle,
     difficulty: diff,
     programmingLang: lang,
     taskType,
-    problemStatement: `${contextScenario} Đề bài được sinh tự động dựa trên tài liệu bài học của lớp ${cls}. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả ${sampleTestCases.length} ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.`,
-    functionalRequirements: [
-      `Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của ${topicName}.`,
-      `Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.`,
-      `Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.`,
-      `Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).`,
-    ],
-    technicalConstraints: [
-      `Sử dụng ngôn ngữ ${lang} phiên bản mới nhất, không dùng thư viện ngoài bị cấm.`,
-      `Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.`,
-      `Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.`,
-      `Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.`,
-    ],
+    problemStatement: topicKey === 'java-oop'
+      ? 'Đề thi thực hành môn Lập trình Hướng đối tượng Java OOP (PRO192). Đề thi gồm 2 câu hỏi độc lập (Question 1: 5.0 điểm và Question 2: 5.0 điểm), tổng điểm 10.0 điểm. Hệ thống tự động biên dịch và chấm điểm dựa trên bộ Test Cases chuẩn xác từng ký tự.'
+      : `${contextScenario} Đề bài được sinh tự động dựa trên tài liệu bài học của lớp ${cls}. Sinh viên cần cài đặt mã nguồn hoàn chỉnh, đáp ứng tất cả ${sampleTestCases.length} ca kiểm thử tự động (gồm cả test case ẩn) và tuân thủ các quy tắc thiết kế hệ thống.`,
+    functionalRequirements: topicKey === 'java-oop'
+      ? [
+          'Question 1 (5.0 điểm): Xây dựng lớp Person gồm các thuộc tính private name (String), sickLeave (double). Cung cấp 2 constructor (mặc định và có tham số). Cài đặt phương thức setSickLeave(upValue: double) cộng dồn sickLeave; phương thức getName() trả về tên in hoa; phương thức toString() định dạng: name,sickLeave (không chứa khoảng trắng).',
+          'Question 2 (5.0 điểm): Xây dựng lớp cha Chair gồm thuộc tính color (String), quantity (int), các phương thức getter/setter và toString() định dạng: color,quantity (không có khoảng trắng). Xây dựng lớp con SpecChair kế thừa từ Chair bổ sung thuộc tính type (String), constructor gọi super constructor, phương thức getType() trả về type đã cắt bỏ ký tự cuối, phương thức setType() gán type = "discount" nếu quantity > 5 ngược lại gán "no discount", và toString() định dạng: color,quantity,type (không chứa khoảng trắng).'
+        ]
+      : [
+          `Cài đặt đầy đủ các cấu trúc dữ liệu và phương thức nghiệp vụ theo đặc tả của ${topicName}.`,
+          `Xây dựng cơ chế tiếp nhận dữ liệu đầu vào, kiểm tra tính hợp lệ và phản hồi mã trạng thái tương ứng.`,
+          `Cài đặt các hàm xử lý dữ liệu với độ phức tạp tối ưu, hạn chế tiêu tốn tài nguyên bộ nhớ.`,
+          `Hỗ trợ ghi log chi tiết phục vụ kiểm tra lỗi (Debug & Audit Trail).`,
+        ],
+    technicalConstraints: topicKey === 'java-oop'
+      ? [
+          'Sử dụng ngôn ngữ Java (OOP) - JDK 17/21.',
+          'Đặt đúng tên Class, thuộc tính và phương thức chính xác 100% theo biểu đồ UML (phân biệt chữ hoa/chữ thường).',
+          'Tuân thủ tính đóng gói (Encapsulation: thuộc tính private, getter/setter public), kế thừa (Inheritance: SpecChair extends Chair) và ghi đè phương thức (Method Overriding).'
+        ]
+      : [
+          `Sử dụng ngôn ngữ ${lang} phiên bản mới nhất, không dùng thư viện ngoài bị cấm.`,
+          `Mã nguồn phải được tổ chức thành các package/module riêng biệt theo kiến trúc Controller-Service-Repository.`,
+          `Toàn bộ các trường dữ liệu bắt buộc phải đóng gói (Encapsulation) với getter/setter hợp lệ.`,
+          `Hệ thống phải vượt qua kiểm tra tĩnh AST (Abstract Syntax Tree) và không có dead code.`,
+        ],
     sampleTestCases,
-    gradingRubric: [
-      {
-        criterion: 'Tính đúng đắn chức năng (Functional Correctness)',
-        weight: 40,
-        maxScore: 4.0,
-        description: `Vượt qua toàn bộ ${sampleTestCases.length} ca kiểm thử tự động (Unit Test / Integration Tests) trên Worker.`,
-      },
-      {
-        criterion: 'Cấu trúc mã nguồn & Thiết kế Clean Code',
-        weight: 20,
-        maxScore: 2.0,
-        description: 'Mã nguồn tường minh, tuân thủ nguyên lý SOLID, quy tắc đặt tên và không lặp mã (DRY).',
-      },
-      {
-        criterion: 'Xử lý ngoại lệ & Dữ liệu biên (Error Handling)',
-        weight: 20,
-        maxScore: 2.0,
-        description: 'Bắt lỗi và kiểm soát toàn bộ trường hợp ngoại lệ (null pointer, out of bounds, format error).',
-      },
-      {
-        criterion: 'Chất lượng kiểm thử & Lịch sử Git (Testing & Git Quality)',
-        weight: 20,
-        maxScore: 2.0,
-        description: 'Viết test case độ bao phủ >= 80%, commit đều đặn, thông điệp commit chuẩn Convention.',
-      },
-    ],
+    gradingRubric,
     generatedByAi: true,
     modelUsed: (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY) ? 'Google Gemini 1.5 Flash' : 'AITA Curriculum AI Engine v1.0 (Intelligent Fallback)',
   };

@@ -115,13 +115,14 @@ function generateTestCasesForTopic(
     return customTestCases.map((tc, idx) => {
       const isPassed = idx < passedCount;
       const duration = 85 + ((seed + idx * 47) % 200);
+      const maxPt = tc.points !== undefined ? Number(tc.points) : ptPerCase;
       return {
         id: `TC0${idx + 1}`.replace('TC010', 'TC10'),
         name: tc.name || `TC0${idx + 1}: Kiểm thử yêu cầu đề bài`,
         category: (tc.isHidden || idx === totalCount - 1) ? 'exception' : (idx === 1 ? 'boundary' : 'functional'),
         status: isPassed ? 'passed' : 'failed',
-        points: isPassed ? ptPerCase : 0.0,
-        maxPoints: ptPerCase,
+        points: isPassed ? maxPt : 0.0,
+        maxPoints: maxPt,
         durationMs: isPassed ? duration : (idx === 7 ? 30000 : 120),
         input: tc.input || 'Dữ liệu kiểm thử theo yêu cầu đề bài',
         expectedOutput: tc.expectedOutput || 'Kết quả mong đợi theo đặc tả',
@@ -142,7 +143,16 @@ function generateTestCasesForTopic(
     failMsg?: string;
   }>;
 
-  if (topUpper.includes('BULLMQ') || topUpper.includes('REDIS QUEUE') || (topUpper.includes('REDIS') && topUpper.includes('QUEUE'))) {
+  if (topUpper.includes('CHAIR') || topUpper.includes('PERSON') || topUpper.includes('SPEC') || topUpper.includes('PRO192') || topUpper.includes('JAVA OOP') || topUpper.includes('OOP')) {
+    baseCases = [
+      { name: '[Q1] TC01: Khởi tạo Person & getName() in hoa (1.5đ)', category: 'functional', input: 'Person p = new Person("alex", 2.5); p.getName()', expected: '"ALEX"' },
+      { name: '[Q1] TC02: Định dạng Person.toString() không khoảng trắng (1.5đ)', category: 'functional', input: 'new Person("John", 4.0).toString()', expected: '"John,4.0"' },
+      { name: '[Q1] TC03: Tăng ngày nghỉ setSickLeave(upValue) cộng dồn (2.0đ)', category: 'functional', input: 'Person p = new Person("Mary", 3.0); p.setSickLeave(1.5); p.toString()', expected: '"Mary,4.5"' },
+      { name: '[Q2] TC04: Lớp cha Chair (getColor, getQuantity, toString) (1.5đ)', category: 'functional', input: 'new Chair("red", 4).toString()', expected: '"red,4"' },
+      { name: '[Q2] TC05: Lớp con SpecChair.getType() cắt bỏ ký tự cuối (1.5đ)', category: 'functional', input: 'new SpecChair("brown", 2, "gaming").getType()', expected: '"gamin"' },
+      { name: '[Q2] TC06: Logic SpecChair.setType() theo quantity > 5 (2.0đ)', category: 'boundary', input: 'SpecChair sc = new SpecChair("black", 8, "old"); sc.setType(); sc.toString()', expected: '"black,8,discount"' },
+    ];
+  } else if (topUpper.includes('BULLMQ') || topUpper.includes('REDIS QUEUE') || (topUpper.includes('REDIS') && topUpper.includes('QUEUE'))) {
     baseCases = [
       { name: 'TC01: Khởi tạo kết nối Redis Cluster & BullMQ Client', category: 'functional', input: 'new Queue("grading-queue", { connection: redisConfig })', expected: 'Redis Client kết nối PING/PONG thành công, Hàng đợi sẵn sàng' },
       { name: 'TC02: Đưa tác vụ vào hàng đợi (Enqueue Job với Payload & Priority)', category: 'functional', input: 'queue.add("grade-submission", { subId: "SUB-101", priority: 1 })', expected: 'Trả về Job ID #101 với trạng thái "waiting", payload tuần tự hóa JSON' },

@@ -83,26 +83,21 @@ export const removeDeletedClassCode = (cCode: string) => {
   } catch { }
 };
 
-const defaultClasses: InMemoryClass[] = [
-  {
-    id: 1,
-    className: 'SWP391-SE1801',
-    courseName: 'Application Development Project (SWP391)',
-    department: 'Kỹ thuật phần mềm (SE)',
-    lecturer: { fullName: 'Lê Nguyễn Anh Mai', email: 'lenguyenanhmai113@gmail.com' },
-    createdAt: '2026-10-10',
-  },
-  {
-    id: 2,
-    className: 'PRN231-SE1803',
-    courseName: 'Building Cross-Platform Apps with .NET (PRN231)',
-    department: 'Kỹ thuật phần mềm (SE)',
-    lecturer: { fullName: 'TS. Nguyễn Văn Giảng', email: 'giangnv@fpt.edu.vn' },
-    createdAt: '2026-10-11',
-  },
-];
+const defaultClasses: InMemoryClass[] = [];
 
 let inMemoryClasses: InMemoryClass[] = [...defaultClasses];
+
+/**
+ * GET /api/classes/deleted
+ * Fetch all deleted class codes
+ */
+router.get('/classes/deleted', (_req: Request, res: Response) => {
+  const deletedSet = getDeletedClassCodes();
+  return res.json({
+    success: true,
+    data: Array.from(deletedSet),
+  });
+});
 
 /**
  * GET /api/classes
@@ -123,11 +118,8 @@ router.get('/classes', async (_req: Request, res: Response) => {
       },
       orderBy: { id: 'asc' },
     });
-    if (dbClasses && dbClasses.length > 0) {
-      rawClasses = dbClasses;
-    } else {
-      rawClasses = [...inMemoryClasses];
-    }
+    // Supabase is the single source of truth when connected:
+    rawClasses = dbClasses || [];
   } catch (error: any) {
     console.warn('[Class Routes] Database unavailable, using in-memory classes:', error?.message);
     rawClasses = [...inMemoryClasses];

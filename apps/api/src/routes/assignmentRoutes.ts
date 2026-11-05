@@ -271,13 +271,13 @@ router.get('/assignments', async (req: Request, res: Response) => {
 
     const deletedSet = getDeletedClassCodes();
 
-    // Include any assignments saved to disk that aren't yet in DB (e.g. newly created assignments)
-    const stored = getStoredAssignments();
-    const dbTitles = new Set(assignments.map((a: any) => (a.title || '').trim().toLowerCase()));
-    const missingFromDb = stored.filter((s: any) => !dbTitles.has((s.title || '').trim().toLowerCase()));
-    const combined = [...assignments, ...missingFromDb];
+    // Supabase PostgreSQL is the single source of truth when connected!
+    // Keep disk cache in exact sync with Supabase:
+    try {
+      saveStoredAssignments(assignments);
+    } catch {}
 
-    const validAssignments = combined
+    const validAssignments = assignments
       .filter((a: any) => {
         const c = String(a.class?.className || a.classCode || '');
         const norm = normalizeClassCodeStr(c);
@@ -418,13 +418,13 @@ router.delete('/assignments/:id', async (req: Request, res: Response) => {
     }
 
     const decodedId = decodeURIComponent(rawId).trim();
+    const cleanNumericId = Number(decodedId.replace(/^ASM-/i, ''));
 
-    // 1. Delete from PostgreSQL database if numeric or matching title
-    const numId = Number(decodedId);
+    // 1. Delete from PostgreSQL database if numeric, prefixed ASM- or matching title
     try {
       let targetAsm = null;
-      if (!isNaN(numId)) {
-        targetAsm = await prisma.assignment.findUnique({ where: { id: numId } });
+      if (!isNaN(cleanNumericId)) {
+        targetAsm = await prisma.assignment.findUnique({ where: { id: cleanNumericId } });
       }
       if (!targetAsm) {
         targetAsm = await prisma.assignment.findFirst({
@@ -446,6 +446,8 @@ router.delete('/assignments/:id', async (req: Request, res: Response) => {
     const stored = getStoredAssignments();
     const updated = stored.filter(
       s => String(s.id) !== decodedId &&
+           String(s.id) !== String(cleanNumericId) &&
+           `ASM-${s.id}`.toLowerCase() !== decodedId.toLowerCase() &&
            String(s.title).trim().toLowerCase() !== decodedId.toLowerCase()
     );
     saveStoredAssignments(updated);

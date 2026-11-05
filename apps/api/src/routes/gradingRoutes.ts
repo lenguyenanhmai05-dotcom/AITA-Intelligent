@@ -13,6 +13,9 @@ import {
   reviewGradingJob,
   getSubmissionReport,
   updateSubmissionGrade,
+  deleteSubmission,
+  bulkDeleteSubmissions,
+  clearAllSubmissions,
 } from '../controllers/gradingController';
 
 const router = Router();
@@ -23,6 +26,10 @@ router.post('/submissions', createSubmission);
 router.get('/submissions/:id/report', getSubmissionReport);
 router.patch('/submissions/:id/grade', updateSubmissionGrade);
 router.post('/submissions/:id/grade', updateSubmissionGrade);
+router.delete('/submissions/:id', deleteSubmission);
+router.post('/submissions/bulk-delete', bulkDeleteSubmissions);
+router.delete('/submissions', clearAllSubmissions);
+router.post('/submissions/clear-all', clearAllSubmissions);
 
 // Batch Grading Orchestration (UC-01 & BR-02)
 router.get('/batches', getBatches);
